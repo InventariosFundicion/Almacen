@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Control de Almacén - Fundición</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            flex: 1;
+            min-width: 140px;
+            padding: 18px 15px;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tab.active {
+            background: white;
+            border-bottom: 4px solid #e74c3c;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        /* Estilo especial para el campo de scanner */
+        #qr-input {
+            background: #f8f9fa;
+            border: 3px solid #28a745;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            line-height: 1.4;
+        }
+
+        #qr-input:focus {
+            outline: none;
+            border-color: #20c997;
+            box-shadow: 0 0 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 8px 5px;
+            text-transform: uppercase;
+        }
+
+        .btn-primary { background: #3498db; color: white; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-info { background: #17a2b8; color: white; }
+        .btn-danger { background: #e74c3c; color: white; }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-left: 6px solid #3498db;
+            margin: 20px 0;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin: 25px 0;
+        }
+
+        .stats-card {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+        }
+
+        .stats-number {
+            font-size: 3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .alert {
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 12px;
+            font-weight: bold;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .warehouse-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .warehouse-btn {
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .warehouse-btn.selected {
+            border-color: #e74c3c;
+            background: #e74c3c;
+            color: white;
+        }
+
+        .inventory-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .inventory-table th, .inventory-table td {
+            padding: 18px 15px;
+            text-align: left;
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        .inventory-table th {
+            background: linear-gradient(135deg, #34495e, #2c3e50);
+            color: white;
+            font-weight: bold;
+        }
+
+        .code-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            color: white;
+            margin: 2px;
+            display: inline-block;
+        }
+
+        .pallet-preview {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .pallet-code {
+            font-size: 12px;
+            padding: 2px 5px;
+            margin: 1px;
+            background: #e9ecef;
+            border-radius: 3px;
+            display: inline-block;
+        }
+
+        .pallet-info {
+            background: #e3f2fd;
+            border: 2px solid #2196f3;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .pallet-id {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .scanner-hint {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #856404;
+        }
+
+        .auto-detect {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏭 Sistema de Almacén</h1>
+            <p>Control de Inventario - Fundición y Acabados</p>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('dashboard')">📊 Dashboard</button>
+            <button class="nav-tab" onclick="showTab('scanner')">📱 Escáner QR</button>
+            <button class="nav-tab" onclick="showTab('inventory')">📋 Inventario</button>
+            <button class="nav-tab" onclick="showTab('pallets')">📦 Tarimas</button>
+            <button class="nav-tab" onclick="showTab('production')">🏭 Producción</button>
+            <button class="nav-tab" onclick="showTab('theoretical')">📊 Teórico vs Físico</button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <h2>📊 Dashboard de Almacén</h2>
+            
+            <div class="grid">
+                <div class="card stats-card">
+                    <div class="stats-number" id="total-fundidos">0</div>
+                    <h3>🔥 FUNDIDOS</h3>
+                </div>
+                <div class="card stats-card">
+                    <div class="stats-number" id="total-acabados">0</div>
+                    <h3>✅ ACABADOS</h3>
+                </div>
+                <div class="card stats-card">
+                    <div class="stats-number" id="total-upr">0</div>
+                    <h3>🔺 UPR</h3>
+                </div>
+                <div class="card stats-card">
+                    <div class="stats-number" id="total-lwr">0</div>
+                    <h3>🔻 LWR</h3>
+                </div>
+                <div class="card stats-card">
+                    <div class="stats-number" id="total-pallets">0</div>
+                    <h3>📦 TARIMAS</h3>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn btn-primary" onclick="exportData()">📊 Exportar Datos</button>
+            </div>
+        </div>
+
+        <!-- Scanner Tab -->
+        <div id="scanner" class="tab-content">
+            <h2>📱 Procesamiento de Códigos QR</h2>
+            
+            <div class="card">
+                <h3>Procesar Código QR</h3>
+                
+                <div class="scanner-hint">
+                    💡 <strong>Para Scanner Físico:</strong> Posiciona el scanner sobre este campo de texto y escanea. 
+                    El código se capturará automáticamente.
+                </div>
+                
+                <div class="form-group">
+                    <label>Código QR (Tarima o Individual):</label>
+                    <textarea id="qr-input" rows="4" placeholder="Pega aquí el código QR completo o usa el scanner físico..." autofocus></textarea>
+                    <div id="qr-analysis"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Tipo de Inventario:</label>
+                    <select id="inventory-type">
+                        <option value="movimiento">📦 Movimiento Normal</option>
+                        <option value="inicial">🎯 Inventario Inicial</option>
+                        <option value="turno">⏰ Inventario por Turno</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Turno:</label>
+                    <select id="shift">
+                        <option value="1">Primer Turno (07:00 am - 07:00 pm)</option>
+                        <option value="2">Segundo Turno (07:00 pm - 07:00 am)</option>
+                    </select>
+                </div>
+                
+                <!-- Sección para piezas individuales - Estado del material -->
+                <div class="form-group" id="individual-state-section" style="display: none;">
+                    <label>Estado del Material (Pieza Individual):</label>
+                    <select id="individual-state">
+                        <option value="fundidos">🔥 Fundido</option>
+                        <option value="acabados">✅ Acabado</option>
+                    </select>
+                </div>
+                
+                <!-- Sección para movimientos - Solo cuando es "Movimiento Normal" -->
+                <div class="form-group" id="movement-destination-section" style="display: none;">
+                    <label>Destino del Movimiento:</label>
+                    <div class="warehouse-selector" id="movement-selector">
+                        <div class="warehouse-btn" data-movement="envios">📦 ENVÍOS</div>
+                        <div class="warehouse-btn" data-movement="retenciones">⏸️ RETENCIONES</div>
+                        <div class="warehouse-btn" data-movement="scrap">♻️ SCRAP</div>
+                        <div class="warehouse-btn" data-movement="pruebas">🧪 PRUEBAS</div>
+                    </div>
+                </div>
+                
+                <!-- Sección para override de tarimas (solo cuando auto-detección falla) -->
+                <div class="form-group" id="warehouse-override-section" style="display: none;">
+                    <label>Forzar Almacén (Tarima sin estado detectado):</label>
+                    <div class="warehouse-selector" id="warehouse-selector">
+                        <div class="warehouse-btn" data-warehouse="fundidos">🔥 FUNDIDOS</div>
+                        <div class="warehouse-btn" data-warehouse="acabados">✅ ACABADOS</div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-success" onclick="processQRCode()">✅ Procesar Código QR</button>
+                <button class="btn btn-info" onclick="clearForm()">🔄 Limpiar</button>
+            </div>
+
+            <div id="process-result"></div>
+        </div>
+
+        <!-- Inventory Tab -->
+        <div id="inventory" class="tab-content">
+            <h2>📋 Inventario</h2>
+            
+            <div class="card">
+                <h3>📊 Resumen por Número de Parte</h3>
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>Número de Parte</th>
+                            <th>Fundidos</th>
+                            <th>Acabados</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="grouped-inventory-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pallets Tab -->
+        <div id="pallets" class="tab-content">
+            <h2>📦 Gestión de Tarimas</h2>
+            
+            <div class="card">
+                <h3>📋 Registro de Tarimas</h3>
+                <table class="inventory-table">
+                    <thead>
+                        <tr>
+                            <th>ID Tarima</th>
+                            <th>ID Original</th>
+                            <th>Estado</th>
+                            <th>Tipo</th>
+                            <th>Piezas</th>
+                            <th>Almacén</th>
+                            <th>Fecha</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pallets-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Production Tab -->
+        <div id="production" class="tab-content">
+            <h2>🏭 Reporte de Producción</h2>
+            
+            <div class="card">
+                <h3>Nuevo Reporte</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                    <div class="form-group">
+                        <label>Máquina:</label>
+                        <select id="machine">
+                            <option value="30">#30</option>
+                            <option value="31">#31</option>
+                            <option value="32">#32</option>
+                            <option value="33">#33</option>
+                            <option value="34">#34</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Proceso:</label>
+                        <select id="process">
+                            <option value="fundicion">🔥 Fundición</option>
+                            <option value="acabado">✅ Acabado</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Número de Parte:</label>
+                        <select id="part-number">
+                            <option value="PX13-10-301">PX13-10-301 (UPR)</option>
+                            <option value="PX13-10-382">PX13-10-382 (LWR)</option>
+                            <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
+                            <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Cantidad Total:</label>
+                        <input type="number" id="total-produced" min="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Cantidad NG:</label>
+                        <input type="number" id="ng-quantity" min="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Fecha:</label>
+                        <input type="date" id="production-date">
+                    </div>
+                </div>
+                
+                <button class="btn btn-success" onclick="saveProductionReport()">💾 Guardar Reporte</button>
+            </div>
+        </div>
+
+        <!-- Theoretical vs Physical Tab -->
+        <div id="theoretical" class="tab-content">
+            <h2>📊 Inventario Teórico vs Físico</h2>
+            
+            <div class="card">
+                <h3>⚙️ Configuración Base</h3>
+                <p>Configura el inventario inicial y producción para calcular el teórico.</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+                    <div>
+                        <h4>📦 Inventario Inicial</h4>
+                        <div id="initial-setup"></div>
+                    </div>
+                    
+                    <div>
+                        <h4>🏭 Producción</h4>
+                        <div id="production-setup"></div>
+                    </div>
+                </div>
+                
+                <button class="btn btn-info" onclick="calculateTheoretical()">🧮 Calcular Teórico</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let inventory = [];
+        let movements = [];
+        let productionReports = [];
+        let pallets = [];
+        let selectedWarehouse = '';
+        let selectedMovement = '';
+        let palletCounter = 1;
+
+        const PART_NUMBERS = [
+            'PX13-10-301', 'PX13-10-382', 'PEDD-10-301-A', 'PEDD-10-382-A'
+        ];
+
+        // Estados posibles detectados en códigos QR
+        const STATE_MAPPING = {
+            'FUNDIDO': 'fundidos',
+            'FUNDIDOS': 'fundidos',
+            'ACABADO': 'acabados',
+            'ACABADOS': 'acabados',
+            'FINISHED': 'acabados',
+            'CAST': 'fundidos',
+            'MOLTEN': 'fundidos'
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            loadSampleData();
+            updateAllDisplays();
+            document.getElementById('production-date').value = new Date().toISOString().split('T')[0];
+        });
+
+        function setupEventListeners() {
+            document.getElementById('qr-input').addEventListener('input', analyzeQRCode);
+            
+            // Listener para cambios en tipo de inventario
+            document.getElementById('inventory-type').addEventListener('change', updateFormSections);
+            
+            // Auto-submit cuando se detecta un código completo (para scanners físicos)
+            document.getElementById('qr-input').addEventListener('paste', function(e) {
+                setTimeout(() => {
+                    const content = e.target.value.trim();
+                    if (content && (content.includes('|') || content.length >= 13)) {
+                        analyzeQRCode();
+                    }
+                }, 100);
+            });
+            
+            // Listener para selección de almacén (override de tarimas)
+            document.getElementById('warehouse-selector').addEventListener('click', function(e) {
+                if (e.target.classList.contains('warehouse-btn')) {
+                    this.querySelectorAll('.warehouse-btn').forEach(btn => 
+                        btn.classList.remove('selected'));
+                    e.target.classList.add('selected');
+                    selectedWarehouse = e.target.dataset.warehouse;
+                }
+            });
+            
+            // Listener para selección de movimiento
+            document.getElementById('movement-selector').addEventListener('click', function(e) {
+                if (e.target.classList.contains('warehouse-btn')) {
+                    this.querySelectorAll('.warehouse-btn').forEach(btn => 
+                        btn.classList.remove('selected'));
+                    e.target.classList.add('selected');
+                    selectedMovement = e.target.dataset.movement;
+                }
+            });
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => 
+                tab.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(tab => 
+                tab.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function generatePalletId() {
+            return `PAL-${String(palletCounter++).padStart(4, '0')}`;
+        }
+
+        function updateFormSections() {
+            const inventoryType = document.getElementById('inventory-type').value;
+            const movementSection = document.getElementById('movement-destination-section');
+            
+            // Mostrar sección de movimientos solo si es "Movimiento Normal"
+            if (inventoryType === 'movimiento') {
+                movementSection.style.display = 'block';
+            } else {
+                movementSection.style.display = 'none';
+                // Limpiar selección de movimiento
+                document.querySelectorAll('#movement-selector .warehouse-btn').forEach(btn => 
+                    btn.classList.remove('selected'));
+                selectedMovement = '';
+            }
+        }
+
+        function analyzeQRCode() {
+            const input = document.getElementById('qr-input').value.trim();
+            const analysisDiv = document.getElementById('qr-analysis');
+            
+            // Ocultar todas las secciones primero
+            document.getElementById('warehouse-override-section').style.display = 'none';
+            document.getElementById('individual-state-section').style.display = 'none';
+            
+            if (!input) {
+                analysisDiv.innerHTML = '';
+                return;
+            }
+            
+            const analysis = parseQRCode(input);
+            
+            if (analysis.isPallet) {
+                // Para TARIMAS
+                const autoDetectedState = analysis.detectedState ? 
+                    `<div class="auto-detect">🔍 <strong>Estado Auto-detectado:</strong> ${analysis.detectedState.toUpperCase()}</div>` : '';
+                
+                // Solo mostrar override si NO se detectó estado automáticamente
+                if (!analysis.detectedState) {
+                    document.getElementById('warehouse-override-section').style.display = 'block';
+                }
+                
+                analysisDiv.innerHTML = `
+                    <div class="alert alert-info">
+                        <strong>🎯 TARIMA DETECTADA</strong><br>
+                        <span class="code-badge" style="background: #17a2b8;">ID Original: ${analysis.palletId}</span>
+                        <span class="code-badge" style="background: #28a745;">${analysis.type}</span>
+                        <span class="code-badge" style="background: #6c757d;">${analysis.codes.length} piezas</span>
+                        ${autoDetectedState}
+                        
+                        <div class="pallet-info">
+                            <div class="pallet-id">🆔 Se asignará ID: ${generatePalletId()}</div>
+                            <small>Este ID único permitirá movimientos futuros de la tarima completa</small>
+                        </div>
+                        
+                        <div class="pallet-preview">
+                            <strong>Códigos en la tarima:</strong><br>
+                            ${analysis.codes.slice(0, 10).map(code => 
+                                `<span class="pallet-code">${code}</span>`
+                            ).join('')}
+                            ${analysis.codes.length > 10 ? `<br><em>... y ${analysis.codes.length - 10} más</em>` : ''}
+                        </div>
+                    </div>
+                `;
+                palletCounter--; // Decrementar para que se use el ID correcto al procesar
+                
+            } else if (analysis.isValid) {
+                // Para PIEZAS INDIVIDUALES - mostrar selector de estado
+                document.getElementById('individual-state-section').style.display = 'block';
+                
+                analysisDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        <strong>✅ CÓDIGO INDIVIDUAL</strong><br>
+                        <span class="code-badge" style="background: #28a745;">${analysis.type}</span>
+                        <span class="code-badge" style="background: #6c757d;">${analysis.code}</span>
+                        <div class="auto-detect">💡 <strong>Selecciona el estado del material abajo</strong></div>
+                    </div>
+                `;
+            } else {
+                analysisDiv.innerHTML = `
+                    <div class="alert" style="background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;">
+                        ❌ <strong>Código no válido</strong><br>
+                        Verifica que el código QR esté completo y en el formato correcto.
+                    </div>
+                `;
+            }
+            
+            // Actualizar secciones basadas en tipo de inventario
+            updateFormSections();
+        }
+
+        function parseQRCode(input) {
+            if (input.includes('|')) {
+                const parts = input.split('|');
+                if (parts.length >= 3) {
+                    const palletId = parts[0];
+                    const state = parts[1];
+                    const codes = parts.slice(2).filter(code => code.trim().length > 0);
+                    
+                    let type = 'UNKNOWN';
+                    if (codes.length > 0) {
+                        const firstCode = codes[0];
+                        type = firstCode.length === 13 ? 'UPR' : 'LWR';
+                    }
+                    
+                    // Detectar estado automáticamente
+                    let detectedState = null;
+                    const stateUpper = state.toUpperCase();
+                    for (const [key, value] of Object.entries(STATE_MAPPING)) {
+                        if (stateUpper.includes(key)) {
+                            detectedState = value;
+                            break;
+                        }
+                    }
+                    
+                    return {
+                        isPallet: true,
+                        isValid: true,
+                        palletId: palletId,
+                        type: type,
+                        state: state,
+                        detectedState: detectedState,
+                        codes: codes
+                    };
+                }
+            } else {
+                const cleanCode = input.trim();
+                if (cleanCode.length === 13 || cleanCode.length === 17) {
+                    return {
+                        isPallet: false,
+                        isValid: true,
+                        code: cleanCode,
+                        type: cleanCode.length === 13 ? 'UPR' : 'LWR'
+                    };
+                }
+            }
+            
+            return { isPallet: false, isValid: false };
+        }
+
+        function processQRCode() {
+            const input = document.getElementById('qr-input').value.trim();
+            const inventoryType = document.getElementById('inventory-type').value;
+            const shift = document.getElementById('shift').value;
+            const resultDiv = document.getElementById('process-result');
+            
+            if (!input) {
+                alert('Por favor escanea o pega un código QR');
+                return;
+            }
+            
+            const analysis = parseQRCode(input);
+            if (!analysis.isValid) {
+                alert('Código QR no válido');
+                return;
+            }
+            
+            let processedCount = 0;
+            let targetWarehouse = '';
+            let movementType = inventoryType;
+            
+            if (analysis.isPallet) {
+                // LÓGICA PARA TARIMAS
+                if (inventoryType === 'movimiento') {
+                    // Es movimiento normal - debe seleccionar destino
+                    if (!selectedMovement) {
+                        alert('Por favor selecciona el destino del movimiento (Envíos, Retenciones, Scrap, o Pruebas)');
+                        return;
+                    }
+                    targetWarehouse = selectedMovement;
+                } else {
+                    // Es inventario inicial o por turno
+                    if (analysis.detectedState) {
+                        // Usar estado auto-detectado
+                        targetWarehouse = analysis.detectedState;
+                    } else {
+                        // Necesita override manual
+                        if (!selectedWarehouse) {
+                            alert('Esta tarima no tiene estado detectable. Por favor selecciona Fundidos o Acabados manualmente.');
+                            return;
+                        }
+                        targetWarehouse = selectedWarehouse;
+                    }
+                }
+                
+                // Generar ID único para la tarima
+                const palletSystemId = generatePalletId();
+                
+                // Crear registro de tarima
+                const palletRecord = {
+                    systemId: palletSystemId,
+                    originalId: analysis.palletId,
+                    state: targetWarehouse === 'fundidos' ? 'fundidos' : 
+                           (targetWarehouse === 'acabados' ? 'acabados' : targetWarehouse),
+                    type: analysis.type,
+                    codesCount: analysis.codes.length,
+                    warehouse: targetWarehouse,
+                    codes: analysis.codes,
+                    createdDate: new Date(),
+                    inventoryType: inventoryType,
+                    shift: shift,
+                    movementType: movementType
+                };
+                
+                pallets.push(palletRecord);
+                
+                // Procesar cada código individual
+                analysis.codes.forEach(code => {
+                    processIndividualCode(code, analysis.type, inventoryType, shift, targetWarehouse, palletSystemId);
+                    processedCount++;
+                });
+                
+                resultDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        ✅ <strong>Tarima procesada exitosamente</strong><br>
+                        🆔 ID Sistema: <strong>${palletSystemId}</strong><br>
+                        📦 ID Original: ${analysis.palletId}<br>
+                        📊 ${processedCount} piezas ${analysis.type}<br>
+                        🏪 Destino: ${getWarehouseName(targetWarehouse)}<br>
+                        🔄 Tipo: ${inventoryType} - Turno ${shift}
+                    </div>
+                `;
+                
+            } else {
+                // LÓGICA PARA PIEZAS INDIVIDUALES
+                const individualState = document.getElementById('individual-state').value;
+                
+                if (inventoryType === 'movimiento') {
+                    // Es movimiento normal - debe seleccionar destino
+                    if (!selectedMovement) {
+                        alert('Por favor selecciona el destino del movimiento (Envíos, Retenciones, Scrap, o Pruebas)');
+                        return;
+                    }
+                    targetWarehouse = selectedMovement;
+                } else {
+                    // Es inventario inicial o por turno - usar estado seleccionado
+                    targetWarehouse = individualState;
+                }
+                
+                processIndividualCode(analysis.code, analysis.type, inventoryType, shift, targetWarehouse);
+                
+                resultDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        ✅ <strong>Código individual procesado</strong><br>
+                        📦 ${analysis.code}<br>
+                        🏪 Destino: ${getWarehouseName(targetWarehouse)}<br>
+                        📊 Estado: ${getWarehouseName(individualState)}<br>
+                        🔄 Tipo: ${inventoryType} - Turno ${shift}
+                    </div>
+                `;
+            }
+            
+            clearForm();
+            updateAllDisplays();
+            
+            setTimeout(() => resultDiv.innerHTML = '', 6000);
+        }
+
+        function getWarehouseName(warehouse) {
+            const names = {
+                'fundidos': '🔥 FUNDIDOS',
+                'acabados': '✅ ACABADOS',
+                'scrap': '♻️ SCRAP',
+                'retenciones': '⏸️ RETENCIONES',
+                'envios': '📦 ENVÍOS',
+                'pruebas': '🧪 PRUEBAS'
+            };
+            return names[warehouse] || warehouse.toUpperCase();
+        }
+
+        function clearForm() {
+            document.getElementById('qr-input').value = '';
+            document.getElementById('qr-analysis').innerHTML = '';
+            
+            // Ocultar todas las secciones dinámicas
+            document.getElementById('warehouse-override-section').style.display = 'none';
+            document.getElementById('individual-state-section').style.display = 'none';
+            document.getElementById('movement-destination-section').style.display = 'none';
+            
+            // Reset selecciones
+            document.querySelectorAll('.warehouse-btn').forEach(btn => 
+                btn.classList.remove('selected'));
+            selectedWarehouse = '';
+            selectedMovement = '';
+            
+            // Focus back to input for next scan
+            document.getElementById('qr-input').focus();
+        }
+
+        function processIndividualCode(code, type, movementType, shift, warehouse, palletId = null) {
+            const partNumber = type === 'UPR' ? 'PX13-10-301' : 'PX13-10-382';
+            
+            let item = inventory.find(i => i.code === code);
+            
+            if (!item) {
+                item = {
+                    code: code,
+                    partNumber: partNumber,
+                    type: type,
+                    state: warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS',
+                    warehouse: warehouse,
+                    quantity: 0,
+                    lastMovement: new Date(),
+                    shift: shift,
+                    palletId: palletId
+                };
+                inventory.push(item);
+            }
+            
+            item.quantity += 1;
+            item.warehouse = warehouse;
+            item.state = warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
+            item.lastMovement = new Date();
+            item.palletId = palletId;
+            
+            movements.push({
+                id: Date.now() + Math.random(),
+                code: code,
+                partNumber: partNumber,
+                type: movementType,
+                warehouse: warehouse,
+                quantity: 1,
+                date: new Date(),
+                shift: shift,
+                palletId: palletId
+            });
+        }
+
+        function loadSampleData() {
+            const samples = [
+                { code: 'P69A3037OFPX5', type: 'UPR', partNumber: 'PX13-10-301' },
+                { code: '25F093109026100PX', type: 'LWR', partNumber: 'PX13-10-382' }
+            ];
+            
+            samples.forEach(sample => {
+                inventory.push({
+                    code: sample.code,
+                    partNumber: sample.partNumber,
+                    type: sample.type,
+                    state: 'ACABADOS',
+                    warehouse: 'acabados',
+                    quantity: Math.floor(Math.random() * 20) + 1,
+                    lastMovement: new Date(),
+                    shift: '1',
+                    palletId: null
+                });
+            });
+
+            // Agregar tarima de ejemplo
+            const samplePallet = {
+                systemId: generatePalletId(),
+                originalId: 'TARM001',
+                state: 'acabados',
+                type: 'UPR',
+                codesCount: 15,
+                warehouse: 'acabados',
+                codes: ['P69A3037OFPX1', 'P69A3037OFPX2', 'P69A3037OFPX3'],
+                createdDate: new Date(),
+                inventoryType: 'inicial',
+                shift: '1'
+            };
+            pallets.push(samplePallet);
+            palletCounter++; // Incrementar contador después del ejemplo
+        }
+
+        function updateAllDisplays() {
+            updateDashboard();
+            updateGroupedInventory();
+            updatePalletsTable();
+        }
+
+        function updateDashboard() {
+            const fundidos = inventory.filter(i => i.state === 'FUNDIDOS' && i.quantity > 0).length;
+            const acabados = inventory.filter(i => i.state === 'ACABADOS' && i.quantity > 0).length;
+            const upr = inventory.filter(i => i.type === 'UPR' && i.quantity > 0).length;
+            const lwr = inventory.filter(i => i.type === 'LWR' && i.quantity > 0).length;
+            const totalPallets = pallets.length;
+            
+            document.getElementById('total-fundidos').textContent = fundidos;
+            document.getElementById('total-acabados').textContent = acabados;
+            document.getElementById('total-upr').textContent = upr;
+            document.getElementById('total-lwr').textContent = lwr;
+            document.getElementById('total-pallets').textContent = totalPallets;
+        }
+
+        function updateGroupedInventory() {
+            const tbody = document.getElementById('grouped-inventory-tbody');
+            tbody.innerHTML = '';
+            
+            const grouped = {};
+            
+            inventory.forEach(item => {
+                if (item.quantity > 0) {
+                    if (!grouped[item.partNumber]) {
+                        grouped[item.partNumber] = { fundidos: 0, acabados: 0 };
+                    }
+                    
+                    if (item.state === 'FUNDIDOS') {
+                        grouped[item.partNumber].fundidos += item.quantity;
+                    } else {
+                        grouped[item.partNumber].acabados += item.quantity;
+                    }
+                }
+            });
+            
+            Object.keys(grouped).forEach(partNumber => {
+                const data = grouped[partNumber];
+                const total = data.fundidos + data.acabados;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${partNumber}</strong></td>
+                    <td style="text-align: center;">🔥 ${data.fundidos}</td>
+                    <td style="text-align: center;">✅ ${data.acabados}</td>
+                    <td style="text-align: center; font-weight: bold;">${total}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updatePalletsTable() {
+            const tbody = document.getElementById('pallets-tbody');
+            tbody.innerHTML = '';
+            
+            pallets.forEach(pallet => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${pallet.systemId}</strong></td>
+                    <td>${pallet.originalId}</td>
+                    <td><span class="code-badge" style="background: ${pallet.state === 'fundidos' ? '#e74c3c' : '#27ae60'};">${pallet.state.toUpperCase()}</span></td>
+                    <td><span class="code-badge" style="background: #17a2b8;">${pallet.type}</span></td>
+                    <td style="text-align: center;">${pallet.codesCount}</td>
+                    <td>${getWarehouseName(pallet.warehouse)}</td>
+                    <td>${pallet.createdDate.toLocaleDateString()}</td>
+                    <td>
+                        <button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;" onclick="movePallet('${pallet.systemId}')">📦 Mover</button>
+                        <button class="btn btn-info" style="padding: 5px 10px; font-size: 12px;" onclick="viewPalletDetails('${pallet.systemId}')">👁️ Ver</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function movePallet(palletId) {
+            const pallet = pallets.find(p => p.systemId === palletId);
+            if (!pallet) {
+                alert('Tarima no encontrada');
+                return;
+            }
+
+            const newWarehouse = prompt(`Mover tarima ${palletId} a:\n\n1. fundidos\n2. acabados\n3. scrap\n4. retenciones\n5. envios\n6. pruebas\n\nEscribe el nombre del almacén:`);
+            
+            if (newWarehouse && ['fundidos', 'acabados', 'scrap', 'retenciones', 'envios', 'pruebas'].includes(newWarehouse.toLowerCase())) {
+                const warehouse = newWarehouse.toLowerCase();
+                
+                // Actualizar tarima
+                pallet.warehouse = warehouse;
+                pallet.state = warehouse === 'fundidos' ? 'fundidos' : 'acabados';
+                
+                // Actualizar todos los códigos de la tarima en el inventario
+                inventory.forEach(item => {
+                    if (item.palletId === palletId) {
+                        item.warehouse = warehouse;
+                        item.state = warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
+                        item.lastMovement = new Date();
+                    }
+                });
+                
+                // Registrar movimiento
+                movements.push({
+                    id: Date.now() + Math.random(),
+                    palletId: palletId,
+                    type: 'movimiento_tarima',
+                    warehouse: warehouse,
+                    quantity: pallet.codesCount,
+                    date: new Date(),
+                    shift: document.getElementById('shift').value
+                });
+                
+                alert(`✅ Tarima ${palletId} movida a ${getWarehouseName(warehouse)}`);
+                updateAllDisplays();
+            } else if (newWarehouse !== null) {
+                alert('Almacén no válido');
+            }
+        }
+
+        function viewPalletDetails(palletId) {
+            const pallet = pallets.find(p => p.systemId === palletId);
+            if (!pallet) {
+                alert('Tarima no encontrada');
+                return;
+            }
+
+            const codes = pallet.codes.length > 10 ? 
+                pallet.codes.slice(0, 10).join('\n') + `\n... y ${pallet.codes.length - 10} más` :
+                pallet.codes.join('\n');
+
+            alert(`📦 DETALLES DE TARIMA\n\n` +
+                  `🆔 ID Sistema: ${pallet.systemId}\n` +
+                  `📋 ID Original: ${pallet.originalId}\n` +
+                  `📊 Estado: ${pallet.state.toUpperCase()}\n` +
+                  `🔧 Tipo: ${pallet.type}\n` +
+                  `📦 Piezas: ${pallet.codesCount}\n` +
+                  `🏪 Almacén: ${getWarehouseName(pallet.warehouse)}\n` +
+                  `📅 Creada: ${pallet.createdDate.toLocaleString()}\n\n` +
+                  `📋 CÓDIGOS:\n${codes}`);
+        }
+
+        function saveProductionReport() {
+            const machine = document.getElementById('machine').value;
+            const process = document.getElementById('process').value;
+            const partNumber = document.getElementById('part-number').value;
+            const totalProduced = parseInt(document.getElementById('total-produced').value) || 0;
+            const ngQuantity = parseInt(document.getElementById('ng-quantity').value) || 0;
+            const date = document.getElementById('production-date').value;
+            
+            if (!date || totalProduced === 0) {
+                alert('Por favor completa los campos obligatorios');
+                return;
+            }
+            
+            const report = {
+                id: Date.now(),
+                machine: machine,
+                process: process,
+                partNumber: partNumber,
+                totalProduced: totalProduced,
+                ngQuantity: ngQuantity,
+                okQuantity: totalProduced - ngQuantity,
+                date: date
+            };
+            
+            productionReports.push(report);
+            alert('✅ Reporte guardado');
+            
+            document.getElementById('total-produced').value = '';
+            document.getElementById('ng-quantity').value = '';
+        }
+
+        function calculateTheoretical() {
+            alert('🧮 Función de cálculo teórico en desarrollo.\n\nSe implementará la lógica completa basada en:\n- Inventario inicial\n- Producción del turno\n- Movimientos registrados');
+        }
+
+        function exportData() {
+            const data = {
+                inventory: inventory,
+                movements: movements,
+                productionReports: productionReports,
+                pallets: pallets,
+                exportDate: new Date()
+            };
+            
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'almacen-' + new Date().toISOString().split('T')[0] + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
