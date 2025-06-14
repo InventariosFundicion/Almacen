@@ -897,34 +897,85 @@ function processQRCode() {
         `;
         
     } else {
+        // LÓGICA PARA PIEZAS INDIVIDUALES - CON VERIFICACIÓN ESTRICTA
         const individualState = document.getElementById('individual-state').value;
         const existingItem = inventory.find(item => item.code === analysis.code && item.quantity > 0);
         
         if (inventoryType === 'movimiento') {
+            // Para movimientos, permitir solo si el código ya existe
+            if (!existingItem) {
+                alert('❌ ERROR: No puedes hacer un movimiento de un código que no existe en el inventario.\n\nPrimero registra el código con "Inventario Inicial" o "Inventario por Turno".');
+                return;
+            }
+            
             if (!selectedMovement) {
                 alert('Por favor selecciona el destino del movimiento (Envíos, Retenciones, Scrap, o Pruebas)');
                 return;
             }
             targetWarehouse = selectedMovement;
+            
+            // Procesar movimiento (cambiar ubicación sin duplicar)
+            existingItem.warehouse = targetWarehouse;
+            existingItem.state = targetWarehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
+            existingItem.lastMovement = new Date();
+            
+            movements.push({
+                id: Date.now() + Math.random(),
+                code: analysis.code,
+                partNumber: existingItem.partNumber,
+                type: inventoryType,
+                warehouse: targetWarehouse,
+                quantity: 1,
+                date: new Date(),
+                shift: shift,
+                palletId: null
+            });
+            
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    ✅ <strong>Movimiento procesado</strong><br>
+                    📦 ${analysis.code}<br>
+                    🏪 Movido a: ${getWarehouseName(targetWarehouse)}<br>
+                    🔄 Tipo: ${inventoryType} - Turno ${shift}<br>
+                    📊 Cantidad total: ${existingItem.quantity}
+                </div>
+            `;
+            
         } else {
+            // Para inventarios iniciales o por turno
+            if (existingItem) {
+                // Verificar si es el mismo almacén/estado
+                if (existingItem.warehouse === individualState) {
+                    alert(`⚠️ CÓDIGO YA REGISTRADO\n\nEl código ${analysis.code} ya está registrado en ${getWarehouseName(individualState)}.\n\nCantidad actual: ${existingItem.quantity}\nÚltimo registro: ${formatLastMovement(existingItem.lastMovement)}\n\n¿Quieres hacer un MOVIMIENTO en lugar de inventario?`);
+                    return;
+                } else {
+                    // Confirmación para cambiar de estado
+                    const confirmChange = confirm(`🔄 CAMBIO DE ESTADO DETECTADO\n\nEl código ${analysis.code} está actualmente en:\n${getWarehouseName(existingItem.warehouse)}\n\n¿Quieres moverlo a ${getWarehouseName(individualState)}?\n\n✅ Aceptar = Mover\n❌ Cancelar = No hacer nada`);
+                    
+                    if (!confirmChange) {
+                        clearForm();
+                        return;
+                    }
+                }
+            }
+            
             targetWarehouse = individualState;
+            processIndividualCode(analysis.code, analysis.type, inventoryType, shift, targetWarehouse);
+            
+            const statusMessage = existingItem ? 
+                `<br>🔄 Código movido desde ${getWarehouseName(existingItem.warehouse)}` : 
+                '<br>✨ Código nuevo registrado';
+            
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    ✅ <strong>Código individual procesado</strong><br>
+                    📦 ${analysis.code}<br>
+                    🏪 Registrado en: ${getWarehouseName(targetWarehouse)}<br>
+                    📊 Estado: ${getWarehouseName(individualState)}<br>
+                    🔄 Tipo: ${inventoryType} - Turno ${shift}${statusMessage}
+                </div>
+            `;
         }
-        
-        processIndividualCode(analysis.code, analysis.type, inventoryType, shift, targetWarehouse);
-        
-        const statusMessage = existingItem ? 
-            `<br>🔄 Código actualizado (existía previamente en ${getWarehouseName(existingItem.warehouse)})` : 
-            '<br>✨ Código nuevo registrado';
-        
-        resultDiv.innerHTML = `
-            <div class="alert alert-success">
-                ✅ <strong>Código individual procesado</strong><br>
-                📦 ${analysis.code}<br>
-                🏪 Destino: ${getWarehouseName(targetWarehouse)}<br>
-                📊 Estado: ${getWarehouseName(individualState)}<br>
-                🔄 Tipo: ${inventoryType} - Turno ${shift}${statusMessage}
-            </div>
-        `;
     }
     
     clearForm();
