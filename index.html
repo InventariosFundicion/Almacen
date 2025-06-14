@@ -86,7 +86,6 @@
             font-size: 16px;
         }
 
-        /* Estilo especial para el campo de scanner */
         #qr-input {
             background: #f8f9fa;
             border: 3px solid #28a745;
@@ -275,6 +274,38 @@
             margin: 10px 0;
             font-size: 14px;
         }
+
+        .existing-code {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        .existing-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .existing-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .duplicate-warning {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            color: #721c24;
+        }
     </style>
 </head>
 <body>
@@ -360,7 +391,6 @@
                     </select>
                 </div>
                 
-                <!-- Sección para piezas individuales - Estado del material -->
                 <div class="form-group" id="individual-state-section" style="display: none;">
                     <label>Estado del Material (Pieza Individual):</label>
                     <select id="individual-state">
@@ -369,7 +399,6 @@
                     </select>
                 </div>
                 
-                <!-- Sección para movimientos - Solo cuando es "Movimiento Normal" -->
                 <div class="form-group" id="movement-destination-section" style="display: none;">
                     <label>Destino del Movimiento:</label>
                     <div class="warehouse-selector" id="movement-selector">
@@ -380,7 +409,6 @@
                     </div>
                 </div>
                 
-                <!-- Sección para override de tarimas (solo cuando auto-detección falla) -->
                 <div class="form-group" id="warehouse-override-section" style="display: none;">
                     <label>Forzar Almacén (Tarima sin estado detectado):</label>
                     <div class="warehouse-selector" id="warehouse-selector">
@@ -521,651 +549,729 @@
         </div>
     </div>
 
-    <script>
-        let inventory = [];
-        let movements = [];
-        let productionReports = [];
-        let pallets = [];
-        let selectedWarehouse = '';
-        let selectedMovement = '';
-        let palletCounter = 1;
+<script>
+// Variables globales
+let inventory = [];
+let movements = [];
+let productionReports = [];
+let pallets = [];
+let selectedWarehouse = '';
+let selectedMovement = '';
+let palletCounter = 1;
 
-        const PART_NUMBERS = [
-            'PX13-10-301', 'PX13-10-382', 'PEDD-10-301-A', 'PEDD-10-382-A'
-        ];
+const PART_NUMBERS = ['PX13-10-301', 'PX13-10-382', 'PEDD-10-301-A', 'PEDD-10-382-A'];
 
-        // Estados posibles detectados en códigos QR
-        const STATE_MAPPING = {
-            'FUNDIDO': 'fundidos',
-            'FUNDIDOS': 'fundidos',
-            'ACABADO': 'acabados',
-            'ACABADOS': 'acabados',
-            'FINISHED': 'acabados',
-            'CAST': 'fundidos',
-            'MOLTEN': 'fundidos'
+const STATE_MAPPING = {
+    'FUNDIDO': 'fundidos',
+    'FUNDIDOS': 'fundidos',
+    'ACABADO': 'acabados',
+    'ACABADOS': 'acabados',
+    'FINISHED': 'acabados',
+    'CAST': 'fundidos',
+    'MOLTEN': 'fundidos'
+};
+
+// Función para cambiar pestañas
+function showTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+    
+    document.getElementById(tabName).classList.add('active');
+    const activeButton = document.querySelector(`[onclick="showTab('${tabName}')"]`);
+    if (activeButton) {
+        activeButton.classList.add('active');
+    }
+}
+
+function generatePalletId() {
+    return `PAL-${String(palletCounter++).padStart(4, '0')}`;
+}
+
+function checkExistingCodes(codes) {
+    const existingCodes = [];
+    const newCodes = [];
+    
+    codes.forEach(code => {
+        const existing = inventory.find(item => item.code === code && item.quantity > 0);
+        if (existing) {
+            existingCodes.push({ code: code, data: existing });
+        } else {
+            newCodes.push(code);
+        }
+    });
+    
+    return { existingCodes, newCodes };
+}
+
+function formatLastMovement(date) {
+    const now = new Date();
+    const diff = now - date;
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(hours / 24);
+    
+    if (days > 0) {
+        return `hace ${days} día${days > 1 ? 's' : ''}`;
+    } else if (hours > 0) {
+        return `hace ${hours} hora${hours > 1 ? 's' : ''}`;
+    } else {
+        return 'hace poco';
+    }
+}
+
+function updateFormSections() {
+    const inventoryType = document.getElementById('inventory-type').value;
+    const movementSection = document.getElementById('movement-destination-section');
+    
+    if (inventoryType === 'movimiento') {
+        movementSection.style.display = 'block';
+    } else {
+        movementSection.style.display = 'none';
+        document.querySelectorAll('#movement-selector .warehouse-btn').forEach(btn => 
+            btn.classList.remove('selected'));
+        selectedMovement = '';
+    }
+}
+
+function analyzeQRCode() {
+    const input = document.getElementById('qr-input').value.trim();
+    const analysisDiv = document.getElementById('qr-analysis');
+    
+    document.getElementById('warehouse-override-section').style.display = 'none';
+    document.getElementById('individual-state-section').style.display = 'none';
+    
+    if (!input) {
+        analysisDiv.innerHTML = '';
+        return;
+    }
+    
+    const analysis = parseQRCode(input);
+    
+    if (analysis.isPallet) {
+        const codeCheck = checkExistingCodes(analysis.codes);
+        
+        let existingWarning = '';
+        if (codeCheck.existingCodes.length > 0) {
+            const existingInfo = codeCheck.existingCodes.slice(0, 3).map(item => 
+                `<div class="existing-info">
+                    <span class="existing-badge" style="background: ${item.data.state === 'FUNDIDOS' ? '#e74c3c' : '#27ae60'};">
+                        ${item.data.state}
+                    </span>
+                    <span class="existing-badge" style="background: #6c757d;">
+                        ${getWarehouseName(item.data.warehouse)}
+                    </span>
+                    <small>${item.code} - ${formatLastMovement(item.data.lastMovement)}</small>
+                </div>`
+            ).join('');
+            
+            existingWarning = `
+                <div class="duplicate-warning">
+                    ⚠️ <strong>CÓDIGOS DUPLICADOS DETECTADOS</strong><br>
+                    ${codeCheck.existingCodes.length} de ${analysis.codes.length} códigos ya existen en el sistema:<br>
+                    ${existingInfo}
+                    ${codeCheck.existingCodes.length > 3 ? `<small>... y ${codeCheck.existingCodes.length - 3} más</small>` : ''}
+                    <br><strong>Solo se procesarán ${codeCheck.newCodes.length} códigos nuevos</strong>
+                </div>
+            `;
+        }
+        
+        const autoDetectedState = analysis.detectedState ? 
+            `<div class="auto-detect">🔍 <strong>Estado Auto-detectado:</strong> ${analysis.detectedState.toUpperCase()}</div>` : '';
+        
+        if (!analysis.detectedState) {
+            document.getElementById('warehouse-override-section').style.display = 'block';
+        }
+        
+        analysisDiv.innerHTML = `
+            <div class="alert alert-info">
+                <strong>🎯 TARIMA DETECTADA</strong><br>
+                <span class="code-badge" style="background: #17a2b8;">ID Original: ${analysis.palletId}</span>
+                <span class="code-badge" style="background: #28a745;">${analysis.type}</span>
+                <span class="code-badge" style="background: #6c757d;">${analysis.codes.length} piezas</span>
+                <span class="code-badge" style="background: #17a2b8;">${codeCheck.newCodes.length} nuevas</span>
+                ${autoDetectedState}
+                ${existingWarning}
+                
+                <div class="pallet-info">
+                    <div class="pallet-id">🆔 Se asignará ID: ${generatePalletId()}</div>
+                    <small>Este ID único permitirá movimientos futuros de la tarima completa</small>
+                </div>
+                
+                <div class="pallet-preview">
+                    <strong>Códigos ${codeCheck.newCodes.length > 0 ? 'NUEVOS' : 'EXISTENTES'} en la tarima:</strong><br>
+                    ${(codeCheck.newCodes.length > 0 ? codeCheck.newCodes : analysis.codes).slice(0, 10).map(code => 
+                        `<span class="pallet-code">${code}</span>`
+                    ).join('')}
+                    ${analysis.codes.length > 10 ? `<br><em>... y ${analysis.codes.length - 10} más</em>` : ''}
+                </div>
+            </div>
+        `;
+        palletCounter--;
+        
+    } else if (analysis.isValid) {
+        const existingItem = inventory.find(item => item.code === analysis.code && item.quantity > 0);
+        
+        if (existingItem) {
+            analysisDiv.innerHTML = `
+                <div class="existing-code">
+                    <strong>⚠️ CÓDIGO EXISTENTE</strong><br>
+                    <span class="code-badge" style="background: #28a745;">${analysis.type}</span>
+                    <span class="code-badge" style="background: #6c757d;">${analysis.code}</span>
+                    
+                    <div class="existing-info">
+                        <strong>Información actual:</strong><br>
+                        <span class="existing-badge" style="background: ${existingItem.state === 'FUNDIDOS' ? '#e74c3c' : '#27ae60'};">
+                            ${existingItem.state}
+                        </span>
+                        <span class="existing-badge" style="background: #6c757d;">
+                            ${getWarehouseName(existingItem.warehouse)}
+                        </span>
+                        <span class="existing-badge" style="background: #17a2b8;">
+                            Cant: ${existingItem.quantity}
+                        </span>
+                        <br><small>Último movimiento: ${formatLastMovement(existingItem.lastMovement)}</small>
+                    </div>
+                </div>
+                
+                <div class="alert alert-success">
+                    <strong>🔄 ACTUALIZACIÓN DISPONIBLE</strong><br>
+                    El código se procesará como movimiento adicional con la nueva información.
+                </div>
+            `;
+            
+            document.getElementById('individual-state').value = existingItem.warehouse;
+        } else {
+            analysisDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <strong>✅ CÓDIGO NUEVO</strong><br>
+                    <span class="code-badge" style="background: #28a745;">${analysis.type}</span>
+                    <span class="code-badge" style="background: #6c757d;">${analysis.code}</span>
+                    <div class="auto-detect">💡 <strong>Selecciona el estado del material abajo</strong></div>
+                </div>
+            `;
+        }
+        
+        document.getElementById('individual-state-section').style.display = 'block';
+        
+    } else {
+        analysisDiv.innerHTML = `
+            <div class="alert" style="background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;">
+                ❌ <strong>Código no válido</strong><br>
+                Verifica que el código QR esté completo y en el formato correcto.
+            </div>
+        `;
+    }
+    
+    updateFormSections();
+}
+
+function parseQRCode(input) {
+    if (input.includes('|')) {
+        const parts = input.split('|');
+        if (parts.length >= 3) {
+            const palletId = parts[0];
+            const state = parts[1];
+            const codes = parts.slice(2).filter(code => code.trim().length > 0);
+            
+            let type = 'UNKNOWN';
+            if (codes.length > 0) {
+                const firstCode = codes[0];
+                type = firstCode.length === 13 ? 'UPR' : 'LWR';
+            }
+            
+            let detectedState = null;
+            const stateUpper = state.toUpperCase();
+            for (const [key, value] of Object.entries(STATE_MAPPING)) {
+                if (stateUpper.includes(key)) {
+                    detectedState = value;
+                    break;
+                }
+            }
+            
+            return {
+                isPallet: true,
+                isValid: true,
+                palletId: palletId,
+                type: type,
+                state: state,
+                detectedState: detectedState,
+                codes: codes
+            };
+        }
+    } else {
+        const cleanCode = input.trim();
+        if (cleanCode.length === 13 || cleanCode.length === 17) {
+            return {
+                isPallet: false,
+                isValid: true,
+                code: cleanCode,
+                type: cleanCode.length === 13 ? 'UPR' : 'LWR'
+            };
+        }
+    }
+    
+    return { isPallet: false, isValid: false };
+}
+
+function processQRCode() {
+    const input = document.getElementById('qr-input').value.trim();
+    const inventoryType = document.getElementById('inventory-type').value;
+    const shift = document.getElementById('shift').value;
+    const resultDiv = document.getElementById('process-result');
+    
+    if (!input) {
+        alert('Por favor escanea o pega un código QR');
+        return;
+    }
+    
+    const analysis = parseQRCode(input);
+    if (!analysis.isValid) {
+        alert('Código QR no válido');
+        return;
+    }
+    
+    let processedCount = 0;
+    let targetWarehouse = '';
+    
+    if (analysis.isPallet) {
+        const codeCheck = checkExistingCodes(analysis.codes);
+        
+        if (inventoryType === 'movimiento') {
+            if (!selectedMovement) {
+                alert('Por favor selecciona el destino del movimiento (Envíos, Retenciones, Scrap, o Pruebas)');
+                return;
+            }
+            targetWarehouse = selectedMovement;
+        } else {
+            if (analysis.detectedState) {
+                targetWarehouse = analysis.detectedState;
+            } else {
+                if (!selectedWarehouse) {
+                    alert('Esta tarima no tiene estado detectable. Por favor selecciona Fundidos o Acabados manualmente.');
+                    return;
+                }
+                targetWarehouse = selectedWarehouse;
+            }
+        }
+        
+        if (codeCheck.newCodes.length === 0) {
+            alert('⚠️ Todos los códigos de esta tarima ya existen en el sistema. No se procesará nada.');
+            return;
+        }
+        
+        const palletSystemId = generatePalletId();
+        
+        const palletRecord = {
+            systemId: palletSystemId,
+            originalId: analysis.palletId,
+            state: targetWarehouse === 'fundidos' ? 'fundidos' : 
+                   (targetWarehouse === 'acabados' ? 'acabados' : targetWarehouse),
+            type: analysis.type,
+            codesCount: codeCheck.newCodes.length,
+            warehouse: targetWarehouse,
+            codes: codeCheck.newCodes,
+            createdDate: new Date(),
+            inventoryType: inventoryType,
+            shift: shift,
+            duplicatesFound: codeCheck.existingCodes.length
         };
-
-        document.addEventListener('DOMContentLoaded', function() {
-            setupEventListeners();
-            loadSampleData();
-            updateAllDisplays();
-            document.getElementById('production-date').value = new Date().toISOString().split('T')[0];
+        
+        pallets.push(palletRecord);
+        
+        codeCheck.newCodes.forEach(code => {
+            processIndividualCode(code, analysis.type, inventoryType, shift, targetWarehouse, palletSystemId);
+            processedCount++;
         });
-
-        function setupEventListeners() {
-            document.getElementById('qr-input').addEventListener('input', analyzeQRCode);
-            
-            // Listener para cambios en tipo de inventario
-            document.getElementById('inventory-type').addEventListener('change', updateFormSections);
-            
-            // Auto-submit cuando se detecta un código completo (para scanners físicos)
-            document.getElementById('qr-input').addEventListener('paste', function(e) {
-                setTimeout(() => {
-                    const content = e.target.value.trim();
-                    if (content && (content.includes('|') || content.length >= 13)) {
-                        analyzeQRCode();
-                    }
-                }, 100);
-            });
-            
-            // Listener para selección de almacén (override de tarimas)
-            document.getElementById('warehouse-selector').addEventListener('click', function(e) {
-                if (e.target.classList.contains('warehouse-btn')) {
-                    this.querySelectorAll('.warehouse-btn').forEach(btn => 
-                        btn.classList.remove('selected'));
-                    e.target.classList.add('selected');
-                    selectedWarehouse = e.target.dataset.warehouse;
-                }
-            });
-            
-            // Listener para selección de movimiento
-            document.getElementById('movement-selector').addEventListener('click', function(e) {
-                if (e.target.classList.contains('warehouse-btn')) {
-                    this.querySelectorAll('.warehouse-btn').forEach(btn => 
-                        btn.classList.remove('selected'));
-                    e.target.classList.add('selected');
-                    selectedMovement = e.target.dataset.movement;
-                }
-            });
-        }
-
-        function showTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(tab => 
-                tab.classList.remove('active'));
-            document.querySelectorAll('.nav-tab').forEach(tab => 
-                tab.classList.remove('active'));
-            
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
-        }
-
-        function generatePalletId() {
-            return `PAL-${String(palletCounter++).padStart(4, '0')}`;
-        }
-
-        function updateFormSections() {
-            const inventoryType = document.getElementById('inventory-type').value;
-            const movementSection = document.getElementById('movement-destination-section');
-            
-            // Mostrar sección de movimientos solo si es "Movimiento Normal"
-            if (inventoryType === 'movimiento') {
-                movementSection.style.display = 'block';
-            } else {
-                movementSection.style.display = 'none';
-                // Limpiar selección de movimiento
-                document.querySelectorAll('#movement-selector .warehouse-btn').forEach(btn => 
-                    btn.classList.remove('selected'));
-                selectedMovement = '';
-            }
-        }
-
-        function analyzeQRCode() {
-            const input = document.getElementById('qr-input').value.trim();
-            const analysisDiv = document.getElementById('qr-analysis');
-            
-            // Ocultar todas las secciones primero
-            document.getElementById('warehouse-override-section').style.display = 'none';
-            document.getElementById('individual-state-section').style.display = 'none';
-            
-            if (!input) {
-                analysisDiv.innerHTML = '';
+        
+        const duplicateInfo = codeCheck.existingCodes.length > 0 ? 
+            `<br>⚠️ ${codeCheck.existingCodes.length} códigos duplicados omitidos` : '';
+        
+        resultDiv.innerHTML = `
+            <div class="alert alert-success">
+                ✅ <strong>Tarima procesada exitosamente</strong><br>
+                🆔 ID Sistema: <strong>${palletSystemId}</strong><br>
+                📦 ID Original: ${analysis.palletId}<br>
+                📊 ${processedCount} piezas NUEVAS ${analysis.type}<br>
+                🏪 Destino: ${getWarehouseName(targetWarehouse)}<br>
+                🔄 Tipo: ${inventoryType} - Turno ${shift}${duplicateInfo}
+            </div>
+        `;
+        
+    } else {
+        const individualState = document.getElementById('individual-state').value;
+        const existingItem = inventory.find(item => item.code === analysis.code && item.quantity > 0);
+        
+        if (inventoryType === 'movimiento') {
+            if (!selectedMovement) {
+                alert('Por favor selecciona el destino del movimiento (Envíos, Retenciones, Scrap, o Pruebas)');
                 return;
             }
+            targetWarehouse = selectedMovement;
+        } else {
+            targetWarehouse = individualState;
+        }
+        
+        processIndividualCode(analysis.code, analysis.type, inventoryType, shift, targetWarehouse);
+        
+        const statusMessage = existingItem ? 
+            `<br>🔄 Código actualizado (existía previamente en ${getWarehouseName(existingItem.warehouse)})` : 
+            '<br>✨ Código nuevo registrado';
+        
+        resultDiv.innerHTML = `
+            <div class="alert alert-success">
+                ✅ <strong>Código individual procesado</strong><br>
+                📦 ${analysis.code}<br>
+                🏪 Destino: ${getWarehouseName(targetWarehouse)}<br>
+                📊 Estado: ${getWarehouseName(individualState)}<br>
+                🔄 Tipo: ${inventoryType} - Turno ${shift}${statusMessage}
+            </div>
+        `;
+    }
+    
+    clearForm();
+    updateAllDisplays();
+    
+    setTimeout(() => resultDiv.innerHTML = '', 6000);
+}
+
+function getWarehouseName(warehouse) {
+    const names = {
+        'fundidos': '🔥 FUNDIDOS',
+        'acabados': '✅ ACABADOS',
+        'scrap': '♻️ SCRAP',
+        'retenciones': '⏸️ RETENCIONES',
+        'envios': '📦 ENVÍOS',
+        'pruebas': '🧪 PRUEBAS'
+    };
+    return names[warehouse] || warehouse.toUpperCase();
+}
+
+function clearForm() {
+    document.getElementById('qr-input').value = '';
+    document.getElementById('qr-analysis').innerHTML = '';
+    
+    document.getElementById('warehouse-override-section').style.display = 'none';
+    document.getElementById('individual-state-section').style.display = 'none';
+    document.getElementById('movement-destination-section').style.display = 'none';
+    
+    document.querySelectorAll('.warehouse-btn').forEach(btn => 
+        btn.classList.remove('selected'));
+    selectedWarehouse = '';
+    selectedMovement = '';
+    
+    document.getElementById('qr-input').focus();
+}
+
+function processIndividualCode(code, type, movementType, shift, warehouse, palletId = null) {
+    const partNumber = type === 'UPR' ? 'PX13-10-301' : 'PX13-10-382';
+    
+    let item = inventory.find(i => i.code === code);
+    
+    if (!item) {
+        item = {
+            code: code,
+            partNumber: partNumber,
+            type: type,
+            state: warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS',
+            warehouse: warehouse,
+            quantity: 0,
+            lastMovement: new Date(),
+            shift: shift,
+            palletId: palletId
+        };
+        inventory.push(item);
+    }
+    
+    item.quantity += 1;
+    item.warehouse = warehouse;
+    item.state = warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
+    item.lastMovement = new Date();
+    item.palletId = palletId;
+    
+    movements.push({
+        id: Date.now() + Math.random(),
+        code: code,
+        partNumber: partNumber,
+        type: movementType,
+        warehouse: warehouse,
+        quantity: 1,
+        date: new Date(),
+        shift: shift,
+        palletId: palletId
+    });
+}
+
+function movePallet(palletId) {
+    const pallet = pallets.find(p => p.systemId === palletId);
+    if (!pallet) {
+        alert('Tarima no encontrada');
+        return;
+    }
+
+    const newWarehouse = prompt(`Mover tarima ${palletId} a:\n\n1. fundidos\n2. acabados\n3. scrap\n4. retenciones\n5. envios\n6. pruebas\n\nEscribe el nombre del almacén:`);
+    
+    if (newWarehouse && ['fundidos', 'acabados', 'scrap', 'retenciones', 'envios', 'pruebas'].includes(newWarehouse.toLowerCase())) {
+        const warehouse = newWarehouse.toLowerCase();
+        
+        pallet.warehouse = warehouse;
+        pallet.state = warehouse === 'fundidos' ? 'fundidos' : 'acabados';
+        
+        inventory.forEach(item => {
+            if (item.palletId === palletId) {
+                item.warehouse = warehouse;
+                item.state = warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
+                item.lastMovement = new Date();
+            }
+        });
+        
+        movements.push({
+            id: Date.now() + Math.random(),
+            palletId: palletId,
+            type: 'movimiento_tarima',
+            warehouse: warehouse,
+            quantity: pallet.codesCount,
+            date: new Date(),
+            shift: document.getElementById('shift').value
+        });
+        
+        alert(`✅ Tarima ${palletId} movida a ${getWarehouseName(warehouse)}`);
+        updateAllDisplays();
+    } else if (newWarehouse !== null) {
+        alert('Almacén no válido');
+    }
+}
+
+function viewPalletDetails(palletId) {
+    const pallet = pallets.find(p => p.systemId === palletId);
+    if (!pallet) {
+        alert('Tarima no encontrada');
+        return;
+    }
+
+    const codes = pallet.codes.length > 10 ? 
+        pallet.codes.slice(0, 10).join('\n') + `\n... y ${pallet.codes.length - 10} más` :
+        pallet.codes.join('\n');
+
+    alert(`📦 DETALLES DE TARIMA\n\n` +
+          `🆔 ID Sistema: ${pallet.systemId}\n` +
+          `📋 ID Original: ${pallet.originalId}\n` +
+          `📊 Estado: ${pallet.state.toUpperCase()}\n` +
+          `🔧 Tipo: ${pallet.type}\n` +
+          `📦 Piezas: ${pallet.codesCount}\n` +
+          `🏪 Almacén: ${getWarehouseName(pallet.warehouse)}\n` +
+          `📅 Creada: ${pallet.createdDate.toLocaleString()}\n\n` +
+          `📋 CÓDIGOS:\n${codes}`);
+}
+
+function saveProductionReport() {
+    const machine = document.getElementById('machine').value;
+    const process = document.getElementById('process').value;
+    const partNumber = document.getElementById('part-number').value;
+    const totalProduced = parseInt(document.getElementById('total-produced').value) || 0;
+    const ngQuantity = parseInt(document.getElementById('ng-quantity').value) || 0;
+    const date = document.getElementById('production-date').value;
+    
+    if (!date || totalProduced === 0) {
+        alert('Por favor completa los campos obligatorios');
+        return;
+    }
+    
+    const report = {
+        id: Date.now(),
+        machine: machine,
+        process: process,
+        partNumber: partNumber,
+        totalProduced: totalProduced,
+        ngQuantity: ngQuantity,
+        okQuantity: totalProduced - ngQuantity,
+        date: date
+    };
+    
+    productionReports.push(report);
+    alert('✅ Reporte guardado');
+    
+    document.getElementById('total-produced').value = '';
+    document.getElementById('ng-quantity').value = '';
+}
+
+function calculateTheoretical() {
+    alert('🧮 Función de cálculo teórico en desarrollo.\n\nSe implementará la lógica completa basada en:\n- Inventario inicial\n- Producción del turno\n- Movimientos registrados');
+}
+
+function exportData() {
+    const data = {
+        inventory: inventory,
+        movements: movements,
+        productionReports: productionReports,
+        pallets: pallets,
+        exportDate: new Date()
+    };
+    
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'almacen-' + new Date().toISOString().split('T')[0] + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function loadSampleData() {
+    const samples = [
+        { code: 'P69A3037OFPX5', type: 'UPR', partNumber: 'PX13-10-301' },
+        { code: '25F093109026100PX', type: 'LWR', partNumber: 'PX13-10-382' }
+    ];
+    
+    samples.forEach(sample => {
+        inventory.push({
+            code: sample.code,
+            partNumber: sample.partNumber,
+            type: sample.type,
+            state: 'ACABADOS',
+            warehouse: 'acabados',
+            quantity: Math.floor(Math.random() * 20) + 1,
+            lastMovement: new Date(),
+            shift: '1',
+            palletId: null
+        });
+    });
+
+    const samplePallet = {
+        systemId: generatePalletId(),
+        originalId: 'TARM001',
+        state: 'acabados',
+        type: 'UPR',
+        codesCount: 15,
+        warehouse: 'acabados',
+        codes: ['P69A3037OFPX1', 'P69A3037OFPX2', 'P69A3037OFPX3'],
+        createdDate: new Date(),
+        inventoryType: 'inicial',
+        shift: '1'
+    };
+    pallets.push(samplePallet);
+    palletCounter++;
+}
+
+function updateAllDisplays() {
+    updateDashboard();
+    updateGroupedInventory();
+    updatePalletsTable();
+}
+
+function updateDashboard() {
+    const fundidos = inventory.filter(i => i.state === 'FUNDIDOS' && i.quantity > 0).length;
+    const acabados = inventory.filter(i => i.state === 'ACABADOS' && i.quantity > 0).length;
+    const upr = inventory.filter(i => i.type === 'UPR' && i.quantity > 0).length;
+    const lwr = inventory.filter(i => i.type === 'LWR' && i.quantity > 0).length;
+    const totalPallets = pallets.length;
+    
+    document.getElementById('total-fundidos').textContent = fundidos;
+    document.getElementById('total-acabados').textContent = acabados;
+    document.getElementById('total-upr').textContent = upr;
+    document.getElementById('total-lwr').textContent = lwr;
+    document.getElementById('total-pallets').textContent = totalPallets;
+}
+
+function updateGroupedInventory() {
+    const tbody = document.getElementById('grouped-inventory-tbody');
+    tbody.innerHTML = '';
+    
+    const grouped = {};
+    
+    inventory.forEach(item => {
+        if (item.quantity > 0) {
+            if (!grouped[item.partNumber]) {
+                grouped[item.partNumber] = { fundidos: 0, acabados: 0 };
+            }
             
-            const analysis = parseQRCode(input);
-            
-            if (analysis.isPallet) {
-                // Para TARIMAS
-                const autoDetectedState = analysis.detectedState ? 
-                    `<div class="auto-detect">🔍 <strong>Estado Auto-detectado:</strong> ${analysis.detectedState.toUpperCase()}</div>` : '';
-                
-                // Solo mostrar override si NO se detectó estado automáticamente
-                if (!analysis.detectedState) {
-                    document.getElementById('warehouse-override-section').style.display = 'block';
-                }
-                
-                analysisDiv.innerHTML = `
-                    <div class="alert alert-info">
-                        <strong>🎯 TARIMA DETECTADA</strong><br>
-                        <span class="code-badge" style="background: #17a2b8;">ID Original: ${analysis.palletId}</span>
-                        <span class="code-badge" style="background: #28a745;">${analysis.type}</span>
-                        <span class="code-badge" style="background: #6c757d;">${analysis.codes.length} piezas</span>
-                        ${autoDetectedState}
-                        
-                        <div class="pallet-info">
-                            <div class="pallet-id">🆔 Se asignará ID: ${generatePalletId()}</div>
-                            <small>Este ID único permitirá movimientos futuros de la tarima completa</small>
-                        </div>
-                        
-                        <div class="pallet-preview">
-                            <strong>Códigos en la tarima:</strong><br>
-                            ${analysis.codes.slice(0, 10).map(code => 
-                                `<span class="pallet-code">${code}</span>`
-                            ).join('')}
-                            ${analysis.codes.length > 10 ? `<br><em>... y ${analysis.codes.length - 10} más</em>` : ''}
-                        </div>
-                    </div>
-                `;
-                palletCounter--; // Decrementar para que se use el ID correcto al procesar
-                
-            } else if (analysis.isValid) {
-                // Para PIEZAS INDIVIDUALES - mostrar selector de estado
-                document.getElementById('individual-state-section').style.display = 'block';
-                
-                analysisDiv.innerHTML = `
-                    <div class="alert alert-success">
-                        <strong>✅ CÓDIGO INDIVIDUAL</strong><br>
-                        <span class="code-badge" style="background: #28a745;">${analysis.type}</span>
-                        <span class="code-badge" style="background: #6c757d;">${analysis.code}</span>
-                        <div class="auto-detect">💡 <strong>Selecciona el estado del material abajo</strong></div>
-                    </div>
-                `;
+            if (item.state === 'FUNDIDOS') {
+                grouped[item.partNumber].fundidos += item.quantity;
             } else {
-                analysisDiv.innerHTML = `
-                    <div class="alert" style="background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;">
-                        ❌ <strong>Código no válido</strong><br>
-                        Verifica que el código QR esté completo y en el formato correcto.
-                    </div>
-                `;
+                grouped[item.partNumber].acabados += item.quantity;
             }
-            
-            // Actualizar secciones basadas en tipo de inventario
-            updateFormSections();
         }
+    });
+    
+    Object.keys(grouped).forEach(partNumber => {
+        const data = grouped[partNumber];
+        const total = data.fundidos + data.acabados;
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${partNumber}</strong></td>
+            <td style="text-align: center;">🔥 ${data.fundidos}</td>
+            <td style="text-align: center;">✅ ${data.acabados}</td>
+            <td style="text-align: center; font-weight: bold;">${total}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
 
-        function parseQRCode(input) {
-            if (input.includes('|')) {
-                const parts = input.split('|');
-                if (parts.length >= 3) {
-                    const palletId = parts[0];
-                    const state = parts[1];
-                    const codes = parts.slice(2).filter(code => code.trim().length > 0);
-                    
-                    let type = 'UNKNOWN';
-                    if (codes.length > 0) {
-                        const firstCode = codes[0];
-                        type = firstCode.length === 13 ? 'UPR' : 'LWR';
-                    }
-                    
-                    // Detectar estado automáticamente
-                    let detectedState = null;
-                    const stateUpper = state.toUpperCase();
-                    for (const [key, value] of Object.entries(STATE_MAPPING)) {
-                        if (stateUpper.includes(key)) {
-                            detectedState = value;
-                            break;
-                        }
-                    }
-                    
-                    return {
-                        isPallet: true,
-                        isValid: true,
-                        palletId: palletId,
-                        type: type,
-                        state: state,
-                        detectedState: detectedState,
-                        codes: codes
-                    };
-                }
-            } else {
-                const cleanCode = input.trim();
-                if (cleanCode.length === 13 || cleanCode.length === 17) {
-                    return {
-                        isPallet: false,
-                        isValid: true,
-                        code: cleanCode,
-                        type: cleanCode.length === 13 ? 'UPR' : 'LWR'
-                    };
-                }
-            }
-            
-            return { isPallet: false, isValid: false };
-        }
+function updatePalletsTable() {
+    const tbody = document.getElementById('pallets-tbody');
+    tbody.innerHTML = '';
+    
+    pallets.forEach(pallet => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${pallet.systemId}</strong></td>
+            <td>${pallet.originalId}</td>
+            <td><span class="code-badge" style="background: ${pallet.state === 'fundidos' ? '#e74c3c' : '#27ae60'};">${pallet.state.toUpperCase()}</span></td>
+            <td><span class="code-badge" style="background: #17a2b8;">${pallet.type}</span></td>
+            <td style="text-align: center;">${pallet.codesCount}</td>
+            <td>${getWarehouseName(pallet.warehouse)}</td>
+            <td>${pallet.createdDate.toLocaleDateString()}</td>
+            <td>
+                <button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;" onclick="movePallet('${pallet.systemId}')">📦 Mover</button>
+                <button class="btn btn-info" style="padding: 5px 10px; font-size: 12px;" onclick="viewPalletDetails('${pallet.systemId}')">👁️ Ver</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
 
-        function processQRCode() {
-            const input = document.getElementById('qr-input').value.trim();
-            const inventoryType = document.getElementById('inventory-type').value;
-            const shift = document.getElementById('shift').value;
-            const resultDiv = document.getElementById('process-result');
-            
-            if (!input) {
-                alert('Por favor escanea o pega un código QR');
-                return;
+// Configurar event listeners cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    // Event listeners
+    document.getElementById('qr-input').addEventListener('input', analyzeQRCode);
+    document.getElementById('inventory-type').addEventListener('change', updateFormSections);
+    
+    document.getElementById('qr-input').addEventListener('paste', function(e) {
+        setTimeout(() => {
+            const content = e.target.value.trim();
+            if (content && (content.includes('|') || content.length >= 13)) {
+                analyzeQRCode();
             }
-            
-            const analysis = parseQRCode(input);
-            if (!analysis.isValid) {
-                alert('Código QR no válido');
-                return;
-            }
-            
-            let processedCount = 0;
-            let targetWarehouse = '';
-            let movementType = inventoryType;
-            
-            if (analysis.isPallet) {
-                // LÓGICA PARA TARIMAS
-                if (inventoryType === 'movimiento') {
-                    // Es movimiento normal - debe seleccionar destino
-                    if (!selectedMovement) {
-                        alert('Por favor selecciona el destino del movimiento (Envíos, Retenciones, Scrap, o Pruebas)');
-                        return;
-                    }
-                    targetWarehouse = selectedMovement;
-                } else {
-                    // Es inventario inicial o por turno
-                    if (analysis.detectedState) {
-                        // Usar estado auto-detectado
-                        targetWarehouse = analysis.detectedState;
-                    } else {
-                        // Necesita override manual
-                        if (!selectedWarehouse) {
-                            alert('Esta tarima no tiene estado detectable. Por favor selecciona Fundidos o Acabados manualmente.');
-                            return;
-                        }
-                        targetWarehouse = selectedWarehouse;
-                    }
-                }
-                
-                // Generar ID único para la tarima
-                const palletSystemId = generatePalletId();
-                
-                // Crear registro de tarima
-                const palletRecord = {
-                    systemId: palletSystemId,
-                    originalId: analysis.palletId,
-                    state: targetWarehouse === 'fundidos' ? 'fundidos' : 
-                           (targetWarehouse === 'acabados' ? 'acabados' : targetWarehouse),
-                    type: analysis.type,
-                    codesCount: analysis.codes.length,
-                    warehouse: targetWarehouse,
-                    codes: analysis.codes,
-                    createdDate: new Date(),
-                    inventoryType: inventoryType,
-                    shift: shift,
-                    movementType: movementType
-                };
-                
-                pallets.push(palletRecord);
-                
-                // Procesar cada código individual
-                analysis.codes.forEach(code => {
-                    processIndividualCode(code, analysis.type, inventoryType, shift, targetWarehouse, palletSystemId);
-                    processedCount++;
-                });
-                
-                resultDiv.innerHTML = `
-                    <div class="alert alert-success">
-                        ✅ <strong>Tarima procesada exitosamente</strong><br>
-                        🆔 ID Sistema: <strong>${palletSystemId}</strong><br>
-                        📦 ID Original: ${analysis.palletId}<br>
-                        📊 ${processedCount} piezas ${analysis.type}<br>
-                        🏪 Destino: ${getWarehouseName(targetWarehouse)}<br>
-                        🔄 Tipo: ${inventoryType} - Turno ${shift}
-                    </div>
-                `;
-                
-            } else {
-                // LÓGICA PARA PIEZAS INDIVIDUALES
-                const individualState = document.getElementById('individual-state').value;
-                
-                if (inventoryType === 'movimiento') {
-                    // Es movimiento normal - debe seleccionar destino
-                    if (!selectedMovement) {
-                        alert('Por favor selecciona el destino del movimiento (Envíos, Retenciones, Scrap, o Pruebas)');
-                        return;
-                    }
-                    targetWarehouse = selectedMovement;
-                } else {
-                    // Es inventario inicial o por turno - usar estado seleccionado
-                    targetWarehouse = individualState;
-                }
-                
-                processIndividualCode(analysis.code, analysis.type, inventoryType, shift, targetWarehouse);
-                
-                resultDiv.innerHTML = `
-                    <div class="alert alert-success">
-                        ✅ <strong>Código individual procesado</strong><br>
-                        📦 ${analysis.code}<br>
-                        🏪 Destino: ${getWarehouseName(targetWarehouse)}<br>
-                        📊 Estado: ${getWarehouseName(individualState)}<br>
-                        🔄 Tipo: ${inventoryType} - Turno ${shift}
-                    </div>
-                `;
-            }
-            
-            clearForm();
-            updateAllDisplays();
-            
-            setTimeout(() => resultDiv.innerHTML = '', 6000);
-        }
-
-        function getWarehouseName(warehouse) {
-            const names = {
-                'fundidos': '🔥 FUNDIDOS',
-                'acabados': '✅ ACABADOS',
-                'scrap': '♻️ SCRAP',
-                'retenciones': '⏸️ RETENCIONES',
-                'envios': '📦 ENVÍOS',
-                'pruebas': '🧪 PRUEBAS'
-            };
-            return names[warehouse] || warehouse.toUpperCase();
-        }
-
-        function clearForm() {
-            document.getElementById('qr-input').value = '';
-            document.getElementById('qr-analysis').innerHTML = '';
-            
-            // Ocultar todas las secciones dinámicas
-            document.getElementById('warehouse-override-section').style.display = 'none';
-            document.getElementById('individual-state-section').style.display = 'none';
-            document.getElementById('movement-destination-section').style.display = 'none';
-            
-            // Reset selecciones
-            document.querySelectorAll('.warehouse-btn').forEach(btn => 
+        }, 100);
+    });
+    
+    document.getElementById('warehouse-selector').addEventListener('click', function(e) {
+        if (e.target.classList.contains('warehouse-btn')) {
+            this.querySelectorAll('.warehouse-btn').forEach(btn => 
                 btn.classList.remove('selected'));
-            selectedWarehouse = '';
-            selectedMovement = '';
-            
-            // Focus back to input for next scan
-            document.getElementById('qr-input').focus();
+            e.target.classList.add('selected');
+            selectedWarehouse = e.target.dataset.warehouse;
         }
-
-        function processIndividualCode(code, type, movementType, shift, warehouse, palletId = null) {
-            const partNumber = type === 'UPR' ? 'PX13-10-301' : 'PX13-10-382';
-            
-            let item = inventory.find(i => i.code === code);
-            
-            if (!item) {
-                item = {
-                    code: code,
-                    partNumber: partNumber,
-                    type: type,
-                    state: warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS',
-                    warehouse: warehouse,
-                    quantity: 0,
-                    lastMovement: new Date(),
-                    shift: shift,
-                    palletId: palletId
-                };
-                inventory.push(item);
-            }
-            
-            item.quantity += 1;
-            item.warehouse = warehouse;
-            item.state = warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
-            item.lastMovement = new Date();
-            item.palletId = palletId;
-            
-            movements.push({
-                id: Date.now() + Math.random(),
-                code: code,
-                partNumber: partNumber,
-                type: movementType,
-                warehouse: warehouse,
-                quantity: 1,
-                date: new Date(),
-                shift: shift,
-                palletId: palletId
-            });
+    });
+    
+    document.getElementById('movement-selector').addEventListener('click', function(e) {
+        if (e.target.classList.contains('warehouse-btn')) {
+            this.querySelectorAll('.warehouse-btn').forEach(btn => 
+                btn.classList.remove('selected'));
+            e.target.classList.add('selected');
+            selectedMovement = e.target.dataset.movement;
         }
+    });
+    
+    // Inicializar datos y displays
+    loadSampleData();
+    updateAllDisplays();
+    document.getElementById('production-date').value = new Date().toISOString().split('T')[0];
+});
 
-        function loadSampleData() {
-            const samples = [
-                { code: 'P69A3037OFPX5', type: 'UPR', partNumber: 'PX13-10-301' },
-                { code: '25F093109026100PX', type: 'LWR', partNumber: 'PX13-10-382' }
-            ];
-            
-            samples.forEach(sample => {
-                inventory.push({
-                    code: sample.code,
-                    partNumber: sample.partNumber,
-                    type: sample.type,
-                    state: 'ACABADOS',
-                    warehouse: 'acabados',
-                    quantity: Math.floor(Math.random() * 20) + 1,
-                    lastMovement: new Date(),
-                    shift: '1',
-                    palletId: null
-                });
-            });
-
-            // Agregar tarima de ejemplo
-            const samplePallet = {
-                systemId: generatePalletId(),
-                originalId: 'TARM001',
-                state: 'acabados',
-                type: 'UPR',
-                codesCount: 15,
-                warehouse: 'acabados',
-                codes: ['P69A3037OFPX1', 'P69A3037OFPX2', 'P69A3037OFPX3'],
-                createdDate: new Date(),
-                inventoryType: 'inicial',
-                shift: '1'
-            };
-            pallets.push(samplePallet);
-            palletCounter++; // Incrementar contador después del ejemplo
-        }
-
-        function updateAllDisplays() {
-            updateDashboard();
-            updateGroupedInventory();
-            updatePalletsTable();
-        }
-
-        function updateDashboard() {
-            const fundidos = inventory.filter(i => i.state === 'FUNDIDOS' && i.quantity > 0).length;
-            const acabados = inventory.filter(i => i.state === 'ACABADOS' && i.quantity > 0).length;
-            const upr = inventory.filter(i => i.type === 'UPR' && i.quantity > 0).length;
-            const lwr = inventory.filter(i => i.type === 'LWR' && i.quantity > 0).length;
-            const totalPallets = pallets.length;
-            
-            document.getElementById('total-fundidos').textContent = fundidos;
-            document.getElementById('total-acabados').textContent = acabados;
-            document.getElementById('total-upr').textContent = upr;
-            document.getElementById('total-lwr').textContent = lwr;
-            document.getElementById('total-pallets').textContent = totalPallets;
-        }
-
-        function updateGroupedInventory() {
-            const tbody = document.getElementById('grouped-inventory-tbody');
-            tbody.innerHTML = '';
-            
-            const grouped = {};
-            
-            inventory.forEach(item => {
-                if (item.quantity > 0) {
-                    if (!grouped[item.partNumber]) {
-                        grouped[item.partNumber] = { fundidos: 0, acabados: 0 };
-                    }
-                    
-                    if (item.state === 'FUNDIDOS') {
-                        grouped[item.partNumber].fundidos += item.quantity;
-                    } else {
-                        grouped[item.partNumber].acabados += item.quantity;
-                    }
-                }
-            });
-            
-            Object.keys(grouped).forEach(partNumber => {
-                const data = grouped[partNumber];
-                const total = data.fundidos + data.acabados;
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><strong>${partNumber}</strong></td>
-                    <td style="text-align: center;">🔥 ${data.fundidos}</td>
-                    <td style="text-align: center;">✅ ${data.acabados}</td>
-                    <td style="text-align: center; font-weight: bold;">${total}</td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        function updatePalletsTable() {
-            const tbody = document.getElementById('pallets-tbody');
-            tbody.innerHTML = '';
-            
-            pallets.forEach(pallet => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td><strong>${pallet.systemId}</strong></td>
-                    <td>${pallet.originalId}</td>
-                    <td><span class="code-badge" style="background: ${pallet.state === 'fundidos' ? '#e74c3c' : '#27ae60'};">${pallet.state.toUpperCase()}</span></td>
-                    <td><span class="code-badge" style="background: #17a2b8;">${pallet.type}</span></td>
-                    <td style="text-align: center;">${pallet.codesCount}</td>
-                    <td>${getWarehouseName(pallet.warehouse)}</td>
-                    <td>${pallet.createdDate.toLocaleDateString()}</td>
-                    <td>
-                        <button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;" onclick="movePallet('${pallet.systemId}')">📦 Mover</button>
-                        <button class="btn btn-info" style="padding: 5px 10px; font-size: 12px;" onclick="viewPalletDetails('${pallet.systemId}')">👁️ Ver</button>
-                    </td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        function movePallet(palletId) {
-            const pallet = pallets.find(p => p.systemId === palletId);
-            if (!pallet) {
-                alert('Tarima no encontrada');
-                return;
-            }
-
-            const newWarehouse = prompt(`Mover tarima ${palletId} a:\n\n1. fundidos\n2. acabados\n3. scrap\n4. retenciones\n5. envios\n6. pruebas\n\nEscribe el nombre del almacén:`);
-            
-            if (newWarehouse && ['fundidos', 'acabados', 'scrap', 'retenciones', 'envios', 'pruebas'].includes(newWarehouse.toLowerCase())) {
-                const warehouse = newWarehouse.toLowerCase();
-                
-                // Actualizar tarima
-                pallet.warehouse = warehouse;
-                pallet.state = warehouse === 'fundidos' ? 'fundidos' : 'acabados';
-                
-                // Actualizar todos los códigos de la tarima en el inventario
-                inventory.forEach(item => {
-                    if (item.palletId === palletId) {
-                        item.warehouse = warehouse;
-                        item.state = warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
-                        item.lastMovement = new Date();
-                    }
-                });
-                
-                // Registrar movimiento
-                movements.push({
-                    id: Date.now() + Math.random(),
-                    palletId: palletId,
-                    type: 'movimiento_tarima',
-                    warehouse: warehouse,
-                    quantity: pallet.codesCount,
-                    date: new Date(),
-                    shift: document.getElementById('shift').value
-                });
-                
-                alert(`✅ Tarima ${palletId} movida a ${getWarehouseName(warehouse)}`);
-                updateAllDisplays();
-            } else if (newWarehouse !== null) {
-                alert('Almacén no válido');
-            }
-        }
-
-        function viewPalletDetails(palletId) {
-            const pallet = pallets.find(p => p.systemId === palletId);
-            if (!pallet) {
-                alert('Tarima no encontrada');
-                return;
-            }
-
-            const codes = pallet.codes.length > 10 ? 
-                pallet.codes.slice(0, 10).join('\n') + `\n... y ${pallet.codes.length - 10} más` :
-                pallet.codes.join('\n');
-
-            alert(`📦 DETALLES DE TARIMA\n\n` +
-                  `🆔 ID Sistema: ${pallet.systemId}\n` +
-                  `📋 ID Original: ${pallet.originalId}\n` +
-                  `📊 Estado: ${pallet.state.toUpperCase()}\n` +
-                  `🔧 Tipo: ${pallet.type}\n` +
-                  `📦 Piezas: ${pallet.codesCount}\n` +
-                  `🏪 Almacén: ${getWarehouseName(pallet.warehouse)}\n` +
-                  `📅 Creada: ${pallet.createdDate.toLocaleString()}\n\n` +
-                  `📋 CÓDIGOS:\n${codes}`);
-        }
-
-        function saveProductionReport() {
-            const machine = document.getElementById('machine').value;
-            const process = document.getElementById('process').value;
-            const partNumber = document.getElementById('part-number').value;
-            const totalProduced = parseInt(document.getElementById('total-produced').value) || 0;
-            const ngQuantity = parseInt(document.getElementById('ng-quantity').value) || 0;
-            const date = document.getElementById('production-date').value;
-            
-            if (!date || totalProduced === 0) {
-                alert('Por favor completa los campos obligatorios');
-                return;
-            }
-            
-            const report = {
-                id: Date.now(),
-                machine: machine,
-                process: process,
-                partNumber: partNumber,
-                totalProduced: totalProduced,
-                ngQuantity: ngQuantity,
-                okQuantity: totalProduced - ngQuantity,
-                date: date
-            };
-            
-            productionReports.push(report);
-            alert('✅ Reporte guardado');
-            
-            document.getElementById('total-produced').value = '';
-            document.getElementById('ng-quantity').value = '';
-        }
-
-        function calculateTheoretical() {
-            alert('🧮 Función de cálculo teórico en desarrollo.\n\nSe implementará la lógica completa basada en:\n- Inventario inicial\n- Producción del turno\n- Movimientos registrados');
-        }
-
-        function exportData() {
-            const data = {
-                inventory: inventory,
-                movements: movements,
-                productionReports: productionReports,
-                pallets: pallets,
-                exportDate: new Date()
-            };
-            
-            const jsonString = JSON.stringify(data, null, 2);
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'almacen-' + new Date().toISOString().split('T')[0] + '.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-    </script>
+</script>
 </body>
 </html>
