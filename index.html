@@ -566,14 +566,14 @@
                     <div class="form-group">
                         <label>Número de Parte:</label>
                         <select id="foundry-part-number">
-                            <option value="PX13-10-301">PX13-10-301 (UPR)</option>
-                            <option value="PX13-10-382">PX13-10-382 (LWR)</option>
-                            <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
-                            <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
-                            <option value="PX13-10-401">PX13-10-401 (UPR)</option>
-                            <option value="PX13-10-482">PX13-10-482 (LWR)</option>
-                            <option value="PEDD-10-401-A">PEDD-10-401-A (UPR)</option>
-                            <option value="PEDD-10-482-A">PEDD-10-482-A (LWR)</option>
+                            <option value="PX13-10-301">PX13-10-301</option>
+                            <option value="PX13-10-382">PX13-10-382</option>
+                            <option value="PEDD-10-301-A">PEDD-10-301-A</option>
+                            <option value="PEDD-10-382-A">PEDD-10-382-A</option>
+                            <option value="PX13-10-401">P54G-10-301</option>
+                            <option value="PX13-10-482">P54G-10-382</option>
+                            <option value="PEDD-10-401-A">S51L-10-301</option>
+                            <option value="PEDD-10-482-A">S51L-10-382</option>
                         </select>
                     </div>
                     
@@ -611,24 +611,25 @@
                     <div class="form-group">
                         <label>Línea de Acabado:</label>
                         <select id="finishing-line">
-                            <option value="L1">Línea 1</option>
-                            <option value="L2">Línea 2</option>
-                            <option value="L3">Línea 3</option>
-                            <option value="L4">Línea 4</option>
+                            <option value="L1">#30</option>
+                            <option value="L2">#31</option>
+                            <option value="L3">#32</option>
+                            <option value="L4">#33</option>
+                            <option value="L5">#34</option>
                         </select>
                     </div>
                     
                     <div class="form-group">
                         <label>Número de Parte:</label>
                         <select id="finishing-part-number">
-                            <option value="PX13-10-301">PX13-10-301 (UPR)</option>
-                            <option value="PX13-10-382">PX13-10-382 (LWR)</option>
-                            <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
-                            <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
-                            <option value="PX13-10-401">PX13-10-401 (UPR)</option>
-                            <option value="PX13-10-482">PX13-10-482 (LWR)</option>
-                            <option value="PEDD-10-401-A">PEDD-10-401-A (UPR)</option>
-                            <option value="PEDD-10-482-A">PEDD-10-482-A (LWR)</option>
+                            <option value="PX13-10-301">PX13-10-301</option>
+                            <option value="PX13-10-382">PX13-10-382</option>
+                            <option value="PEDD-10-301-A">PEDD-10-301-A</option>
+                            <option value="PEDD-10-382-A">PEDD-10-382-A</option>
+                            <option value="PX13-10-401">P54G-10-301</option>
+                            <option value="PX13-10-482">P54G-10-382</option>
+                            <option value="PEDD-10-401-A">S51L-10-301</option>
+                            <option value="PEDD-10-482-A">S51L-10-382</option>
                         </select>
                     </div>
                     
@@ -708,7 +709,7 @@ let selectedWarehouse = '';
 let selectedMovement = '';
 let palletCounter = 1;
 
-const PART_NUMBERS = ['PX13-10-301', 'PX13-10-382', 'PEDD-10-301-A', 'PEDD-10-382-A', 'PX13-10-401', 'PX13-10-482', 'PEDD-10-401-A', 'PEDD-10-482-A'];
+const PART_NUMBERS = ['PX13-10-301', 'PX13-10-382', 'PEDD-10-301-A', 'PEDD-10-382-A', 'P54G-10-301', 'P54G-10-382', 'S51L-10-301', 'S51L-10-382'];
 
 const STATE_MAPPING = {
     'FUNDIDO': 'fundidos',
