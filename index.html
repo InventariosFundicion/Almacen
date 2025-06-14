@@ -306,6 +306,73 @@
             margin: 10px 0;
             color: #721c24;
         }
+
+        .model-section {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            margin: 15px 0;
+            padding: 20px;
+        }
+
+        .model-header {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .state-subsection {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            margin: 10px 0;
+            padding: 15px;
+        }
+
+        .state-header {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .movement-list {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin: 5px 0;
+        }
+
+        .theoretical-result {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .verification-section {
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .verification-match {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .verification-mismatch {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
     </style>
 </head>
 <body>
@@ -426,7 +493,12 @@
 
         <!-- Inventory Tab -->
         <div id="inventory" class="tab-content">
-            <h2>📋 Inventario</h2>
+            <h2>📋 Inventario Detallado</h2>
+            
+            <div class="card">
+                <h3>📊 Inventario por Modelo y Estado</h3>
+                <div id="detailed-inventory"></div>
+            </div>
             
             <div class="card">
                 <h3>📊 Resumen por Número de Parte</h3>
@@ -436,6 +508,10 @@
                             <th>Número de Parte</th>
                             <th>Fundidos</th>
                             <th>Acabados</th>
+                            <th>Envíos</th>
+                            <th>Retenciones</th>
+                            <th>Scrap</th>
+                            <th>Pruebas</th>
                             <th>Total</th>
                         </tr>
                     </thead>
@@ -470,14 +546,15 @@
 
         <!-- Production Tab -->
         <div id="production" class="tab-content">
-            <h2>🏭 Reporte de Producción</h2>
+            <h2>🏭 Control de Producción</h2>
             
+            <!-- Sección 1: Reporte de Fundición -->
             <div class="card">
-                <h3>Nuevo Reporte</h3>
+                <h3>🔥 Reporte de Fundición</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
                     <div class="form-group">
                         <label>Máquina:</label>
-                        <select id="machine">
+                        <select id="foundry-machine">
                             <option value="30">#30</option>
                             <option value="31">#31</option>
                             <option value="32">#32</option>
@@ -487,40 +564,110 @@
                     </div>
                     
                     <div class="form-group">
-                        <label>Proceso:</label>
-                        <select id="process">
-                            <option value="fundicion">🔥 Fundición</option>
-                            <option value="acabado">✅ Acabado</option>
+                        <label>Número de Parte:</label>
+                        <select id="foundry-part-number">
+                            <option value="PX13-10-301">PX13-10-301 (UPR)</option>
+                            <option value="PX13-10-382">PX13-10-382 (LWR)</option>
+                            <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
+                            <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
+                            <option value="PX13-10-401">PX13-10-401 (UPR)</option>
+                            <option value="PX13-10-482">PX13-10-482 (LWR)</option>
+                            <option value="PEDD-10-401-A">PEDD-10-401-A (UPR)</option>
+                            <option value="PEDD-10-482-A">PEDD-10-482-A (LWR)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Turno:</label>
+                        <select id="foundry-shift">
+                            <option value="1">Primer Turno (07:00 am - 07:00 pm)</option>
+                            <option value="2">Segundo Turno (07:00 pm - 07:00 am)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Cantidad Total Fundida:</label>
+                        <input type="number" id="foundry-total-produced" min="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Cantidad NG Fundición:</label>
+                        <input type="number" id="foundry-ng-quantity" min="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Fecha:</label>
+                        <input type="date" id="foundry-date">
+                    </div>
+                </div>
+                
+                <button class="btn btn-success" onclick="saveFoundryReport()">🔥 Guardar Reporte Fundición</button>
+            </div>
+
+            <!-- Sección 2: Reporte de Acabado -->
+            <div class="card">
+                <h3>✅ Reporte de Acabado</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                    <div class="form-group">
+                        <label>Línea de Acabado:</label>
+                        <select id="finishing-line">
+                            <option value="L1">Línea 1</option>
+                            <option value="L2">Línea 2</option>
+                            <option value="L3">Línea 3</option>
+                            <option value="L4">Línea 4</option>
                         </select>
                     </div>
                     
                     <div class="form-group">
                         <label>Número de Parte:</label>
-                        <select id="part-number">
+                        <select id="finishing-part-number">
                             <option value="PX13-10-301">PX13-10-301 (UPR)</option>
                             <option value="PX13-10-382">PX13-10-382 (LWR)</option>
                             <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
                             <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
+                            <option value="PX13-10-401">PX13-10-401 (UPR)</option>
+                            <option value="PX13-10-482">PX13-10-482 (LWR)</option>
+                            <option value="PEDD-10-401-A">PEDD-10-401-A (UPR)</option>
+                            <option value="PEDD-10-482-A">PEDD-10-482-A (LWR)</option>
                         </select>
                     </div>
                     
                     <div class="form-group">
-                        <label>Cantidad Total:</label>
-                        <input type="number" id="total-produced" min="0">
+                        <label>Turno:</label>
+                        <select id="finishing-shift">
+                            <option value="1">Primer Turno (07:00 am - 07:00 pm)</option>
+                            <option value="2">Segundo Turno (07:00 pm - 07:00 am)</option>
+                        </select>
                     </div>
                     
                     <div class="form-group">
-                        <label>Cantidad NG:</label>
-                        <input type="number" id="ng-quantity" min="0">
+                        <label>Cantidad Total Procesada:</label>
+                        <input type="number" id="finishing-total-processed" min="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Cantidad NG Acabado:</label>
+                        <input type="number" id="finishing-ng-quantity" min="0">
                     </div>
                     
                     <div class="form-group">
                         <label>Fecha:</label>
-                        <input type="date" id="production-date">
+                        <input type="date" id="finishing-date">
                     </div>
                 </div>
                 
-                <button class="btn btn-success" onclick="saveProductionReport()">💾 Guardar Reporte</button>
+                <button class="btn btn-success" onclick="saveFinishingReport()">✅ Guardar Reporte Acabado</button>
+            </div>
+
+            <!-- Sección 3: Comprobación -->
+            <div class="card">
+                <h3>🔍 Comprobación Fundición vs Acabado</h3>
+                <div class="form-group">
+                    <label>Seleccionar Fecha para Comprobación:</label>
+                    <input type="date" id="verification-date">
+                    <button class="btn btn-info" onclick="generateVerificationReport()" style="margin-top: 10px;">🔍 Generar Comprobación</button>
+                </div>
+                <div id="verification-results"></div>
             </div>
         </div>
 
@@ -554,12 +701,14 @@
 let inventory = [];
 let movements = [];
 let productionReports = [];
+let foundryReports = [];
+let finishingReports = [];
 let pallets = [];
 let selectedWarehouse = '';
 let selectedMovement = '';
 let palletCounter = 1;
 
-const PART_NUMBERS = ['PX13-10-301', 'PX13-10-382', 'PEDD-10-301-A', 'PEDD-10-382-A'];
+const PART_NUMBERS = ['PX13-10-301', 'PX13-10-382', 'PEDD-10-301-A', 'PEDD-10-382-A', 'PX13-10-401', 'PX13-10-482', 'PEDD-10-401-A', 'PEDD-10-482-A'];
 
 const STATE_MAPPING = {
     'FUNDIDO': 'fundidos',
@@ -1032,11 +1181,20 @@ function processIndividualCode(code, type, movementType, shift, warehouse, palle
         inventory.push(item);
     }
     
-    item.quantity += 1;
-    item.warehouse = warehouse;
-    item.state = warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
-    item.lastMovement = new Date();
-    item.palletId = palletId;
+    // Para movimientos, no aumentar cantidad, solo cambiar ubicación
+    if (movementType === 'movimiento') {
+        item.warehouse = warehouse;
+        item.state = warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
+        item.lastMovement = new Date();
+        item.palletId = palletId;
+    } else {
+        // Para inventarios iniciales o por turno, aumentar cantidad
+        item.quantity += 1;
+        item.warehouse = warehouse;
+        item.state = warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
+        item.lastMovement = new Date();
+        item.palletId = palletId;
+    }
     
     movements.push({
         id: Date.now() + Math.random(),
@@ -1113,13 +1271,13 @@ function viewPalletDetails(palletId) {
           `📋 CÓDIGOS:\n${codes}`);
 }
 
-function saveProductionReport() {
-    const machine = document.getElementById('machine').value;
-    const process = document.getElementById('process').value;
-    const partNumber = document.getElementById('part-number').value;
-    const totalProduced = parseInt(document.getElementById('total-produced').value) || 0;
-    const ngQuantity = parseInt(document.getElementById('ng-quantity').value) || 0;
-    const date = document.getElementById('production-date').value;
+function saveFoundryReport() {
+    const machine = document.getElementById('foundry-machine').value;
+    const partNumber = document.getElementById('foundry-part-number').value;
+    const shift = document.getElementById('foundry-shift').value;
+    const totalProduced = parseInt(document.getElementById('foundry-total-produced').value) || 0;
+    const ngQuantity = parseInt(document.getElementById('foundry-ng-quantity').value) || 0;
+    const date = document.getElementById('foundry-date').value;
     
     if (!date || totalProduced === 0) {
         alert('Por favor completa los campos obligatorios');
@@ -1129,19 +1287,111 @@ function saveProductionReport() {
     const report = {
         id: Date.now(),
         machine: machine,
-        process: process,
         partNumber: partNumber,
+        shift: shift,
         totalProduced: totalProduced,
         ngQuantity: ngQuantity,
         okQuantity: totalProduced - ngQuantity,
-        date: date
+        date: date,
+        type: 'fundicion'
     };
     
-    productionReports.push(report);
-    alert('✅ Reporte guardado');
+    foundryReports.push(report);
+    alert('✅ Reporte de Fundición guardado');
     
-    document.getElementById('total-produced').value = '';
-    document.getElementById('ng-quantity').value = '';
+    document.getElementById('foundry-total-produced').value = '';
+    document.getElementById('foundry-ng-quantity').value = '';
+}
+
+function saveFinishingReport() {
+    const line = document.getElementById('finishing-line').value;
+    const partNumber = document.getElementById('finishing-part-number').value;
+    const shift = document.getElementById('finishing-shift').value;
+    const totalProcessed = parseInt(document.getElementById('finishing-total-processed').value) || 0;
+    const ngQuantity = parseInt(document.getElementById('finishing-ng-quantity').value) || 0;
+    const date = document.getElementById('finishing-date').value;
+    
+    if (!date || totalProcessed === 0) {
+        alert('Por favor completa los campos obligatorios');
+        return;
+    }
+    
+    const report = {
+        id: Date.now(),
+        line: line,
+        partNumber: partNumber,
+        shift: shift,
+        totalProcessed: totalProcessed,
+        ngQuantity: ngQuantity,
+        okQuantity: totalProcessed - ngQuantity,
+        date: date,
+        type: 'acabado'
+    };
+    
+    finishingReports.push(report);
+    alert('✅ Reporte de Acabado guardado');
+    
+    document.getElementById('finishing-total-processed').value = '';
+    document.getElementById('finishing-ng-quantity').value = '';
+}
+
+function generateVerificationReport() {
+    const date = document.getElementById('verification-date').value;
+    const resultsDiv = document.getElementById('verification-results');
+    
+    if (!date) {
+        alert('Por favor selecciona una fecha');
+        return;
+    }
+    
+    const foundryData = foundryReports.filter(r => r.date === date);
+    const finishingData = finishingReports.filter(r => r.date === date);
+    
+    if (foundryData.length === 0 && finishingData.length === 0) {
+        resultsDiv.innerHTML = `
+            <div class="alert" style="background: #fff3cd; color: #856404; border: 1px solid #ffeaa7;">
+                📅 No hay reportes para la fecha ${date}
+            </div>
+        `;
+        return;
+    }
+    
+    let verificationHTML = `<h4>🔍 Comprobación para ${date}</h4>`;
+    
+    // Agrupar por parte y turno
+    const allParts = [...new Set([...foundryData.map(r => r.partNumber), ...finishingData.map(r => r.partNumber)])];
+    const allShifts = ['1', '2'];
+    
+    allParts.forEach(partNumber => {
+        verificationHTML += `<h5>📦 ${partNumber}</h5>`;
+        
+        allShifts.forEach(shift => {
+            const foundryReport = foundryData.find(r => r.partNumber === partNumber && r.shift === shift);
+            const finishingReport = finishingData.find(r => r.partNumber === partNumber && r.shift === shift);
+            
+            if (foundryReport || finishingReport) {
+                const foundryOK = foundryReport ? foundryReport.okQuantity : 0;
+                const finishingOK = finishingReport ? finishingReport.okQuantity : 0;
+                const difference = foundryOK - finishingOK;
+                
+                const isMatch = Math.abs(difference) <= 2; // Tolerancia de 2 piezas
+                const sectionClass = isMatch ? 'verification-match' : 'verification-mismatch';
+                const icon = isMatch ? '✅' : '❌';
+                
+                verificationHTML += `
+                    <div class="verification-section ${sectionClass}">
+                        <strong>${icon} Turno ${shift}</strong><br>
+                        🔥 Fundición: ${foundryOK} piezas buenas<br>
+                        ✅ Acabado: ${finishingOK} piezas buenas<br>
+                        📊 Diferencia: ${difference} piezas<br>
+                        ${!isMatch ? '<strong>⚠️ DISCREPANCIA DETECTADA</strong>' : '🎯 BALANCE CORRECTO'}
+                    </div>
+                `;
+            }
+        });
+    });
+    
+    resultsDiv.innerHTML = verificationHTML;
 }
 
 function calculateTheoretical() {
@@ -1153,6 +1403,8 @@ function exportData() {
         inventory: inventory,
         movements: movements,
         productionReports: productionReports,
+        foundryReports: foundryReports,
+        finishingReports: finishingReports,
         pallets: pallets,
         exportDate: new Date()
     };
@@ -1163,7 +1415,7 @@ function exportData() {
     
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'almacen-' + new Date().toISOString().split('T')[0] + '.json';
+    a.download = 'almacen-completo-' + new Date().toISOString().split('T')[0] + '.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1209,6 +1461,7 @@ function loadSampleData() {
 function updateAllDisplays() {
     updateDashboard();
     updateGroupedInventory();
+    updateDetailedInventory();
     updatePalletsTable();
 }
 
@@ -1235,30 +1488,160 @@ function updateGroupedInventory() {
     inventory.forEach(item => {
         if (item.quantity > 0) {
             if (!grouped[item.partNumber]) {
-                grouped[item.partNumber] = { fundidos: 0, acabados: 0 };
+                grouped[item.partNumber] = { 
+                    fundidos: 0, acabados: 0, envios: 0, 
+                    retenciones: 0, scrap: 0, pruebas: 0 
+                };
             }
             
-            if (item.state === 'FUNDIDOS') {
+            if (item.warehouse === 'fundidos') {
                 grouped[item.partNumber].fundidos += item.quantity;
-            } else {
+            } else if (item.warehouse === 'acabados') {
                 grouped[item.partNumber].acabados += item.quantity;
+            } else if (item.warehouse === 'envios') {
+                grouped[item.partNumber].envios += item.quantity;
+            } else if (item.warehouse === 'retenciones') {
+                grouped[item.partNumber].retenciones += item.quantity;
+            } else if (item.warehouse === 'scrap') {
+                grouped[item.partNumber].scrap += item.quantity;
+            } else if (item.warehouse === 'pruebas') {
+                grouped[item.partNumber].pruebas += item.quantity;
             }
         }
     });
     
     Object.keys(grouped).forEach(partNumber => {
         const data = grouped[partNumber];
-        const total = data.fundidos + data.acabados;
+        const total = data.fundidos + data.acabados + data.envios + data.retenciones + data.scrap + data.pruebas;
         
         const row = document.createElement('tr');
         row.innerHTML = `
             <td><strong>${partNumber}</strong></td>
             <td style="text-align: center;">🔥 ${data.fundidos}</td>
             <td style="text-align: center;">✅ ${data.acabados}</td>
+            <td style="text-align: center;">📦 ${data.envios}</td>
+            <td style="text-align: center;">⏸️ ${data.retenciones}</td>
+            <td style="text-align: center;">♻️ ${data.scrap}</td>
+            <td style="text-align: center;">🧪 ${data.pruebas}</td>
             <td style="text-align: center; font-weight: bold;">${total}</td>
         `;
         tbody.appendChild(row);
     });
+}
+
+function updateDetailedInventory() {
+    const detailedDiv = document.getElementById('detailed-inventory');
+    
+    // Agrupar por tipo (UPR/LWR)
+    const uprParts = PART_NUMBERS.filter(p => p.includes('301') || p.includes('401'));
+    const lwrParts = PART_NUMBERS.filter(p => p.includes('382') || p.includes('482'));
+    
+    let html = '';
+    
+    // Sección UPR
+    html += '<div class="model-section">';
+    html += '<div class="model-header">🔺 UPR (Upper)</div>';
+    
+    uprParts.forEach(partNumber => {
+        html += generatePartSection(partNumber);
+    });
+    
+    html += '</div>';
+    
+    // Sección LWR
+    html += '<div class="model-section">';
+    html += '<div class="model-header">🔻 LWR (Lower)</div>';
+    
+    lwrParts.forEach(partNumber => {
+        html += generatePartSection(partNumber);
+    });
+    
+    html += '</div>';
+    
+    detailedDiv.innerHTML = html;
+}
+
+function generatePartSection(partNumber) {
+    let html = `<h4>📦 ${partNumber}</h4>`;
+    
+    const warehouses = ['fundidos', 'acabados', 'envios', 'retenciones', 'scrap', 'pruebas'];
+    const warehouseNames = {
+        'fundidos': '🔥 FUNDIDOS',
+        'acabados': '✅ ACABADOS',
+        'envios': '📦 ENVÍOS',
+        'retenciones': '⏸️ RETENCIONES',
+        'scrap': '♻️ SCRAP',
+        'pruebas': '🧪 PRUEBAS'
+    };
+    
+    warehouses.forEach(warehouse => {
+        const warehouseName = warehouseNames[warehouse];
+        
+        html += '<div class="state-subsection">';
+        html += `<div class="state-header">${warehouseName}</div>`;
+        
+        // Inventario inicial
+        const initialInventory = movements.filter(m => 
+            m.partNumber === partNumber && 
+            m.warehouse === warehouse && 
+            (m.type === 'inicial' || m.type === 'turno')
+        ).length;
+        
+        // Producción (solo para fundidos)
+        const production = warehouse === 'fundidos' ? 
+            foundryReports.filter(r => r.partNumber === partNumber)
+                .reduce((sum, r) => sum + r.okQuantity, 0) : 0;
+        
+        // Movimientos recibidos
+        const received = movements.filter(m => 
+            m.partNumber === partNumber && 
+            m.warehouse === warehouse && 
+            m.type === 'movimiento'
+        ).length;
+        
+        // Movimientos enviados (desde este almacén a otros)
+        const sent = movements.filter(m => {
+            const item = inventory.find(i => i.code === m.code);
+            return item && item.partNumber === partNumber && 
+                   m.type === 'movimiento' && 
+                   item.warehouse !== warehouse;
+        }).length;
+        
+        // Inventario actual
+        const currentInventory = inventory.filter(i => 
+            i.partNumber === partNumber && 
+            i.warehouse === warehouse && 
+            i.quantity > 0
+        ).reduce((sum, i) => sum + i.quantity, 0);
+        
+        // Cálculo teórico
+        const theoretical = initialInventory + production + received - sent;
+        
+        html += `<div class="movement-list">📋 Inventario Inicial: ${initialInventory}</div>`;
+        if (production > 0) {
+            html += `<div class="movement-list">🏭 Producción: +${production}</div>`;
+        }
+        if (received > 0) {
+            html += `<div class="movement-list">📥 Recibidos: +${received}</div>`;
+        }
+        if (sent > 0) {
+            html += `<div class="movement-list">📤 Enviados: -${sent}</div>`;
+        }
+        
+        html += `<div class="theoretical-result">📊 Teórico: ${theoretical} | Físico: ${currentInventory}</div>`;
+        
+        // Alerta si hay discrepancia
+        if (theoretical !== currentInventory) {
+            const difference = currentInventory - theoretical;
+            html += `<div style="background: #f8d7da; color: #721c24; padding: 5px; border-radius: 3px; margin-top: 5px; font-size: 0.9em;">
+                ⚠️ Discrepancia: ${difference > 0 ? '+' : ''}${difference}
+            </div>`;
+        }
+        
+        html += '</div>';
+    });
+    
+    return html;
 }
 
 function updatePalletsTable() {
@@ -1320,7 +1703,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inicializar datos y displays
     loadSampleData();
     updateAllDisplays();
-    document.getElementById('production-date').value = new Date().toISOString().split('T')[0];
+    
+    // Configurar fechas por defecto
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('foundry-date').value = today;
+    document.getElementById('finishing-date').value = today;
+    document.getElementById('verification-date').value = today;
 });
 
 </script>
