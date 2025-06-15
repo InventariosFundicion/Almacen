@@ -667,48 +667,85 @@
             }
         }
 
-        function analyzeQRCode() {
-            const input = document.getElementById('qr-input').value.trim();
-            const analysisDiv = document.getElementById('qr-analysis');
-            
-            document.getElementById('warehouse-override-section').style.display = 'none';
-            document.getElementById('individual-state-section').style.display = 'none';
-            
-            if (!input) {
-                analysisDiv.innerHTML = '';
-                return;
-            }
-            
-            const analysis = parseQRCode(input);
-            
-            if (analysis.isPallet) {
-                const codeCheck = checkExistingCodes(analysis.codes);
-                
-                if (!analysis.detectedState) {
-                    document.getElementById('warehouse-override-section').style.display = 'block';
-                }
-                
-                analysisDiv.innerHTML = '<div class="alert alert-info"><strong>🎯 TARIMA DETECTADA</strong><br>' +
-                    '<span class="code-badge" style="background: #17a2b8;">ID: ' + analysis.palletId + '</span>' +
-                    '<span class="code-badge" style="background: #28a745;">' + analysis.type + '</span>' +
-                    '<span class="code-badge" style="background: #6c757d;">' + analysis.codes.length + ' piezas</span>' +
-                    '<span class="code-badge" style="background: #17a2b8;">' + codeCheck.newCodes.length + ' nuevas</span></div>';
-                
-            } else if (analysis.isValid) {
-                document.getElementById('individual-state-section').style.display = 'block';
-                
-                analysisDiv.innerHTML = '<div class="alert alert-success"><strong>✅ CÓDIGO NUEVO</strong><br>' +
-                    '<span class="code-badge" style="background: #28a745;">' + analysis.type + '</span>' +
-                    '<span class="code-badge" style="background: #6c757d;">' + analysis.code + '</span></div>';
-                
-            } else {
-                analysisDiv.innerHTML = '<div class="alert" style="background: #f8d7da; color: #721c24;">' +
-                    '❌ <strong>Código no válido</strong></div>';
-            }
-            
-            updateFormSections();
-        }
-
+function analyzeQRCode() {
+   const input = document.getElementById('qr-input').value.trim();
+   const analysisDiv = document.getElementById('qr-analysis');
+   
+   document.getElementById('warehouse-override-section').style.display = 'none';
+   document.getElementById('individual-state-section').style.display = 'none';
+   
+   if (!input) {
+       analysisDiv.innerHTML = '';
+       return;
+   }
+   
+   const analysis = parseQRCode(input);
+   
+   if (analysis.isPallet) {
+       const codeCheck = checkExistingCodes(analysis.codes);
+       
+       if (!analysis.detectedState) {
+           document.getElementById('warehouse-override-section').style.display = 'block';
+       }
+       
+       analysisDiv.innerHTML = '<div class="alert alert-info"><strong>🎯 TARIMA DETECTADA</strong><br>' +
+           '<span class="code-badge" style="background: #17a2b8;">ID: ' + analysis.palletId + '</span>' +
+           '<span class="code-badge" style="background: #28a745;">' + analysis.type + '</span>' +
+           '<span class="code-badge" style="background: #6c757d;">' + analysis.codes.length + ' piezas</span>' +
+           '<span class="code-badge" style="background: #17a2b8;">' + codeCheck.newCodes.length + ' nuevas</span></div>';
+       
+   } else if (analysis.isValid) {
+       const existingItem = inventory.find(item => item.code === analysis.code && item.quantity > 0);
+       
+       if (existingItem) {
+           analysisDiv.innerHTML = `
+               <div class="existing-code">
+                   <strong>⚠️ CÓDIGO YA REGISTRADO</strong><br>
+                   <span class="code-badge" style="background: #28a745;">${analysis.type}</span>
+                   <span class="code-badge" style="background: #6c757d;">${analysis.code}</span>
+                   
+                   <div class="existing-info">
+                       <strong>Información actual:</strong><br>
+                       <span class="existing-badge" style="background: ${existingItem.state === 'FUNDIDOS' ? '#e74c3c' : '#27ae60'};">
+                           ${existingItem.state}
+                       </span>
+                       <span class="existing-badge" style="background: #6c757d;">
+                           ${getWarehouseName(existingItem.warehouse)}
+                       </span>
+                       <span class="existing-badge" style="background: #17a2b8;">
+                           Cant: ${existingItem.quantity}
+                       </span>
+                       <br><small>Último movimiento: ${formatLastMovement(existingItem.lastMovement)}</small>
+                   </div>
+               </div>
+               
+               <div class="alert alert-info">
+                   <strong>🔄 ¿Quieres cambiar su estado?</strong><br>
+                   Selecciona el nuevo estado abajo para transferir el código.
+               </div>
+           `;
+           
+           document.getElementById('individual-state').value = existingItem.warehouse;
+       } else {
+           analysisDiv.innerHTML = `
+               <div class="alert alert-success">
+                   <strong>✅ CÓDIGO NUEVO</strong><br>
+                   <span class="code-badge" style="background: #28a745;">${analysis.type}</span>
+                   <span class="code-badge" style="background: #6c757d;">${analysis.code}</span>
+                   <div class="auto-detect">💡 <strong>Selecciona el estado del material abajo</strong></div>
+               </div>
+           `;
+       }
+       
+       document.getElementById('individual-state-section').style.display = 'block';
+       
+   } else {
+       analysisDiv.innerHTML = '<div class="alert" style="background: #f8d7da; color: #721c24;">' +
+           '❌ <strong>Código no válido</strong></div>';
+   }
+   
+   updateFormSections();
+}
 function parseQRCode(input) {
     if (input.includes('|')) {
         const parts = input.split('|');
@@ -839,7 +876,16 @@ function processQRCode() {
        
        // Manejar cuando todos los códigos ya existen - permitir transferencia
        if (codeCheck.newCodes.length === 0 && codeCheck.existingCodes.length > 0) {
-           const confirmTransfer = confirm(`🔄 TRANSFERENCIA DE TARIMA\n\nTodos los códigos ya existen en el sistema.\n¿Quieres transferir esta tarima completa a ${getWarehouseName(targetWarehouse)}?\n\n✅ Aceptar = Transferir\n❌ Cancelar = No hacer nada`);
+          // Detectar si es transferencia lógica (fundidos -> acabados)
+const currentState = codeCheck.existingCodes[0].data.warehouse;
+const isLogicalTransfer = (currentState === 'fundidos' && targetWarehouse === 'acabados') || 
+                         (currentState === 'acabados' && targetWarehouse === 'fundidos');
+
+const transferMessage = isLogicalTransfer ? 
+    `🔄 PROCESAMIENTO DE TARIMA\n\nEsta tarima ya está registrada en ${getWarehouseName(currentState)}.\n¿Quieres procesarla y moverla a ${getWarehouseName(targetWarehouse)}?` :
+    `🔄 TRANSFERENCIA DE TARIMA\n\nTodos los códigos ya existen en el sistema.\n¿Quieres transferir esta tarima completa a ${getWarehouseName(targetWarehouse)}?`;
+
+const confirmTransfer = confirm(`${transferMessage}\n\n✅ Aceptar = Transferir\n❌ Cancelar = No hacer nada`);
            
            if (!confirmTransfer) {
                return;
