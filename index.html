@@ -710,55 +710,81 @@
         }
 
         function parseQRCode(input) {
-            if (input.includes('|')) {
-                const parts = input.split('|');
-                if (parts.length >= 3) {
-                    const palletId = parts[0];
-                    const state = parts[1];
-                    const codes = parts.slice(2).filter(code => code.trim().length > 0);
-                    
-                    let type = 'UNKNOWN';
-                    if (codes.length > 0) {
-                        const firstCodeInfo = extractCodeInfo(codes[0]);
-                        type = firstCodeInfo ? firstCodeInfo.type : 'UNKNOWN';
-                    }
-                    
-                    let detectedState = null;
-                    const stateUpper = state.toUpperCase();
-                    for (const key in STATE_MAPPING) {
-                        if (stateUpper.includes(key)) {
-                            detectedState = STATE_MAPPING[key];
-                            break;
-                        }
-                    }
-                    
-                    return {
-                        isPallet: true,
-                        isValid: true,
-                        palletId: palletId,
-                        type: type,
-                        state: state,
-                        detectedState: detectedState,
-                        codes: codes
-                    };
-                }
-            } else {
-                const cleanCode = input.trim();
-                const codeInfo = extractCodeInfo(cleanCode);
-                if (codeInfo) {
-                    return {
-                        isPallet: false,
-                        isValid: true,
-                        code: cleanCode,
-                        type: codeInfo.type,
-                        codeInfo: codeInfo
-                    };
-                }
+    if (input.includes('|')) {
+        const parts = input.split('|');
+        if (parts.length >= 3) {
+            const palletId = parts[0];
+            const state = parts[1];
+            const codes = parts.slice(2).filter(code => code.trim().length > 0);
+            
+            let type = 'UNKNOWN';
+            if (codes.length > 0) {
+                const firstCode = codes[0];
+                type = firstCode.length === 13 ? 'UPR' : 'LWR';
             }
             
-            return { isPallet: false, isValid: false };
+            return {
+                isPallet: true,
+                isValid: true,
+                palletId: palletId,
+                type: type,
+                state: state,
+                codes: codes
+            };
         }
+    } else {
+        const cleanCode = input.trim();
+        if (cleanCode.length === 13 || cleanCode.length === 17) {
+            return {
+                isPallet: false,
+                isValid: true,
+                code: cleanCode,
+                type: cleanCode.length === 13 ? 'UPR' : 'LWR'
+            };
+        }
+    }
+    
+    return { isPallet: false, isValid: false };
+}
 
+        function extractCodeData(code) {
+    if (code.length === 13) { // UPR
+        const lote = code.substring(0, 3);
+        const disparo = code.substring(3, 8);
+        const maquinaRaw = parseInt(code.substring(8, 10));
+        const maquina = maquinaRaw + 30;
+        const modelo = code.substring(10, 12);
+        const molde = code.substring(12, 13);
+        
+        return {
+            type: 'UPR',
+            lote,
+            disparo,
+            maquina,
+            modelo,
+            molde,
+            partNumber: `UPR-${modelo}`
+        };
+    } else if (code.length === 17) { // LWR
+        const lote = code.substring(0, 5);
+        const maquina = parseInt(code.substring(5, 7));
+        const molde = code.substring(7, 9);
+        const disparo = code.substring(9, 15);
+        const modelo = code.substring(15, 17);
+        
+        return {
+            type: 'LWR',
+            lote,
+            disparo,
+            maquina,
+            modelo,
+            molde,
+            partNumber: `LWR-${modelo}`
+        };
+    }
+    
+    return null;
+}
         function processQRCode() {
             const input = document.getElementById('qr-input').value.trim();
             const inventoryType = document.getElementById('inventory-type').value;
@@ -875,70 +901,53 @@
             document.getElementById('qr-input').focus();
         }
 
-        function processIndividualCode(code, type, movementType, shift, warehouse, palletId) {
-            palletId = palletId || null;
-            const codeInfo = extractCodeInfo(code);
-            if (!codeInfo) {
-                console.error('No se pudo extraer información del código:', code);
-                return;
-            }
-            
-            const partNumber = codeInfo.partNumber;
-            
-            let item = inventory.find(function(i) {
-                return i.code === code;
-            });
-            
-            if (!item) {
-                item = {
-                    code: code,
-                    partNumber: partNumber,
-                    type: codeInfo.type,
-                    state: warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS',
-                    warehouse: warehouse,
-                    quantity: 0,
-                    lastMovement: new Date(),
-                    shift: shift,
-                    palletId: palletId,
-                    lote: codeInfo.lote,
-                    numeroDisparo: codeInfo.numeroDisparo,
-                    maquina: codeInfo.maquina,
-                    modelo: codeInfo.modelo,
-                    molde: codeInfo.molde,
-                    displayInfo: codeInfo.displayInfo
-                };
-                inventory.push(item);
-            }
-            
-            if (movementType === 'movimiento') {
-                item.warehouse = warehouse;
-                item.state = warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
-                item.lastMovement = new Date();
-                item.palletId = palletId;
-            } else {
-                item.quantity += 1;
-                item.warehouse = warehouse;
-                item.state = warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
-                item.lastMovement = new Date();
-                item.palletId = palletId;
-            }
-            
-            movements.push({
-                id: Date.now() + Math.random(),
-                code: code,
-                partNumber: partNumber,
-                type: movementType,
-                warehouse: warehouse,
-                quantity: 1,
-                date: new Date(),
-                shift: shift,
-                palletId: palletId,
-                lote: codeInfo.lote,
-                maquina: codeInfo.maquina,
-                modelo: codeInfo.modelo,
-                molde: codeInfo.molde
-            });
-        }
+function processIndividualCode(code, type, movementType, shift, warehouse, palletId = null) {
+    const codeData = extractCodeData(code);
+    const partNumber = codeData ? codeData.partNumber : (type === 'UPR' ? 'PX13-10-301' : 'PX13-10-382');
+    
+    let item = inventory.find(i => i.code === code);
+    
+    if (!item) {
+        item = {
+            code: code,
+            partNumber: partNumber,
+            type: type,
+            state: warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS',
+            warehouse: warehouse,
+            quantity: 0,
+            lastMovement: new Date(),
+            shift: shift,
+            palletId: palletId,
+            codeData: codeData
+        };
+        inventory.push(item);
+    }
+    
+    if (movementType === 'movimiento') {
+        item.warehouse = warehouse;
+        item.state = warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
+        item.lastMovement = new Date();
+        item.palletId = palletId;
+    } else {
+        item.quantity += 1;
+        item.warehouse = warehouse;
+        item.state = warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
+        item.lastMovement = new Date();
+        item.palletId = palletId;
+    }
+    
+    movements.push({
+        id: Date.now() + Math.random(),
+        code: code,
+        partNumber: partNumber,
+        type: movementType,
+        warehouse: warehouse,
+        quantity: 1,
+        date: new Date(),
+        shift: shift,
+        palletId: palletId
+    });
+}
 
         function movePallet(palletId) {
             const newWarehouse = prompt('Almacén destino (fundidos/acabados/scrap/retenciones/envios/pruebas):');
@@ -1126,215 +1135,147 @@
             });
         }
 
-        function updateDetailedInventory() {
-            const detailedDiv = document.getElementById('detailed-inventory');
-            
-            // Filtros
-            const filtersHTML = '<div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;">' +
-                '<h4>🔍 Filtros de Inventario</h4>' +
-                '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 10px;">' +
-                '<div><label><strong>Tipo:</strong></label>' +
-                '<select id="filter-type" onchange="updateDetailedInventory()">' +
-                '<option value="all">Todos</option><option value="UPR">UPR</option><option value="LWR">LWR</option>' +
-                '</select></div>' +
-                '<div><label><strong>Modelo:</strong></label>' +
-                '<select id="filter-modelo" onchange="updateDetailedInventory()"><option value="all">Todos</option></select></div>' +
-                '<div><label><strong>Lote:</strong></label>' +
-                '<select id="filter-lote" onchange="updateDetailedInventory()"><option value="all">Todos</option></select></div>' +
-                '<div><label><strong>Molde:</strong></label>' +
-                '<select id="filter-molde" onchange="updateDetailedInventory()"><option value="all">Todos</option></select></div>' +
-                '</div></div>';
-            
-            // Obtener valores de filtros
-            const typeFilter = document.getElementById('filter-type') ? document.getElementById('filter-type').value : 'all';
-            const modeloFilter = document.getElementById('filter-modelo') ? document.getElementById('filter-modelo').value : 'all';
-            const loteFilter = document.getElementById('filter-lote') ? document.getElementById('filter-lote').value : 'all';
-            const moldeFilter = document.getElementById('filter-molde') ? document.getElementById('filter-molde').value : 'all';
-            
-            // Filtrar inventario
-            let filteredInventory = inventory.filter(function(item) {
-                if (item.quantity === 0) return false;
-                if (typeFilter !== 'all' && item.type !== typeFilter) return false;
-                if (modeloFilter !== 'all' && item.modelo !== modeloFilter) return false;
-                if (loteFilter !== 'all' && item.lote !== loteFilter) return false;
-                if (moldeFilter !== 'all' && item.molde !== moldeFilter) return false;
-                return true;
-            });
-            
-            // Agrupar por tipo y modelo
-            const grouped = {};
-            filteredInventory.forEach(function(item) {
-                const key = item.type + '-' + item.modelo;
-                if (!grouped[key]) {
-                    grouped[key] = {
-                        type: item.type,
-                        modelo: item.modelo,
-                        items: []
-                    };
-                }
-                grouped[key].items.push(item);
-            });
-            
-            let html = filtersHTML;
-            
-            // Generar secciones por tipo/modelo
-            Object.keys(grouped).forEach(function(key) {
-                const group = grouped[key];
-                const totalItems = group.items.reduce(function(sum, item) {
-                    return sum + item.quantity;
-                }, 0);
-                
-                html += '<div class="model-section">' +
-                    '<div class="model-header" onclick="toggleSection(\'' + key + '\')">' +
-                    '<span id="toggle-' + key + '">🔽</span> ' + group.type + '-' + group.modelo + 
-                    ' <span style="float: right;">Total: ' + totalItems + ' piezas</span>' +
-                    '</div>' +
-                    '<div id="section-' + key + '" class="collapsible-content">' +
-                    generateDetailedPartSection(group.items) +
-                    '</div></div>';
-            });
-            
-            if (Object.keys(grouped).length === 0) {
-                html += '<div class="alert alert-info">No hay inventario que coincida con los filtros seleccionados.</div>';
-            }
-            
-            detailedDiv.innerHTML = html;
-            
-            // Actualizar opciones de filtros
-            updateFilterOptions();
-        }
+function updateDetailedInventory() {
+    const detailedDiv = document.getElementById('detailed-inventory');
+    
+    // Filtros
+    let html = `
+        <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
+            <h4>🔍 Filtros</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                <select id="filter-model" onchange="updateDetailedInventory()">
+                    <option value="">Todos los Modelos</option>
+                </select>
+                <select id="filter-lote" onchange="updateDetailedInventory()">
+                    <option value="">Todos los Lotes</option>
+                </select>
+                <select id="filter-molde" onchange="updateDetailedInventory()">
+                    <option value="">Todos los Moldes</option>
+                </select>
+            </div>
+        </div>
+    `;
+    
+    // Obtener valores únicos para filtros
+    const modelos = [...new Set(inventory.filter(i => i.codeData).map(i => i.codeData.modelo))];
+    const lotes = [...new Set(inventory.filter(i => i.codeData).map(i => i.codeData.lote))];
+    const moldes = [...new Set(inventory.filter(i => i.codeData).map(i => i.codeData.molde))];
+    
+    // Agrupar por tipo
+    const uprItems = inventory.filter(i => i.type === 'UPR' && i.quantity > 0);
+    const lwrItems = inventory.filter(i => i.type === 'LWR' && i.quantity > 0);
+    
+    // Sección UPR
+    html += '<div class="model-section">';
+    html += `<div class="model-header">🔺 UPR (${uprItems.length} piezas)</div>`;
+    html += generateDetailedSection(uprItems, 'UPR');
+    html += '</div>';
+    
+    // Sección LWR
+    html += '<div class="model-section">';
+    html += `<div class="model-header">🔻 LWR (${lwrItems.length} piezas)</div>`;
+    html += generateDetailedSection(lwrItems, 'LWR');
+    html += '</div>';
+    
+    detailedDiv.innerHTML = html;
+    
+    // Llenar opciones de filtros
+    fillFilterOptions('filter-model', modelos);
+    fillFilterOptions('filter-lote', lotes);
+    fillFilterOptions('filter-molde', moldes);
+}
 
-        function toggleSection(sectionKey) {
-            const content = document.getElementById('section-' + sectionKey);
-            const toggle = document.getElementById('toggle-' + sectionKey);
-            
-            if (content && toggle) {
-                if (content.style.display === 'none') {
-                    content.style.display = 'block';
-                    toggle.textContent = '🔽';
-                } else {
-                    content.style.display = 'none';
-                    toggle.textContent = '▶️';
-                }
+function generateDetailedSection(items, type) {
+    if (items.length === 0) return '<p>No hay piezas registradas</p>';
+    
+    // Agrupar por modelo
+    const groupedByModel = {};
+    items.forEach(item => {
+        if (item.codeData) {
+            const model = item.codeData.modelo;
+            if (!groupedByModel[model]) {
+                groupedByModel[model] = [];
             }
+            groupedByModel[model].push(item);
         }
+    });
+    
+    let html = '';
+    Object.keys(groupedByModel).forEach(model => {
+        const modelItems = groupedByModel[model];
+        const totalCount = modelItems.reduce((sum, item) => sum + item.quantity, 0);
+        
+        html += `
+            <div class="state-subsection">
+                <div class="state-header" onclick="toggleModelSection('model-${type}-${model}')" style="cursor: pointer;">
+                    📦 Modelo ${model} (${totalCount} piezas) <span id="toggle-${type}-${model}">▼</span>
+                </div>
+                <div id="model-${type}-${model}">
+                    <table class="inventory-table" style="font-size: 0.9em;">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Lote</th>
+                                <th>Máquina</th>
+                                <th>Molde</th>
+                                <th>Disparo</th>
+                                <th>Estado</th>
+                                <th>Cantidad</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+        
+        modelItems.forEach(item => {
+            const data = item.codeData;
+            html += `
+                <tr>
+                    <td style="font-family: monospace; font-size: 0.8em;">${item.code}</td>
+                    <td>${data.lote}</td>
+                    <td>${data.maquina}</td>
+                    <td>${data.molde}</td>
+                    <td>${data.disparo}</td>
+                    <td><span class="code-badge" style="background: ${item.state === 'FUNDIDOS' ? '#e74c3c' : '#27ae60'};">${item.state}</span></td>
+                    <td style="text-align: center; font-weight: bold;">${item.quantity}</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    });
+    
+    return html;
+}
 
-        function updateFilterOptions() {
-            // Obtener valores únicos para los filtros
-            const modelos = [];
-            const lotes = [];
-            const moldes = [];
-            
-            inventory.forEach(function(item) {
-                if (item.quantity > 0) {
-                    if (item.modelo && modelos.indexOf(item.modelo) === -1) {
-                        modelos.push(item.modelo);
-                    }
-                    if (item.lote && lotes.indexOf(item.lote) === -1) {
-                        lotes.push(item.lote);
-                    }
-                    if (item.molde && moldes.indexOf(item.molde) === -1) {
-                        moldes.push(item.molde);
-                    }
-                }
-            });
-            
-            modelos.sort();
-            lotes.sort();
-            moldes.sort();
-            
-            // Actualizar select de modelos
-            const modeloSelect = document.getElementById('filter-modelo');
-            if (modeloSelect) {
-                const currentValue = modeloSelect.value;
-                let modeloOptions = '<option value="all">Todos</option>';
-                modelos.forEach(function(m) {
-                    modeloOptions += '<option value="' + m + '"' + (m === currentValue ? ' selected' : '') + '>' + m + '</option>';
-                });
-                modeloSelect.innerHTML = modeloOptions;
-            }
-            
-            // Actualizar select de lotes
-            const loteSelect = document.getElementById('filter-lote');
-            if (loteSelect) {
-                const currentValue = loteSelect.value;
-                let loteOptions = '<option value="all">Todos</option>';
-                lotes.forEach(function(l) {
-                    loteOptions += '<option value="' + l + '"' + (l === currentValue ? ' selected' : '') + '>' + l + '</option>';
-                });
-                loteSelect.innerHTML = loteOptions;
-            }
-            
-            // Actualizar select de moldes
-            const moldeSelect = document.getElementById('filter-molde');
-            if (moldeSelect) {
-                const currentValue = moldeSelect.value;
-                let moldeOptions = '<option value="all">Todos</option>';
-                moldes.forEach(function(m) {
-                    moldeOptions += '<option value="' + m + '"' + (m === currentValue ? ' selected' : '') + '>' + m + '</option>';
-                });
-                moldeSelect.innerHTML = moldeOptions;
-            }
-        }
+function fillFilterOptions(selectId, options) {
+    const select = document.getElementById(selectId);
+    if (select) {
+        options.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option;
+            optionElement.textContent = option;
+            select.appendChild(optionElement);
+        });
+    }
+}
 
-        function generateDetailedPartSection(items) {
-            const warehouses = ['fundidos', 'acabados', 'envios', 'retenciones', 'scrap', 'pruebas'];
-            const warehouseNames = {
-                'fundidos': '🔥 FUNDIDOS',
-                'acabados': '✅ ACABADOS',
-                'envios': '📦 ENVÍOS',
-                'retenciones': '⏸️ RETENCIONES',
-                'scrap': '♻️ SCRAP',
-                'pruebas': '🧪 PRUEBAS'
-            };
-            
-            let html = '';
-            
-            warehouses.forEach(function(warehouse) {
-                const warehouseItems = items.filter(function(item) {
-                    return item.warehouse === warehouse;
-                });
-                const totalQuantity = warehouseItems.reduce(function(sum, item) {
-                    return sum + item.quantity;
-                }, 0);
-                
-                if (totalQuantity > 0) {
-                    html += '<div class="state-subsection">';
-                    html += '<div class="state-header">' + warehouseNames[warehouse] + ' (' + totalQuantity + ' piezas)</div>';
-                    
-                    // Agrupar por lote y molde
-                    const subgroups = {};
-                    warehouseItems.forEach(function(item) {
-                        const key = 'L:' + item.lote + '-Mo:' + item.molde + '-Mq:' + item.maquina;
-                        if (!subgroups[key]) {
-                            subgroups[key] = [];
-                        }
-                        subgroups[key].push(item);
-                    });
-                    
-                    Object.keys(subgroups).forEach(function(key) {
-                        const subgroup = subgroups[key];
-                        const subgroupTotal = subgroup.reduce(function(sum, item) {
-                            return sum + item.quantity;
-                        }, 0);
-                        
-                        const codes = subgroup.map(function(item) {
-                            return item.code;
-                        }).join(', ');
-                        
-                        html += '<div class="movement-list">' +
-                            '<strong>' + key + '</strong> - ' + subgroupTotal + ' piezas' +
-                            '<br><small>Códigos: ' + codes + '</small>' +
-                            '</div>';
-                    });
-                    
-                    html += '</div>';
-                }
-            });
-            
-            return html;
-        }
-
+function toggleModelSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    const toggleIcon = document.getElementById('toggle-' + sectionId.replace('model-', ''));
+    
+    if (section.style.display === 'none') {
+        section.style.display = 'block';
+        toggleIcon.textContent = '▼';
+    } else {
+        section.style.display = 'none';
+        toggleIcon.textContent = '▶';
+    }
+}
         function updatePalletsTable() {
             const tbody = document.getElementById('pallets-tbody');
             tbody.innerHTML = '';
