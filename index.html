@@ -3042,78 +3042,93 @@ function getInitialInventory(partNumber, warehouse) {
     });
     return total;
 }
-// Mostrar reporte de balance teórico
+// Mostrar reporte de balance teórico - VERSIÓN CORREGIDA
 function showTheoreticalBalanceReport() {
+    // USAR LA FUNCIÓN CORREGIDA para generar los datos
+    const balanceData = generateTheoreticalBalance();
+    
     let html = `
         <div class="card" style="margin-top: 20px;">
             <h3>🧮 Balance Teórico Calculado</h3>
             <div class="alert alert-info">
                 <strong>💡 Interpretación:</strong><br>
-                • <strong>Reportado:</strong> Lo que el personal reportó en producción<br>
-                • <strong>Teórico:</strong> Lo que debería haber según flujo de proceso<br>
-                • <strong>Físico:</strong> Lo que se encontró al escanear (de verificaciones físicas)
+                • <strong>Inventario Inicial:</strong> Lo que ya estaba antes del turno<br>
+                • <strong>Producción:</strong> Lo que se reportó producido en este turno<br>
+                • <strong>Balance Calculado:</strong> Inicial + Producción - Movimientos<br>
+                • <strong>Físico:</strong> Lo que se encontró al escanear (verificaciones físicas)
             </div>
     `;
     
-    if (Object.keys(theoreticalBalance).length === 0) {
-        html += '<div class="alert alert-warning">No hay datos para mostrar. Genera primero el balance teórico.</div>';
+    if (Object.keys(balanceData).length === 0) {
+        html += '<div class="alert alert-warning">No hay datos para mostrar. Asegúrate de tener inventario inicial, reportes de producción o verificaciones físicas.</div>';
     } else {
         html += '<table class="inventory-table"><thead><tr><th>Modelo</th><th>Proceso</th><th>Inv. Inicial</th><th>Producción</th><th>Balance Calculado</th><th>Físico</th><th>Diferencia</th><th>Status</th></tr></thead><tbody>';
         
-        Object.keys(theoreticalBalance).forEach(modelo => {
-            const balance = theoreticalBalance[modelo];
+        // Variables para detectar diferencias críticas
+        const diferencias = [];
+        
+        Object.keys(balanceData).forEach(modelo => {
+            const data = balanceData[modelo];
             
-            // Obtener verificación física para este modelo
-            const physicalFundidos = getPhysicalCountForModel(modelo, 'fundidos');
-            const physicalAcabados = getPhysicalCountForModel(modelo, 'acabados');
-            
-            // Fila de fundición
-            const diffRepTeoFund = balance.fundicion.reportado - balance.fundicion.teorico;
-            const diffTeoFisFund = balance.fundicion.teorico - physicalFundidos;
-            const statusFund = getStatusIcon(diffRepTeoFund, diffTeoFisFund);
+            // Fila de FUNDICIÓN
+            const difFundidos = data.balanceCalculado.fundidos - data.fisico.fundidos;
+            const statusFundidos = Math.abs(difFundidos) <= 5 ? 
+                '<span style="color: #28a745; font-weight: bold;">✅ Perfecto</span>' : 
+                '<span style="color: #dc3545; font-weight: bold;">❌ Crítico</span>';
+                
+            if (Math.abs(difFundidos) > 5) {
+                diferencias.push(`${modelo} - Fundidos: ${difFundidos > 0 ? 'Exceso' : 'Faltante'} de ${Math.abs(difFundidos)} piezas`);
+            }
             
             html += `
-                <tr>
+                <tr style="background: #ffe6cc;">
                     <td rowspan="2"><strong>${modelo}</strong></td>
                     <td>🔥 Fundición</td>
-                    <td style="text-align: center;">${balance.fundicion.reportado}</td>
-                    <td style="text-align: center;">${balance.fundicion.teorico}</td>
-                    <td style="text-align: center;">${physicalFundidos}</td>
-                    <td style="text-align: center;" class="${getDifferenceClass(diffRepTeoFund)}">${diffRepTeoFund}</td>
-                    <td style="text-align: center;" class="${getDifferenceClass(diffTeoFisFund)}">${diffTeoFisFund}</td>
-                    <td>${statusFund}</td>
+                    <td style="text-align: center;">${data.inventarioInicial.fundidos}</td>
+                    <td style="text-align: center;">${data.produccion.fundidos}</td>
+                    <td style="text-align: center; font-weight: bold;">${data.balanceCalculado.fundidos}</td>
+                    <td style="text-align: center;">${data.fisico.fundidos}</td>
+                    <td style="text-align: center;" class="${getDifferenceClass(difFundidos)}">${difFundidos}</td>
+                    <td style="text-align: center;">${statusFundidos}</td>
                 </tr>
             `;
             
-            // Fila de acabado
-            const diffRepTeoAcab = balance.acabado.reportado - balance.acabado.teorico;
-            const diffTeoFisAcab = balance.acabado.teorico - physicalAcabados;
-            const statusAcab = getStatusIcon(diffRepTeoAcab, diffTeoFisAcab);
+            // Fila de ACABADO
+            const difAcabados = data.balanceCalculado.acabados - data.fisico.acabados;
+            const statusAcabados = Math.abs(difAcabados) <= 5 ? 
+                '<span style="color: #28a745; font-weight: bold;">✅ Perfecto</span>' : 
+                '<span style="color: #dc3545; font-weight: bold;">❌ Crítico</span>';
+                
+            if (Math.abs(difAcabados) > 5) {
+                diferencias.push(`${modelo} - Acabados: ${difAcabados > 0 ? 'Exceso' : 'Faltante'} de ${Math.abs(difAcabados)} piezas`);
+            }
             
             html += `
-                <tr>
+                <tr style="background: #ccffcc;">
                     <td>✅ Acabado</td>
-                    <td style="text-align: center;">${balance.acabado.reportado}</td>
-                    <td style="text-align: center;">${balance.acabado.teorico}</td>
-                    <td style="text-align: center;">${physicalAcabados}</td>
-                    <td style="text-align: center;" class="${getDifferenceClass(diffRepTeoAcab)}">${diffRepTeoAcab}</td>
-                    <td style="text-align: center;" class="${getDifferenceClass(diffTeoFisAcab)}">${diffTeoFisAcab}</td>
-                    <td>${statusAcab}</td>
+                    <td style="text-align: center;">${data.inventarioInicial.acabados}</td>
+                    <td style="text-align: center;">${data.produccion.acabados}</td>
+                    <td style="text-align: center; font-weight: bold;">${data.balanceCalculado.acabados}</td>
+                    <td style="text-align: center;">${data.fisico.acabados}</td>
+                    <td style="text-align: center;" class="${getDifferenceClass(difAcabados)}">${difAcabados}</td>
+                    <td style="text-align: center;">${statusAcabados}</td>
                 </tr>
             `;
             
             // Mostrar movimientos si existen
-            const totalMovements = balance.movimientos.scrap + balance.movimientos.envios + 
-                                 balance.movimientos.retenciones + balance.movimientos.pruebas;
-            if (totalMovements > 0) {
+            const totalMovimientos = data.movimientos.scrap + data.movimientos.envios + 
+                                   data.movimientos.retenciones + data.movimientos.pruebas + 
+                                   data.movimientos.acabadoProceso;
+            if (totalMovimientos > 0) {
                 html += `
                     <tr style="background: #f8f9fa;">
-                        <td colspan="2"><em>📦 Movimientos:</em></td>
+                        <td colspan="2"><em>📦 Movimientos del Turno:</em></td>
                         <td colspan="6" style="font-size: 0.9em;">
-                            ♻️ Scrap: ${balance.movimientos.scrap} | 
-                            📦 Envíos: ${balance.movimientos.envios} | 
-                            ⏸️ Retenciones: ${balance.movimientos.retenciones} | 
-                            🧪 Pruebas: ${balance.movimientos.pruebas}
+                            ♻️ Scrap: ${data.movimientos.scrap} | 
+                            📦 Envíos: ${data.movimientos.envios} | 
+                            ⏸️ Retenciones: ${data.movimientos.retenciones} | 
+                            🧪 Pruebas: ${data.movimientos.pruebas} |
+                            🔄 Fundido→Acabado: ${data.movimientos.acabadoProceso}
                         </td>
                     </tr>
                 `;
@@ -3123,40 +3138,59 @@ function showTheoreticalBalanceReport() {
         html += '</tbody></table>';
         
         // Agregar análisis de diferencias críticas
-        html += generateCriticalAnalysis();
+        if (diferencias.length > 0) {
+            html += `
+                <div class="alert" style="background: #ffebee; border: 1px solid #f8bbd9; margin-top: 20px;">
+                    <h4 style="color: #dc3545;">🚨 Diferencias Críticas Detectadas (>5 piezas):</h4>
+                    <ul style="margin: 10px 0; padding-left: 20px;">`;
+            diferencias.forEach(diferencia => {
+                html += `<li style="color: #dc3545; margin: 5px 0;">• ${diferencia}</li>`;
+            });
+            html += `
+                    </ul>
+                    <p style="margin: 10px 0; font-style: italic; color: #666;">
+                        💡 <strong>Posibles causas:</strong> Piezas en proceso (horno/buffer), errores de escaneo, o movimientos no registrados.
+                    </p>
+                </div>`;
+        } else {
+            html += `
+                <div class="alert" style="background: #d4edda; border: 1px solid #c3e6cb; margin-top: 20px;">
+                    <h4 style="color: #28a745;">✅ Balance Perfecto</h4>
+                    <p style="margin: 5px 0; color: #155724;">Todas las diferencias están dentro del rango aceptable (≤5 piezas).</p>
+                </div>`;
+        }
     }
     
     html += '</div>';
     
-    // Mostrar el reporte
-   // Mostrar el reporte en una nueva ventana para no sobrescribir
-const reportWindow = window.open('', '_blank', 'width=1200,height=800');
-reportWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Balance Teórico vs Físico</title>
-        <style>
-            body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.4; }
-            .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-            .inventory-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-            .inventory-table th, .inventory-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            .inventory-table th { background-color: #34495e; color: white; }
-            .alert { padding: 15px; margin: 15px 0; border-radius: 5px; }
-            .alert-info { background: #d1ecf1; border: 1px solid #bee5eb; }
-            .alert-success { background: #d4edda; border: 1px solid #c3e6cb; }
-            .difference-zero { color: #6c757d; }
-            .difference-positive { color: #28a745; font-weight: bold; }
-            .difference-negative { color: #dc3545; font-weight: bold; }
-        </style>
-    </head>
-    <body>${html}</body>
-    </html>
-`);
-reportWindow.document.close();
+    // Mostrar el reporte en una nueva ventana
+    const reportWindow = window.open('', '_blank', 'width=1200,height=800');
+    reportWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Balance Teórico vs Físico - Perfil 1</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.4; background: #f5f5f5; }
+                .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                .inventory-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+                .inventory-table th, .inventory-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+                .inventory-table th { background-color: #34495e; color: white; font-weight: bold; }
+                .inventory-table tr:nth-child(even) { background-color: #f8f9fa; }
+                .alert { padding: 15px; margin: 15px 0; border-radius: 5px; }
+                .alert-info { background: #d1ecf1; border: 1px solid #bee5eb; }
+                .alert-success { background: #d4edda; border: 1px solid #c3e6cb; }
+                .difference-zero { color: #6c757d; }
+                .difference-positive { color: #28a745; font-weight: bold; }
+                .difference-negative { color: #dc3545; font-weight: bold; }
+            </style>
+        </head>
+        <body>${html}</body>
+        </html>
+    `);
+    reportWindow.document.close();
 }
-
 // Funciones auxiliares
 function getPhysicalCountForModel(modelo, warehouse) {
     let count = 0;
