@@ -355,8 +355,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏭 Sistema de Almacén</h1>
-            <p>Control de Inventario - Fundición y Acabados</p>
+            <h1>🏭 Control de Almacen</h1>
+            <p>Fundición 1.3</p>
         </div>
 
         <div class="nav-tabs">
@@ -1188,36 +1188,42 @@ function processIndividualCode(code, type, movementType, shift, warehouse, palle
         }
 
         function loadSampleData() {
-            const samples = [
-                { code: 'P6102448O2P52', type: 'UPR' },
-                { code: '25E153003154276P5', type: 'LWR' },
-                { code: 'P6205362O3P54', type: 'UPR' },
-                { code: '25F164004265387P7', type: 'LWR' }
-            ];
-            
-            samples.forEach(function(sample) {
-                const codeInfo = extractCodeInfo(sample.code);
-                if (codeInfo) {
-                    inventory.push({
-                        code: sample.code,
-                        partNumber: codeInfo.partNumber,
-                        type: sample.type,
-                        state: 'ACABADOS',
-                        warehouse: 'acabados',
-                        quantity: Math.floor(Math.random() * 15) + 5,
-                        lastMovement: new Date(),
-                        shift: '1',
-                        palletId: null,
-                        lote: codeInfo.lote,
-                        numeroDisparo: codeInfo.numeroDisparo,
-                        maquina: codeInfo.maquina,
-                        modelo: codeInfo.modelo,
-                        molde: codeInfo.molde,
-                        displayInfo: codeInfo.displayInfo
-                    });
-                }
+    const samples = [
+        { code: 'P6102448O2P52', type: 'UPR' },
+        { code: '25E153003154276P5', type: 'LWR' },
+        { code: 'P6205362O3P54', type: 'UPR' },
+        { code: '25F164004265387P7', type: 'LWR' }
+    ];
+    
+    samples.forEach(function(sample) {
+        const codeData = extractCodeData(sample.code);
+        if (codeData) {
+            inventory.push({
+                code: sample.code,
+                partNumber: codeData.partNumber, // Esto usa el extractCodeData actualizado
+                type: sample.type,
+                state: 'ACABADOS',
+                warehouse: 'acabados',
+                quantity: Math.floor(Math.random() * 15) + 5,
+                lastMovement: new Date(),
+                shift: '1',
+                palletId: null,
+                codeData: codeData
             });
+        }
+    });
 
+    const samplePallet = {
+        systemId: generatePalletId(),
+        originalId: 'TARM001',
+        state: 'acabados',
+        type: 'UPR',
+        codesCount: 3,
+        warehouse: 'acabados',
+        codes: ['P6102448O2P52', 'P6205362O3P54', 'P6308476O4P56'],
+        createdDate: new Date()
+    };
+    pallets.push(samplePallet);
             const samplePallet = {
                 systemId: generatePalletId(),
                 originalId: 'TARM001',
@@ -1316,37 +1322,42 @@ function updateDetailedInventory() {
         <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
             <h4>🔍 Filtros</h4>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                <select id="filter-model" onchange="updateDetailedInventory()">
+                <select id="filter-model" onchange="applyFilters()">
                     <option value="">Todos los Modelos</option>
                 </select>
-                <select id="filter-lote" onchange="updateDetailedInventory()">
+                <select id="filter-lote" onchange="applyFilters()">
                     <option value="">Todos los Lotes</option>
                 </select>
-                <select id="filter-molde" onchange="updateDetailedInventory()">
+                <select id="filter-molde" onchange="applyFilters()">
                     <option value="">Todos los Moldes</option>
                 </select>
             </div>
         </div>
     `;
     
+    // Filtrar solo inventario disponible (fundidos y acabados)
+    const availableInventory = inventory.filter(i => 
+        i.quantity > 0 && (i.warehouse === 'fundidos' || i.warehouse === 'acabados')
+    );
+    
     // Obtener valores únicos para filtros
-    const modelos = [...new Set(inventory.filter(i => i.codeData).map(i => i.codeData.modelo))];
-    const lotes = [...new Set(inventory.filter(i => i.codeData).map(i => i.codeData.lote))];
-    const moldes = [...new Set(inventory.filter(i => i.codeData).map(i => i.codeData.molde))];
+    const modelos = [...new Set(availableInventory.filter(i => i.codeData).map(i => i.codeData.modelo))];
+    const lotes = [...new Set(availableInventory.filter(i => i.codeData).map(i => i.codeData.lote))];
+    const moldes = [...new Set(availableInventory.filter(i => i.codeData).map(i => i.codeData.molde))];
     
     // Agrupar por tipo
-    const uprItems = inventory.filter(i => i.type === 'UPR' && i.quantity > 0);
-    const lwrItems = inventory.filter(i => i.type === 'LWR' && i.quantity > 0);
+    const uprItems = availableInventory.filter(i => i.type === 'UPR');
+    const lwrItems = availableInventory.filter(i => i.type === 'LWR');
     
     // Sección UPR
     html += '<div class="model-section">';
-    html += `<div class="model-header">🔺 UPR (${uprItems.length} piezas)</div>`;
+    html += `<div class="model-header">🔺 UPR (${uprItems.length} piezas disponibles)</div>`;
     html += generateDetailedSection(uprItems, 'UPR');
     html += '</div>';
     
     // Sección LWR
     html += '<div class="model-section">';
-    html += `<div class="model-header">🔻 LWR (${lwrItems.length} piezas)</div>`;
+    html += `<div class="model-header">🔻 LWR (${lwrItems.length} piezas disponibles)</div>`;
     html += generateDetailedSection(lwrItems, 'LWR');
     html += '</div>';
     
@@ -1357,7 +1368,6 @@ function updateDetailedInventory() {
     fillFilterOptions('filter-lote', lotes);
     fillFilterOptions('filter-molde', moldes);
 }
-
 function generateDetailedSection(items, type) {
     if (items.length === 0) return '<p>No hay piezas registradas</p>';
     
@@ -1428,7 +1438,13 @@ function generateDetailedSection(items, type) {
 function fillFilterOptions(selectId, options) {
     const select = document.getElementById(selectId);
     if (select) {
-        options.forEach(option => {
+        // Limpiar opciones existentes excepto la primera
+        while (select.children.length > 1) {
+            select.removeChild(select.lastChild);
+        }
+        
+        // Agregar nuevas opciones
+        options.sort().forEach(option => {
             const optionElement = document.createElement('option');
             optionElement.value = option;
             optionElement.textContent = option;
@@ -1436,7 +1452,49 @@ function fillFilterOptions(selectId, options) {
         });
     }
 }
-
+function applyFilters() {
+    const filterModel = document.getElementById('filter-model').value;
+    const filterLote = document.getElementById('filter-lote').value;
+    const filterMolde = document.getElementById('filter-molde').value;
+    
+    // Filtrar inventario disponible
+    let filteredInventory = inventory.filter(i => 
+        i.quantity > 0 && 
+        (i.warehouse === 'fundidos' || i.warehouse === 'acabados') &&
+        i.codeData
+    );
+    
+    // Aplicar filtros
+    if (filterModel) {
+        filteredInventory = filteredInventory.filter(i => i.codeData.modelo === filterModel);
+    }
+    if (filterLote) {
+        filteredInventory = filteredInventory.filter(i => i.codeData.lote === filterLote);
+    }
+    if (filterMolde) {
+        filteredInventory = filteredInventory.filter(i => i.codeData.molde === filterMolde);
+    }
+    
+    // Regenerar secciones con items filtrados
+    const uprItems = filteredInventory.filter(i => i.type === 'UPR');
+    const lwrItems = filteredInventory.filter(i => i.type === 'LWR');
+    
+    // Actualizar contenido de las secciones existentes
+    const uprSection = document.querySelector('[id^="model-UPR"]')?.parentElement;
+    const lwrSection = document.querySelector('[id^="model-LWR"]')?.parentElement;
+    
+    if (uprSection) {
+        uprSection.querySelector('.model-header').innerHTML = `🔺 UPR (${uprItems.length} piezas disponibles)`;
+        const contentDiv = uprSection.querySelector('[id^="model-UPR"]').parentElement;
+        contentDiv.innerHTML = generateDetailedSection(uprItems, 'UPR');
+    }
+    
+    if (lwrSection) {
+        lwrSection.querySelector('.model-header').innerHTML = `🔻 LWR (${lwrItems.length} piezas disponibles)`;
+        const contentDiv = lwrSection.querySelector('[id^="model-LWR"]').parentElement;
+        contentDiv.innerHTML = generateDetailedSection(lwrItems, 'LWR');
+    }
+}
 function toggleModelSection(sectionId) {
     const section = document.getElementById(sectionId);
     const toggleIcon = document.getElementById('toggle-' + sectionId.replace('model-', ''));
