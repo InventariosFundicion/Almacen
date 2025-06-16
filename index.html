@@ -465,7 +465,7 @@
                     </div>
                 </div>
                 
-                <button class="btn btn-success" onclick="()">✅ Procesar Código QR</button>
+                <button class="btn btn-success" onclick="processQRCode()">✅ Procesar Código QR</button>
                 <button class="btn btn-info" onclick="clearForm()">🔄 Limpiar</button>
                 <button class="btn btn-warning" onclick="startNewShiftVerification()">🆕 Nuevo Turno</button>
             </div>
@@ -819,341 +819,300 @@ function extractCodeData(code) {
     return null;
 }
 function processQRCode() {
-   const input = document.getElementById('qr-input').value.trim();
-   const inventoryType = document.getElementById('inventory-type').value;
-   const shift = document.getElementById('shift').value;
-   const resultDiv = document.getElementById('process-result');
-   
-   if (!input) {
-       alert('Por favor escanea o pega un código QR');
-       return;
-   }
-   
-   const analysis = parseQRCode(input);
-   if (!analysis.isValid) {
-       alert('Código QR no válido');
-       return;
-   }
-   
-   let processedCount = 0;
-   let targetWarehouse = '';
-   
-   if (analysis.isPallet) {
-       const codeCheck = checkExistingCodes(analysis.codes);
-       // VERIFICACIÓN FÍSICA - Inventario por Turno
-if (inventoryType === 'turno') {
-    let targetWarehouse = '';
+    const input = document.getElementById('qr-input').value.trim();
+    const inventoryType = document.getElementById('inventory-type').value;
+    const shift = document.getElementById('shift').value;
+    const resultDiv = document.getElementById('process-result');
     
-    if (analysis.detectedState) {
-        targetWarehouse = analysis.detectedState;
-    } else {
-        if (!selectedWarehouse) {
-            alert('Por favor selecciona Fundidos o Acabados para la verificación física');
-            return;
-        }
-        targetWarehouse = selectedWarehouse;
-    }
-    // Verificar si ya fue escaneada en este turno
-const alreadyScanned = analysis.codes.some(code => 
-    physicalVerification[code] && 
-    physicalVerification[code].shift === shift
-);
-
-if (alreadyScanned) {
-    alert(`⚠️ TARIMA YA VERIFICADA\n\nEsta tarima ya fue escaneada en el turno ${shift}.\n\nNo se permite verificar la misma tarima dos veces en el mismo turno.`);
-    return;
-}
-    analysis.codes.forEach(code => {
-        const codeData = extractCodeData(code);
-        if (!physicalVerification[code]) {
-            physicalVerification[code] = {
-                code: code,
-                partNumber: codeData ? codeData.partNumber : 'Unknown',
-                type: analysis.type,
-                verifiedQuantity: 0,
-                lastVerified: new Date(),
-                shift: shift,
-                warehouse: targetWarehouse,
-                palletId: analysis.palletId
-            };
-        }
-        physicalVerification[code].verifiedQuantity += 1;
-        physicalVerification[code].lastVerified = new Date();
-    });
-    
-    resultDiv.innerHTML = `
-        <div class="alert alert-info">
-            🔍 <strong>Tarima verificada físicamente</strong><br>
-            📦 ID Original: ${analysis.palletId}<br>
-            📊 ${analysis.codes.length} piezas verificadas ${analysis.type}<br>
-            🏪 Estado verificado: ${getWarehouseName(targetWarehouse)}<br>
-            ⏰ Turno: ${shift} - Verificación física (NO modifica inventario)
-        </div>
-    `;
-    
-    updateAllDisplays();
-    return; // Salir aquí para evitar el resto del procesamiento
-}
-       if (inventoryType === 'movimiento') {
-           if (!selectedMovement) {
-               alert('Por favor selecciona el destino del movimiento');
-               return;
-           }
-           targetWarehouse = selectedMovement;
-       } else {
-           if (analysis.detectedState) {
-               targetWarehouse = analysis.detectedState;
-           } else {
-               if (!selectedWarehouse) {
-                   alert('Por favor selecciona Fundidos o Acabados manualmente');
-                   return;
-               }
-               targetWarehouse = selectedWarehouse;
-           }
-       }
-       
-       const palletSystemId = generatePalletId();
-       
-       // Manejar cuando todos los códigos ya existen - permitir transferencia
-       if (codeCheck.newCodes.length === 0 && codeCheck.existingCodes.length > 0) {
-          // Detectar si es transferencia lógica (fundidos -> acabados)
-const currentState = codeCheck.existingCodes[0].data.warehouse;
-const isLogicalTransfer = (currentState === 'fundidos' && targetWarehouse === 'acabados') || 
-                         (currentState === 'acabados' && targetWarehouse === 'fundidos');
-
-const transferMessage = isLogicalTransfer ? 
-    `🔄 PROCESAMIENTO DE TARIMA\n\nEsta tarima ya está registrada en ${getWarehouseName(currentState)}.\n¿Quieres procesarla y moverla a ${getWarehouseName(targetWarehouse)}?` :
-    `🔄 TRANSFERENCIA DE TARIMA\n\nTodos los códigos ya existen en el sistema.\n¿Quieres transferir esta tarima completa a ${getWarehouseName(targetWarehouse)}?`;
-
-const confirmTransfer = confirm(`${transferMessage}\n\n✅ Aceptar = Transferir\n❌ Cancelar = No hacer nada`);
-           
-           if (!confirmTransfer) {
-               return;
-           }
-           
-           // Transferir todos los códigos existentes
-           codeCheck.existingCodes.forEach(existingItem => {
-               const item = existingItem.data;
-               item.warehouse = targetWarehouse;
-               item.state = targetWarehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
-               item.lastMovement = new Date();
-               item.palletId = palletSystemId;
-               
-               movements.push({
-                   id: Date.now() + Math.random(),
-                   code: item.code,
-                   partNumber: item.partNumber,
-                   type: 'transferencia',
-                   warehouse: targetWarehouse,
-                   quantity: 1,
-                   date: new Date(),
-                   shift: shift,
-                   palletId: palletSystemId
-               });
-           });
-           
-           processedCount = codeCheck.existingCodes.length;
-           
-           resultDiv.innerHTML = `
-               <div class="alert alert-success">
-                   ✅ <strong>Tarima transferida exitosamente</strong><br>
-                   🆔 ID Sistema: <strong>${palletSystemId}</strong><br>
-                   📦 ID Original: ${analysis.palletId}<br>
-                   🔄 ${processedCount} piezas TRANSFERIDAS ${analysis.type}<br>
-                   🏪 Destino: ${getWarehouseName(targetWarehouse)}<br>
-                   📊 Tipo: transferencia - Turno ${shift}
-               </div>
-           `;
-           
-           clearForm();
-           updateAllDisplays();
-           setTimeout(() => resultDiv.innerHTML = '', 6000);
-           return;
-       }
-       
-       // Procesar códigos nuevos normalmente
-       if (codeCheck.newCodes.length === 0) {
-           alert('⚠️ Todos los códigos ya existen y no se confirmó transferencia');
-           return;
-       }
-       
-       const palletRecord = {
-           systemId: palletSystemId,
-           originalId: analysis.palletId,
-           state: targetWarehouse,
-           type: analysis.type,
-           codesCount: codeCheck.newCodes.length,
-           warehouse: targetWarehouse,
-           codes: codeCheck.newCodes,
-           createdDate: new Date(),
-           inventoryType: inventoryType,
-           shift: shift,
-           duplicatesFound: codeCheck.existingCodes.length
-       };
-       
-       pallets.push(palletRecord);
-       
-       codeCheck.newCodes.forEach(code => {
-           processIndividualCode(code, analysis.type, inventoryType, shift, targetWarehouse, palletSystemId);
-           processedCount++;
-       });
-       
-       const duplicateInfo = codeCheck.existingCodes.length > 0 ? 
-           `<br>⚠️ ${codeCheck.existingCodes.length} códigos duplicados omitidos` : '';
-       
-       resultDiv.innerHTML = `
-           <div class="alert alert-success">
-               ✅ <strong>Tarima procesada exitosamente</strong><br>
-               🆔 ID Sistema: <strong>${palletSystemId}</strong><br>
-               📦 ID Original: ${analysis.palletId}<br>
-               📊 ${processedCount} piezas NUEVAS ${analysis.type}<br>
-               🏪 Destino: ${getWarehouseName(targetWarehouse)}<br>
-               🔄 Tipo: ${inventoryType} - Turno ${shift}${duplicateInfo}
-           </div>
-       `;
-       
-  } else {
-    // Piezas individuales
-    const individualState = document.getElementById('individual-state').value;
-    const existingItem = inventory.find(item => item.code === analysis.code && item.quantity > 0);
-    
-    if (inventoryType === 'movimiento') {
-        // ... código existente ...
-    } else if (inventoryType === 'turno') {
-        // VERIFICACIÓN FÍSICA DE PIEZA INDIVIDUAL
-        let targetWarehouse = individualState;
-        
-        // Verificar si ya fue escaneada
-        if (physicalVerification[analysis.code] && 
-            physicalVerification[analysis.code].shift === shift) {
-            alert(`⚠️ PIEZA YA VERIFICADA\n\nEsta pieza ya fue verificada en el turno ${shift}.`);
-            return;
-        }
-        
-        const codeData = extractCodeData(analysis.code);
-        physicalVerification[analysis.code] = {
-            code: analysis.code,
-            partNumber: codeData ? codeData.partNumber : 'Unknown',
-            type: 'individual',
-            verifiedQuantity: 1,
-            lastVerified: new Date(),
-            shift: shift,
-            warehouse: targetWarehouse,
-            palletId: null
-        };
-        
-        resultDiv.innerHTML = `
-            <div class="alert alert-info">
-                🔍 <strong>Pieza individual verificada</strong><br>
-                📦 Código: ${analysis.code}<br>
-                🏪 Estado verificado: ${getWarehouseName(targetWarehouse)}<br>
-                ⏰ Turno: ${shift} - Verificación física
-            </div>
-        `;
-    } else {
-        // Para inventarios iniciales
-        if (existingItem) {
-            if (existingItem.warehouse === individualState) {
-                alert(`⚠️ CÓDIGO YA REGISTRADO\n\nEl código ${analysis.code} ya está registrado en ${getWarehouseName(individualState)}.\n\nCantidad actual: ${existingItem.quantity}\nÚltimo registro: ${formatLastMovement(existingItem.lastMovement)}`);
-                return;
-            } else {
-                const confirmChange = confirm(`🔄 CAMBIO DE ESTADO DETECTADO\n\nEl código ${analysis.code} está actualmente en:\n${getWarehouseName(existingItem.warehouse)}\n\n¿Quieres moverlo a ${getWarehouseName(individualState)}?\n\n✅ Aceptar = Mover\n❌ Cancelar = No hacer nada`);
-                
-                if (!confirmChange) {
-                    clearForm();
-                    return;
-                }
-            }
-        }
-        
-        targetWarehouse = individualState;
-        processIndividualCode(analysis.code, analysis.type, inventoryType, shift, targetWarehouse);
-        
-        const statusMessage = existingItem ? 
-            `<br>🔄 Código movido desde ${getWarehouseName(existingItem.warehouse)}` : 
-            '<br>✨ Código nuevo registrado';
-        
-        resultDiv.innerHTML = `
-            <div class="alert alert-success">
-                ✅ <strong>Código individual procesado</strong><br>
-                📦 ${analysis.code}<br>
-                🏪 Registrado en: ${getWarehouseName(targetWarehouse)}<br>
-                📊 Estado: ${getWarehouseName(individualState)}<br>
-                🔄 Tipo: ${inventoryType} - Turno ${shift}${statusMessage}
-            </div>
-        `;
-    }
-}
-   } else if (inventoryType === 'turno') {
-    // VERIFICACIÓN FÍSICA DE PIEZA INDIVIDUAL
-    let targetWarehouse = individualState;
-    
-    // Verificar si ya fue escaneada
-    if (physicalVerification[analysis.code] && 
-        physicalVerification[analysis.code].shift === shift) {
-        alert(`⚠️ PIEZA YA VERIFICADA\n\nEsta pieza ya fue verificada en el turno ${shift}.`);
+    if (!input) {
+        alert('Por favor escanea o pega un código QR');
         return;
     }
     
-    const codeData = extractCodeData(analysis.code);
-    physicalVerification[analysis.code] = {
-        code: analysis.code,
-        partNumber: codeData ? codeData.partNumber : 'Unknown',
-        type: 'individual',
-        verifiedQuantity: 1,
-        lastVerified: new Date(),
-        shift: shift,
-        warehouse: targetWarehouse,
-        palletId: null
-    };
+    const analysis = parseQRCode(input);
+    if (!analysis.isValid) {
+        alert('Código QR no válido');
+        return;
+    }
     
-    resultDiv.innerHTML = `
-        <div class="alert alert-info">
-            🔍 <strong>Pieza individual verificada</strong><br>
-            📦 Código: ${analysis.code}<br>
-            🏪 Estado verificado: ${getWarehouseName(targetWarehouse)}<br>
-            ⏰ Turno: ${shift} - Verificación física
-        </div>
-    `;
-} else {
-    // Para inventarios iniciales
-    if (existingItem) {
-        if (existingItem.warehouse === individualState) {
-            alert(`⚠️ CÓDIGO YA REGISTRADO\n\nEl código ${analysis.code} ya está registrado en ${getWarehouseName(individualState)}.\n\nCantidad actual: ${existingItem.quantity}\nÚltimo registro: ${formatLastMovement(existingItem.lastMovement)}`);
-            return;
+    let processedCount = 0;
+    let targetWarehouse = '';
+    
+    if (analysis.isPallet) {
+        const codeCheck = checkExistingCodes(analysis.codes);
+        
+        // VERIFICACIÓN FÍSICA - Inventario por Turno
+        if (inventoryType === 'turno') {
+            let targetWarehouse = '';
+            
+            if (analysis.detectedState) {
+                targetWarehouse = analysis.detectedState;
+            } else {
+                if (!selectedWarehouse) {
+                    alert('Por favor selecciona Fundidos o Acabados para la verificación física');
+                    return;
+                }
+                targetWarehouse = selectedWarehouse;
+            }
+            
+            // Verificar si ya fue escaneada en este turno
+            const alreadyScanned = analysis.codes.some(code => 
+                physicalVerification[code] && 
+                physicalVerification[code].shift === shift
+            );
+
+            if (alreadyScanned) {
+                alert(`⚠️ TARIMA YA VERIFICADA\n\nEsta tarima ya fue escaneada en el turno ${shift}.\n\nNo se permite verificar la misma tarima dos veces en el mismo turno.`);
+                return;
+            }
+            
+            analysis.codes.forEach(code => {
+                const codeData = extractCodeData(code);
+                if (!physicalVerification[code]) {
+                    physicalVerification[code] = {
+                        code: code,
+                        partNumber: codeData ? codeData.partNumber : 'Unknown',
+                        type: analysis.type,
+                        verifiedQuantity: 0,
+                        lastVerified: new Date(),
+                        shift: shift,
+                        warehouse: targetWarehouse,
+                        palletId: analysis.palletId
+                    };
+                }
+                physicalVerification[code].verifiedQuantity += 1;
+                physicalVerification[code].lastVerified = new Date();
+            });
+            
+            resultDiv.innerHTML = `
+                <div class="alert alert-info">
+                    🔍 <strong>Tarima verificada físicamente</strong><br>
+                    📦 ID Original: ${analysis.palletId}<br>
+                    📊 ${analysis.codes.length} piezas verificadas ${analysis.type}<br>
+                    🏪 Estado verificado: ${getWarehouseName(targetWarehouse)}<br>
+                    ⏰ Turno: ${shift} - Verificación física (NO modifica inventario)
+                </div>
+            `;
+            
+            updateAllDisplays();
+            clearForm();
+            setTimeout(() => resultDiv.innerHTML = '', 6000);
+            return; // Salir aquí para evitar el resto del procesamiento
+        }
+        
+        // MOVIMIENTOS O INVENTARIOS INICIALES DE TARIMAS
+        if (inventoryType === 'movimiento') {
+            if (!selectedMovement) {
+                alert('Por favor selecciona el destino del movimiento');
+                return;
+            }
+            targetWarehouse = selectedMovement;
         } else {
-                   const confirmChange = confirm(`🔄 CAMBIO DE ESTADO DETECTADO\n\nEl código ${analysis.code} está actualmente en:\n${getWarehouseName(existingItem.warehouse)}\n\n¿Quieres moverlo a ${getWarehouseName(individualState)}?\n\n✅ Aceptar = Mover\n❌ Cancelar = No hacer nada`);
-                   
-                   if (!confirmChange) {
-                       clearForm();
-                       return;
-                   }
-               }
-           }
-           
-           targetWarehouse = individualState;
-           processIndividualCode(analysis.code, analysis.type, inventoryType, shift, targetWarehouse);
-           
-           const statusMessage = existingItem ? 
-               `<br>🔄 Código movido desde ${getWarehouseName(existingItem.warehouse)}` : 
-               '<br>✨ Código nuevo registrado';
-           
-           resultDiv.innerHTML = `
-               <div class="alert alert-success">
-                   ✅ <strong>Código individual procesado</strong><br>
-                   📦 ${analysis.code}<br>
-                   🏪 Registrado en: ${getWarehouseName(targetWarehouse)}<br>
-                   📊 Estado: ${getWarehouseName(individualState)}<br>
-                   🔄 Tipo: ${inventoryType} - Turno ${shift}${statusMessage}
-               </div>
-           `;
-       }
-   }
-   
-   clearForm();
-   updateAllDisplays();
-   
-   setTimeout(() => resultDiv.innerHTML = '', 6000);
+            if (analysis.detectedState) {
+                targetWarehouse = analysis.detectedState;
+            } else {
+                if (!selectedWarehouse) {
+                    alert('Por favor selecciona Fundidos o Acabados manualmente');
+                    return;
+                }
+                targetWarehouse = selectedWarehouse;
+            }
+        }
+        
+        const palletSystemId = generatePalletId();
+        
+        // Manejar cuando todos los códigos ya existen - permitir transferencia
+        if (codeCheck.newCodes.length === 0 && codeCheck.existingCodes.length > 0) {
+            // Detectar si es transferencia lógica (fundidos -> acabados)
+            const currentState = codeCheck.existingCodes[0].data.warehouse;
+            const isLogicalTransfer = (currentState === 'fundidos' && targetWarehouse === 'acabados') || 
+                                     (currentState === 'acabados' && targetWarehouse === 'fundidos');
+
+            const transferMessage = isLogicalTransfer ? 
+                `🔄 PROCESAMIENTO DE TARIMA\n\nEsta tarima ya está registrada en ${getWarehouseName(currentState)}.\n¿Quieres procesarla y moverla a ${getWarehouseName(targetWarehouse)}?` :
+                `🔄 TRANSFERENCIA DE TARIMA\n\nTodos los códigos ya existen en el sistema.\n¿Quieres transferir esta tarima completa a ${getWarehouseName(targetWarehouse)}?`;
+
+            const confirmTransfer = confirm(`${transferMessage}\n\n✅ Aceptar = Transferir\n❌ Cancelar = No hacer nada`);
+            
+            if (!confirmTransfer) {
+                return;
+            }
+            
+            // Transferir todos los códigos existentes
+            codeCheck.existingCodes.forEach(existingItem => {
+                const item = existingItem.data;
+                item.warehouse = targetWarehouse;
+                item.state = targetWarehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
+                item.lastMovement = new Date();
+                item.palletId = palletSystemId;
+                
+                movements.push({
+                    id: Date.now() + Math.random(),
+                    code: item.code,
+                    partNumber: item.partNumber,
+                    type: 'transferencia',
+                    warehouse: targetWarehouse,
+                    quantity: 1,
+                    date: new Date(),
+                    shift: shift,
+                    palletId: palletSystemId
+                });
+            });
+            
+            processedCount = codeCheck.existingCodes.length;
+            
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    ✅ <strong>Tarima transferida exitosamente</strong><br>
+                    🆔 ID Sistema: <strong>${palletSystemId}</strong><br>
+                    📦 ID Original: ${analysis.palletId}<br>
+                    🔄 ${processedCount} piezas TRANSFERIDAS ${analysis.type}<br>
+                    🏪 Destino: ${getWarehouseName(targetWarehouse)}<br>
+                    📊 Tipo: transferencia - Turno ${shift}
+                </div>
+            `;
+            
+            clearForm();
+            updateAllDisplays();
+            setTimeout(() => resultDiv.innerHTML = '', 6000);
+            return;
+        }
+        
+        // Procesar códigos nuevos normalmente
+        if (codeCheck.newCodes.length === 0) {
+            alert('⚠️ Todos los códigos ya existen y no se confirmó transferencia');
+            return;
+        }
+        
+        const palletRecord = {
+            systemId: palletSystemId,
+            originalId: analysis.palletId,
+            state: targetWarehouse,
+            type: analysis.type,
+            codesCount: codeCheck.newCodes.length,
+            warehouse: targetWarehouse,
+            codes: codeCheck.newCodes,
+            createdDate: new Date(),
+            inventoryType: inventoryType,
+            shift: shift,
+            duplicatesFound: codeCheck.existingCodes.length
+        };
+        
+        pallets.push(palletRecord);
+        
+        codeCheck.newCodes.forEach(code => {
+            processIndividualCode(code, analysis.type, inventoryType, shift, targetWarehouse, palletSystemId);
+            processedCount++;
+        });
+        
+        const duplicateInfo = codeCheck.existingCodes.length > 0 ? 
+            `<br>⚠️ ${codeCheck.existingCodes.length} códigos duplicados omitidos` : '';
+        
+        resultDiv.innerHTML = `
+            <div class="alert alert-success">
+                ✅ <strong>Tarima procesada exitosamente</strong><br>
+                🆔 ID Sistema: <strong>${palletSystemId}</strong><br>
+                📦 ID Original: ${analysis.palletId}<br>
+                📊 ${processedCount} piezas NUEVAS ${analysis.type}<br>
+                🏪 Destino: ${getWarehouseName(targetWarehouse)}<br>
+                🔄 Tipo: ${inventoryType} - Turno ${shift}${duplicateInfo}
+            </div>
+        `;
+        
+    } else {
+        // PIEZAS INDIVIDUALES
+        const individualState = document.getElementById('individual-state').value;
+        const existingItem = inventory.find(item => item.code === analysis.code && item.quantity > 0);
+        
+        if (inventoryType === 'movimiento') {
+            // MOVIMIENTO DE PIEZA INDIVIDUAL
+            if (!selectedMovement) {
+                alert('Por favor selecciona el destino del movimiento');
+                return;
+            }
+            
+            targetWarehouse = selectedMovement;
+            processIndividualCode(analysis.code, analysis.type, inventoryType, shift, targetWarehouse);
+            
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    ✅ <strong>Código movido exitosamente</strong><br>
+                    📦 ${analysis.code}<br>
+                    🏪 Destino: ${getWarehouseName(targetWarehouse)}<br>
+                    🔄 Tipo: movimiento - Turno ${shift}
+                </div>
+            `;
+            
+        } else if (inventoryType === 'turno') {
+            // VERIFICACIÓN FÍSICA DE PIEZA INDIVIDUAL
+            let targetWarehouse = individualState;
+            
+            // Verificar si ya fue escaneada
+            if (physicalVerification[analysis.code] && 
+                physicalVerification[analysis.code].shift === shift) {
+                alert(`⚠️ PIEZA YA VERIFICADA\n\nEsta pieza ya fue verificada en el turno ${shift}.`);
+                return;
+            }
+            
+            const codeData = extractCodeData(analysis.code);
+            physicalVerification[analysis.code] = {
+                code: analysis.code,
+                partNumber: codeData ? codeData.partNumber : 'Unknown',
+                type: 'individual',
+                verifiedQuantity: 1,
+                lastVerified: new Date(),
+                shift: shift,
+                warehouse: targetWarehouse,
+                palletId: null
+            };
+            
+            resultDiv.innerHTML = `
+                <div class="alert alert-info">
+                    🔍 <strong>Pieza individual verificada</strong><br>
+                    📦 Código: ${analysis.code}<br>
+                    🏪 Estado verificado: ${getWarehouseName(targetWarehouse)}<br>
+                    ⏰ Turno: ${shift} - Verificación física
+                </div>
+            `;
+            
+        } else {
+            // INVENTARIO INICIAL DE PIEZA INDIVIDUAL
+            if (existingItem) {
+                if (existingItem.warehouse === individualState) {
+                    alert(`⚠️ CÓDIGO YA REGISTRADO\n\nEl código ${analysis.code} ya está registrado en ${getWarehouseName(individualState)}.\n\nCantidad actual: ${existingItem.quantity}\nÚltimo registro: ${formatLastMovement(existingItem.lastMovement)}`);
+                    return;
+                } else {
+                    const confirmChange = confirm(`🔄 CAMBIO DE ESTADO DETECTADO\n\nEl código ${analysis.code} está actualmente en:\n${getWarehouseName(existingItem.warehouse)}\n\n¿Quieres moverlo a ${getWarehouseName(individualState)}?\n\n✅ Aceptar = Mover\n❌ Cancelar = No hacer nada`);
+                    
+                    if (!confirmChange) {
+                        clearForm();
+                        return;
+                    }
+                }
+            }
+            
+            targetWarehouse = individualState;
+            processIndividualCode(analysis.code, analysis.type, inventoryType, shift, targetWarehouse);
+            
+            const statusMessage = existingItem ? 
+                `<br>🔄 Código movido desde ${getWarehouseName(existingItem.warehouse)}` : 
+                '<br>✨ Código nuevo registrado';
+            
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    ✅ <strong>Código individual procesado</strong><br>
+                    📦 ${analysis.code}<br>
+                    🏪 Registrado en: ${getWarehouseName(targetWarehouse)}<br>
+                    📊 Estado: ${getWarehouseName(individualState)}<br>
+                    🔄 Tipo: ${inventoryType} - Turno ${shift}${statusMessage}
+                </div>
+            `;
+        }
+    }
+    
+    clearForm();
+    updateAllDisplays();
+    setTimeout(() => resultDiv.innerHTML = '', 6000);
 }
 
         function clearForm() {
