@@ -873,7 +873,7 @@
         <h3>📊 Reportes del Turno Actual</h3>
         <div id="production-summary"></div>
         <div style="text-align: center; margin-top: 20px;">
-            <button class="btn btn-primary" onclick="generateTheoreticalBalance()">🧮 Calcular Balance Teórico</button>
+            <button class="btn btn-primary" onclick="()">🧮 Calcular Balance Teórico</button>
             <button class="btn btn-info" onclick="showProductionReport()">📋 Ver Reporte Completo</button>
         </div>
     </div>
@@ -2875,392 +2875,481 @@ function updateProductionSummary() {
     
     summaryDiv.innerHTML = html;
 }
-// Generar balance teórico
+// NUEVO SISTEMA DE REPORTES - Funciona con estructura actual
 function generateTheoreticalBalance() {
-    // Obtener fecha actual para filtrar reportes del día
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const currentShift = document.getElementById('shift').value;
+    const today = new Date().toISOString().split('T')[0];
     
-    // Filtrar reportes del día actual
-    const currentReports = productionReports.filter(reporte => {
-        const reportDate = new Date(reporte.fecha).toISOString().split('T')[0];
-        return reportDate === todayStr;
-    });
-    
-    // Agrupar inventario por modelo y proceso
-    const inventoryByModel = {};
-    
-    // 1. INVENTARIO INICIAL - Todo lo que ya estaba antes del turno
-    inventory.forEach(item => {
-        const modelData = extractCodeData(item.code);
-        if (!modelData) return;
-        
-        const modelo = modelData.partNumber;
-        if (!inventoryByModel[modelo]) {
-            inventoryByModel[modelo] = {
-                inventarioInicial: { fundidos: 0, acabados: 0 },
-                produccion: { fundidos: 0, acabados: 0 },
-                movimientos: { 
-                    scrap: 0, 
-                    retenciones: 0, 
-                    pruebas: 0, 
-                    envios: 0,
-                    acabadoProceso: 0  // UPR: fundidos → acabados
-                },
-                balanceCalculado: { fundidos: 0, acabados: 0 },
-                fisico: { fundidos: 0, acabados: 0 }
-            };
-        }
-        
-        // Contar inventario inicial por proceso
-        if (item.warehouse === 'fundidos' && item.quantity > 0) {
-            inventoryByModel[modelo].inventarioInicial.fundidos += item.quantity;
-        } else if (item.warehouse === 'acabados' && item.quantity > 0) {
-            inventoryByModel[modelo].inventarioInicial.acabados += item.quantity;
-        }
-    });
-    
-    // 2. PRODUCCIÓN DEL TURNO - Reportes del día actual
-    currentReports.forEach(reporte => {
-        const modelo = reporte.modelo;
-        
-        if (!inventoryByModel[modelo]) {
-            inventoryByModel[modelo] = {
-                inventarioInicial: { fundidos: 0, acabados: 0 },
-                produccion: { fundidos: 0, acabados: 0 },
-                movimientos: { 
-                    scrap: 0, 
-                    retenciones: 0, 
-                    pruebas: 0, 
-                    envios: 0,
-                    acabadoProceso: 0 
-                },
-                balanceCalculado: { fundidos: 0, acabados: 0 },
-                fisico: { fundidos: 0, acabados: 0 }
-            };
-        }
-        
-        // Sumar producción por tipo de reporte
-        if (reporte.tipo === 'fundicion') {
-            inventoryByModel[modelo].produccion.fundidos += reporte.piezasBuenas || 0;
-        } else if (reporte.tipo === 'acabado') {
-            inventoryByModel[modelo].produccion.acabados += reporte.piezasBuenas || 0;
-        }
-    });
-    
-    // 3. MOVIMIENTOS DE SALIDA - Del día actual
-    const todayMovements = movements.filter(movement => {
-        const movDate = new Date(movement.date).toISOString().split('T')[0];
-        return movDate === todayStr;
-    });
-    
-    todayMovements.forEach(movement => {
-        const modelData = extractCodeData(movement.code);
-        if (!modelData) return;
-        
-        const modelo = modelData.partNumber;
-        if (!inventoryByModel[modelo]) return;
-        
-        // Contar movimientos por destino
-        switch (movement.warehouse) {
-            case 'scrap':
-                inventoryByModel[modelo].movimientos.scrap += movement.quantity;
-                break;
-            case 'retenciones':
-                inventoryByModel[modelo].movimientos.retenciones += movement.quantity;
-                break;
-            case 'pruebas':
-                inventoryByModel[modelo].movimientos.pruebas += movement.quantity;
-                break;
-            case 'envios':
-                inventoryByModel[modelo].movimientos.envios += movement.quantity;
-                break;
-            case 'acabados':
-                // Cuando fundidos se mueven a acabados (proceso UPR)
-                inventoryByModel[modelo].movimientos.acabadoProceso += movement.quantity;
-                break;
-        }
-    });
-    
-    // 4. INVENTARIO FÍSICO - Verificaciones del turno actual
-    Object.values(physicalVerification).forEach(verification => {
-        if (!verification.shift || verification.shift !== getCurrentShift()) return;
-        
-        const modelData = extractCodeData(verification.code);
-        if (!modelData) return;
-        
-        const modelo = modelData.partNumber;
-        if (!inventoryByModel[modelo]) return;
-        
-        // Contar verificaciones físicas por warehouse
-        if (verification.warehouse === 'fundidos') {
-            inventoryByModel[modelo].fisico.fundidos += verification.verifiedQuantity;
-        } else if (verification.warehouse === 'acabados') {
-            inventoryByModel[modelo].fisico.acabados += verification.verifiedQuantity;
-        }
-    });
-    
-    // 5. CALCULAR BALANCE TEÓRICO FINAL
-    Object.keys(inventoryByModel).forEach(modelo => {
-        const data = inventoryByModel[modelo];
-        
-        // FUNDIDOS: Inicial + Producción - Scrap - Retenciones - Pruebas - Envíos - Proceso_a_Acabado
-        data.balanceCalculado.fundidos = 
-            data.inventarioInicial.fundidos + 
-            data.produccion.fundidos - 
-            data.movimientos.scrap - 
-            data.movimientos.retenciones - 
-            data.movimientos.pruebas - 
-            data.movimientos.envios - 
-            data.movimientos.acabadoProceso;
-        
-        // ACABADOS: Inicial + Producción + Proceso_desde_Fundido - Scrap - Retenciones - Pruebas - Envíos  
-        data.balanceCalculado.acabados = 
-            data.inventarioInicial.acabados + 
-            data.produccion.acabados + 
-            data.movimientos.acabadoProceso - 
-            data.movimientos.scrap - 
-            data.movimientos.retenciones - 
-            data.movimientos.pruebas - 
-            data.movimientos.envios;
-    });
-    
-    return inventoryByModel;
-}
-
-// Función auxiliar para obtener el turno actual
-function getCurrentShift() {
-    const shiftSelect = document.getElementById('shift');
-    return shiftSelect ? shiftSelect.value : 'Primer Turno (07:00-19:00)';
-}
-function getInitialInventory(partNumber, warehouse) {
-    let total = 0;
-    Object.values(inventory).forEach(item => {
-        if (item.partNumber === partNumber && item.warehouse === warehouse) {
-            total += item.quantity;
-        }
-    });
-    return total;
-}
-// Mantener la función generateTheoreticalBalance() del código nuevo (la avanzada)
-// Solo corregir showTheoreticalBalanceReport() y las funciones auxiliares
-
-// Mostrar reporte de balance teórico - VERSIÓN CORREGIDA para la nueva estructura
-function showTheoreticalBalanceReport() {
-    // USAR LA FUNCIÓN CORREGIDA para generar los datos
-    const balanceData = generateTheoreticalBalance();
-    
-    let html = `
-        <div class="card" style="margin-top: 20px;">
-            <h3>🧮 Balance Teórico Calculado</h3>
-            <div class="alert alert-info">
-                <strong>💡 Interpretación:</strong><br>
-                • <strong>Inventario Inicial:</strong> Lo que ya estaba antes del turno<br>
-                • <strong>Producción:</strong> Lo que se reportó producido en este turno<br>
-                • <strong>Balance Calculado:</strong> Inicial + Producción - Movimientos<br>
-                • <strong>Físico:</strong> Lo que se encontró al escanear (verificaciones físicas)
-            </div>
-    `;
-    
-    if (Object.keys(balanceData).length === 0) {
-        html += '<div class="alert alert-warning">No hay datos para mostrar. Asegúrate de tener inventario inicial, reportes de producción o verificaciones físicas.</div>';
-    } else {
-        html += '<table class="inventory-table"><thead><tr><th>Modelo</th><th>Proceso</th><th>Inv. Inicial</th><th>Producción</th><th>Balance Calculado</th><th>Físico</th><th>Diferencia</th><th>Status</th></tr></thead><tbody>';
-        
-        // Variables para detectar diferencias críticas
-        const diferencias = [];
-        
-        Object.keys(balanceData).forEach(modelo => {
-            const data = balanceData[modelo];
-            
-            // Obtener verificación física para este modelo
-            const physicalFundidos = getPhysicalCountForModel(modelo, 'fundidos');
-            const physicalAcabados = getPhysicalCountForModel(modelo, 'acabados');
-            
-            // Fila de FUNDICIÓN
-            const difFundidos = data.balanceCalculado.fundidos - physicalFundidos;
-            const statusFundidos = Math.abs(difFundidos) <= 5 ? 
-                '<span style="color: #28a745; font-weight: bold;">✅ Perfecto</span>' : 
-                '<span style="color: #dc3545; font-weight: bold;">❌ Crítico</span>';
-                
-            if (Math.abs(difFundidos) > 5) {
-                diferencias.push(`${modelo} - Fundidos: ${difFundidos > 0 ? 'Exceso' : 'Faltante'} de ${Math.abs(difFundidos)} piezas`);
-            }
-            
-            html += `
-                <tr style="background: #ffe6cc;">
-                    <td rowspan="2"><strong>${modelo}</strong></td>
-                    <td>🔥 Fundición</td>
-                    <td style="text-align: center;">${data.inventarioInicial.fundidos}</td>
-                    <td style="text-align: center;">${data.produccion.fundidos}</td>
-                    <td style="text-align: center; font-weight: bold;">${data.balanceCalculado.fundidos}</td>
-                    <td style="text-align: center;">${physicalFundidos}</td>
-                    <td style="text-align: center;" class="${getDifferenceClass(difFundidos)}">${difFundidos}</td>
-                    <td style="text-align: center;">${statusFundidos}</td>
-                </tr>
-            `;
-            
-            // Fila de ACABADO
-            const difAcabados = data.balanceCalculado.acabados - physicalAcabados;
-            const statusAcabados = Math.abs(difAcabados) <= 5 ? 
-                '<span style="color: #28a745; font-weight: bold;">✅ Perfecto</span>' : 
-                '<span style="color: #dc3545; font-weight: bold;">❌ Crítico</span>';
-                
-            if (Math.abs(difAcabados) > 5) {
-                diferencias.push(`${modelo} - Acabados: ${difAcabados > 0 ? 'Exceso' : 'Faltante'} de ${Math.abs(difAcabados)} piezas`);
-            }
-            
-            html += `
-                <tr style="background: #ccffcc;">
-                    <td>✅ Acabado</td>
-                    <td style="text-align: center;">${data.inventarioInicial.acabados}</td>
-                    <td style="text-align: center;">${data.produccion.acabados}</td>
-                    <td style="text-align: center; font-weight: bold;">${data.balanceCalculado.acabados}</td>
-                    <td style="text-align: center;">${physicalAcabados}</td>
-                    <td style="text-align: center;" class="${getDifferenceClass(difAcabados)}">${difAcabados}</td>
-                    <td style="text-align: center;">${statusAcabados}</td>
-                </tr>
-            `;
-            
-            // Mostrar movimientos si existen
-            const totalMovimientos = data.movimientos.scrap + data.movimientos.envios + 
-                                   data.movimientos.retenciones + data.movimientos.pruebas + 
-                                   data.movimientos.acabadoProceso;
-            if (totalMovimientos > 0) {
-                html += `
-                    <tr style="background: #f8f9fa;">
-                        <td colspan="2"><em>📦 Movimientos del Turno:</em></td>
-                        <td colspan="6" style="font-size: 0.9em;">
-                            ♻️ Scrap: ${data.movimientos.scrap} | 
-                            📦 Envíos: ${data.movimientos.envios} | 
-                            ⏸️ Retenciones: ${data.movimientos.retenciones} | 
-                            🧪 Pruebas: ${data.movimientos.pruebas} |
-                            🔄 Fundido→Acabado: ${data.movimientos.acabadoProceso}
-                        </td>
-                    </tr>
-                `;
-            }
-        });
-        
-        html += '</tbody></table>';
-        
-        // Agregar análisis de diferencias críticas
-        if (diferencias.length > 0) {
-            html += `
-                <div class="alert" style="background: #ffebee; border: 1px solid #f8bbd9; margin-top: 20px;">
-                    <h4 style="color: #dc3545;">🚨 Diferencias Críticas Detectadas (>5 piezas):</h4>
-                    <ul style="margin: 10px 0; padding-left: 20px;">`;
-            diferencias.forEach(diferencia => {
-                html += `<li style="color: #dc3545; margin: 5px 0;">• ${diferencia}</li>`;
-            });
-            html += `
-                    </ul>
-                    <p style="margin: 10px 0; font-style: italic; color: #666;">
-                        💡 <strong>Posibles causas:</strong> Piezas en proceso (horno/buffer), errores de escaneo, o movimientos no registrados.
-                    </p>
-                </div>`;
-        } else {
-            html += `
-                <div class="alert" style="background: #d4edda; border: 1px solid #c3e6cb; margin-top: 20px;">
-                    <h4 style="color: #28a745;">✅ Balance Perfecto</h4>
-                    <p style="margin: 5px 0; color: #155724;">Todas las diferencias están dentro del rango aceptable (≤5 piezas).</p>
-                </div>`;
-        }
+    // Verificar que hay datos para trabajar
+    if (inventory.length === 0 && Object.keys(physicalVerification).length === 0 && productionReports.length === 0) {
+        alert('⚠️ No hay datos suficientes para generar el reporte.\n\nNecesitas al menos:\n• Inventario registrado, O\n• Verificaciones físicas, O\n• Reportes de producción');
+        return;
     }
     
-    html += '</div>';
+    // Crear el reporte
+    createTheoreticalReport();
+}
+
+function createTheoreticalReport() {
+    const currentShift = document.getElementById('shift').value;
+    const today = new Date().toISOString().split('T')[0];
     
-    // Mostrar el reporte en una nueva ventana
-    const reportWindow = window.open('', '_blank', 'width=1200,height=800');
-    reportWindow.document.write(`
+    // 1. OBTENER INVENTARIO ACTUAL (TEÓRICO)
+    const inventarioTeorico = calcularInventarioTeorico();
+    
+    // 2. OBTENER VERIFICACIÓN FÍSICA
+    const inventarioFisico = calcularInventarioFisico();
+    
+    // 3. OBTENER REPORTES DE PRODUCCIÓN DEL DÍA
+    const reportesProduccion = obtenerReportesProduccion(today, currentShift);
+    
+    // 4. GENERAR HTML DEL REPORTE
+    const reportHTML = generarHTMLReporte(inventarioTeorico, inventarioFisico, reportesProduccion, today, currentShift);
+    
+    // 5. MOSTRAR REPORTE EN NUEVA VENTANA
+    mostrarReporteEnVentana(reportHTML);
+}
+
+// Función 1: Calcular inventario teórico (lo que está registrado en el sistema)
+function calcularInventarioTeorico() {
+    const teorico = {};
+    
+    inventory.forEach(item => {
+        if (item.quantity > 0 && (item.warehouse === 'fundidos' || item.warehouse === 'acabados')) {
+            const modelo = extraerModelo(item.partNumber || item.code);
+            
+            if (!teorico[modelo]) {
+                teorico[modelo] = { fundidos: 0, acabados: 0 };
+            }
+            
+            if (item.warehouse === 'fundidos') {
+                teorico[modelo].fundidos += item.quantity;
+            } else if (item.warehouse === 'acabados') {
+                teorico[modelo].acabados += item.quantity;
+            }
+        }
+    });
+    
+    return teorico;
+}
+
+// Función 2: Calcular inventario físico (verificaciones)
+function calcularInventarioFisico() {
+    const fisico = {};
+    
+    Object.values(physicalVerification).forEach(item => {
+        const modelo = extraerModelo(item.partNumber || item.code);
+        
+        if (!fisico[modelo]) {
+            fisico[modelo] = { fundidos: 0, acabados: 0 };
+        }
+        
+        if (item.warehouse === 'fundidos') {
+            fisico[modelo].fundidos += item.verifiedQuantity || 1;
+        } else if (item.warehouse === 'acabados') {
+            fisico[modelo].acabados += item.verifiedQuantity || 1;
+        }
+    });
+    
+    return fisico;
+}
+
+// Función 3: Obtener reportes de producción
+function obtenerReportesProduccion(fecha, turno) {
+    return productionReports.filter(r => 
+        r.fecha === fecha && r.turno === turno
+    );
+}
+
+// Función auxiliar: Extraer modelo del código o part number
+function extraerModelo(codigo) {
+    if (!codigo) return 'DESCONOCIDO';
+    
+    // Si es un part number directo
+    if (codigo.includes('PX13-10-382') || codigo.includes('382')) return 'LWR-382';
+    if (codigo.includes('PEDD-10-382-A')) return 'LWR-382-A';
+    if (codigo.includes('P54G-10-382')) return 'LWR-382-G';
+    if (codigo.includes('PX13-10-301') || codigo.includes('301')) return 'UPR-301';
+    if (codigo.includes('PEDD-10-301-A')) return 'UPR-301-A';
+    if (codigo.includes('P54G-10-301-A')) return 'UPR-301-G';
+    
+    // Si es un código QR, extraer el modelo
+    if (codigo.length === 13) { // UPR
+        const modelo = codigo.substring(10, 12);
+        return `UPR-${modelo}`;
+    } else if (codigo.length === 17) { // LWR
+        const modelo = codigo.substring(15, 17);
+        return `LWR-${modelo}`;
+    }
+    
+    return 'OTRO';
+}
+
+// Función 4: Generar HTML del reporte
+function generarHTMLReporte(teorico, fisico, reportes, fecha, turno) {
+    const fechaFormato = new Date(fecha).toLocaleDateString('es-ES');
+    const horaActual = new Date().toLocaleTimeString('es-ES');
+    
+    // Obtener todos los modelos únicos
+    const todosModelos = new Set([
+        ...Object.keys(teorico),
+        ...Object.keys(fisico)
+    ]);
+    
+    let html = `
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="UTF-8">
-            <title>Balance Teórico vs Físico - Perfil 1</title>
+            <title>Reporte Teórico vs Físico - ${fechaFormato}</title>
             <style>
-                body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.4; background: #f5f5f5; }
-                .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-                .inventory-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-                .inventory-table th, .inventory-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-                .inventory-table th { background-color: #34495e; color: white; font-weight: bold; }
-                .inventory-table tr:nth-child(even) { background-color: #f8f9fa; }
-                .alert { padding: 15px; margin: 15px 0; border-radius: 5px; }
-                .alert-info { background: #d1ecf1; border: 1px solid #bee5eb; }
-                .alert-success { background: #d4edda; border: 1px solid #c3e6cb; }
-                .difference-zero { color: #6c757d; }
-                .difference-positive { color: #28a745; font-weight: bold; }
-                .difference-negative { color: #dc3545; font-weight: bold; }
+                body { 
+                    font-family: Arial, sans-serif; 
+                    margin: 20px; 
+                    line-height: 1.4; 
+                    background: #f5f5f5; 
+                }
+                .header { 
+                    text-align: center; 
+                    background: white;
+                    padding: 20px; 
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    margin-bottom: 20px;
+                }
+                .company-name {
+                    font-size: 24px;
+                    font-weight: bold;
+                    color: #e74c3c;
+                    margin-bottom: 5px;
+                }
+                .report-title {
+                    font-size: 18px;
+                    color: #2c3e50;
+                    margin-bottom: 10px;
+                }
+                .report-info {
+                    font-size: 14px;
+                    color: #666;
+                }
+                .section { 
+                    background: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    margin: 20px 0; 
+                }
+                .section-title { 
+                    font-size: 16px; 
+                    font-weight: bold; 
+                    color: #2c3e50; 
+                    border-bottom: 2px solid #3498db;
+                    padding-bottom: 5px;
+                    margin-bottom: 15px;
+                }
+                table { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    margin: 15px 0;
+                }
+                th, td { 
+                    border: 1px solid #ddd; 
+                    padding: 12px 8px; 
+                    text-align: center; 
+                }
+                th { 
+                    background-color: #34495e; 
+                    color: white; 
+                    font-weight: bold;
+                    font-size: 14px;
+                }
+                tr:nth-child(even) { 
+                    background-color: #f8f9fa; 
+                }
+                .modelo-col {
+                    text-align: left !important;
+                    font-weight: bold;
+                }
+                .diferencia-ok { 
+                    color: #28a745; 
+                    font-weight: bold; 
+                }
+                .diferencia-warning { 
+                    color: #ffc107; 
+                    font-weight: bold; 
+                }
+                .diferencia-error { 
+                    color: #dc3545; 
+                    font-weight: bold; 
+                }
+                .status-ok { 
+                    background: #d4edda; 
+                    color: #155724; 
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                }
+                .status-warning { 
+                    background: #fff3cd; 
+                    color: #856404; 
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                }
+                .status-error { 
+                    background: #f8d7da; 
+                    color: #721c24; 
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                }
+                .summary-cards {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 15px;
+                    margin: 20px 0;
+                }
+                .summary-card {
+                    background: linear-gradient(135deg, #667eea, #764ba2);
+                    color: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    text-align: center;
+                }
+                .summary-number {
+                    font-size: 2em;
+                    font-weight: bold;
+                    margin-bottom: 5px;
+                }
+                .summary-label {
+                    font-size: 14px;
+                    opacity: 0.9;
+                }
+                .no-data {
+                    text-align: center;
+                    padding: 30px;
+                    color: #6c757d;
+                    font-style: italic;
+                }
+                @media print {
+                    body { margin: 0; background: white; }
+                    .section { box-shadow: none; }
+                }
             </style>
         </head>
-        <body>${html}</body>
-        </html>
-    `);
-    reportWindow.document.close();
-}
-
-// Funciones auxiliares CORREGIDAS
-function getPhysicalCountForModel(modelo, warehouse) {
-    let count = 0;
-    Object.values(physicalVerification).forEach(item => {
-        if (item.partNumber && item.partNumber.includes(modelo) && item.warehouse === warehouse) {
-            count += item.verifiedQuantity;
-        }
-    });
-    return count;
-}
-
-function getDifferenceClass(diff) {
-    if (diff === 0) return 'difference-zero';
-    return diff > 0 ? 'difference-positive' : 'difference-negative';
-}
-
-function getStatusIcon(diffRepTeo, diffTeoFis) {
-    if (diffRepTeo === 0 && diffTeoFis === 0) return '✅ Perfecto';
-    if (Math.abs(diffRepTeo) <= 2 && Math.abs(diffTeoFis) <= 2) return '⚠️ Revisar';
-    return '❌ Crítico';
-}
-
-function generateCriticalAnalysis() {
-    let criticalIssues = [];
-    
-    Object.keys(theoreticalBalance).forEach(modelo => {
-        const balance = theoreticalBalance[modelo];
-        
-        // Obtener verificación física para este modelo
-        const physicalFundidos = getPhysicalCountForModel(modelo, 'fundidos');
-        const physicalAcabados = getPhysicalCountForModel(modelo, 'acabados');
-        
-        // Verificar diferencias críticas en fundidos
-        const diffFund = balance.balanceFinal.fundidos - physicalFundidos;
-        if (Math.abs(diffFund) > 5) {
-            criticalIssues.push(`${modelo} - Fundidos: ${diffFund > 0 ? 'Exceso' : 'Faltante'} de ${Math.abs(diffFund)} piezas`);
-        }
-        
-        // Verificar diferencias críticas en acabados
-        const diffAcab = balance.balanceFinal.acabados - physicalAcabados;
-        if (Math.abs(diffAcab) > 5) {
-            criticalIssues.push(`${modelo} - Acabados: ${diffAcab > 0 ? 'Exceso' : 'Faltante'} de ${Math.abs(diffAcab)} piezas`);
-        }
-    });
-    
-    if (criticalIssues.length > 0) {
-        return `
-            <div class="alert" style="background: #f8d7da; color: #721c24; margin-top: 20px;">
-                <h4>🚨 Diferencias Críticas Detectadas (>5 piezas):</h4>
-                <ul style="margin: 10px 0;">
-                    ${criticalIssues.map(issue => `<li>${issue}</li>`).join('')}
-                </ul>
+        <body>
+            <div class="header">
+                <div class="company-name">🏭 CONTROL DE ALMACÉN - FUNDICIÓN</div>
+                <div class="report-title">📊 REPORTE TEÓRICO vs FÍSICO</div>
+                <div class="report-info">
+                    📅 Fecha: ${fechaFormato} | ⏰ Generado: ${horaActual} | 🔄 Turno: ${turno}
+                </div>
             </div>
-        `;
+    `;
+    
+    // SECCIÓN DE RESUMEN
+    const totalModelos = todosModelos.size;
+    const totalVerificaciones = Object.keys(physicalVerification).length;
+    const totalReportes = reportes.length;
+    const diferenciasEncontradas = calcularDiferenciasEncontradas(teorico, fisico, todosModelos);
+    
+    html += `
+        <div class="section">
+            <div class="section-title">📋 RESUMEN EJECUTIVO</div>
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <div class="summary-number">${totalModelos}</div>
+                    <div class="summary-label">Modelos Analizados</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-number">${totalVerificaciones}</div>
+                    <div class="summary-label">Códigos Verificados</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-number">${totalReportes}</div>
+                    <div class="summary-label">Reportes de Producción</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-number">${diferenciasEncontradas}</div>
+                    <div class="summary-label">Diferencias Detectadas</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // SECCIÓN DE COMPARACIÓN PRINCIPAL
+    html += `
+        <div class="section">
+            <div class="section-title">🔍 COMPARACIÓN INVENTARIO TEÓRICO vs FÍSICO</div>
+    `;
+    
+    if (todosModelos.size === 0) {
+        html += '<div class="no-data">No hay datos de inventario o verificaciones físicas para comparar</div>';
     } else {
-        return `
-            <div class="alert alert-success" style="margin-top: 20px;">
-                <h4>✅ Balance Aceptable</h4>
-                <p>No se detectaron diferencias críticas. Todas las variaciones están dentro del rango normal (≤5 piezas).</p>
-            </div>
+        html += `
+            <table>
+                <thead>
+                    <tr>
+                        <th rowspan="2">Modelo</th>
+                        <th colspan="3">🔥 FUNDIDOS</th>
+                        <th colspan="3">✅ ACABADOS</th>
+                        <th rowspan="2">Estado General</th>
+                    </tr>
+                    <tr>
+                        <th>Teórico</th>
+                        <th>Físico</th>
+                        <th>Diferencia</th>
+                        <th>Teórico</th>
+                        <th>Físico</th>
+                        <th>Diferencia</th>
+                    </tr>
+                </thead>
+                <tbody>
         `;
+        
+        Array.from(todosModelos).sort().forEach(modelo => {
+            const teo = teorico[modelo] || { fundidos: 0, acabados: 0 };
+            const fis = fisico[modelo] || { fundidos: 0, acabados: 0 };
+            
+            const difFund = fis.fundidos - teo.fundidos;
+            const difAcab = fis.acabados - teo.acabados;
+            
+            const statusFund = getStatusClass(difFund);
+            const statusAcab = getStatusClass(difAcab);
+            const statusGeneral = getGeneralStatus(difFund, difAcab);
+            
+            html += `
+                <tr>
+                    <td class="modelo-col">${modelo}</td>
+                    <td>${teo.fundidos}</td>
+                    <td>${fis.fundidos}</td>
+                    <td class="${statusFund.class}">${difFund >= 0 ? '+' : ''}${difFund}</td>
+                    <td>${teo.acabados}</td>
+                    <td>${fis.acabados}</td>
+                    <td class="${statusAcab.class}">${difAcab >= 0 ? '+' : ''}${difAcab}</td>
+                    <td><span class="${statusGeneral.class}">${statusGeneral.text}</span></td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table>';
     }
+    
+    html += '</div>';
+    
+    // SECCIÓN DE REPORTES DE PRODUCCIÓN
+    html += `
+        <div class="section">
+            <div class="section-title">🏭 REPORTES DE PRODUCCIÓN DEL TURNO</div>
+    `;
+    
+    if (reportes.length === 0) {
+        html += '<div class="no-data">No hay reportes de producción registrados para este turno</div>';
+    } else {
+        html += `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Modelo</th>
+                        <th>Máquina</th>
+                        <th>Total Producido</th>
+                        <th>NG</th>
+                        <th>Piezas Buenas</th>
+                        <th>Hora Registro</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        reportes.forEach(reporte => {
+            html += `
+                <tr>
+                    <td>${reporte.tipo.toUpperCase()}</td>
+                    <td>${reporte.modelo}</td>
+                    <td>${reporte.maquina || 'N/A'}</td>
+                    <td>${reporte.cantidadTotal}</td>
+                    <td>${reporte.cantidadNG}</td>
+                    <td><strong>${reporte.piezasBuenas}</strong></td>
+                    <td>${new Date(reporte.timestamp).toLocaleTimeString()}</td>
+                </tr>
+            `;
+        });
+        
+        html += '</tbody></table>';
+    }
+    
+    html += '</div>';
+    
+    // PIE DE PÁGINA
+    html += `
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #666; font-size: 12px;">
+                Reporte generado automáticamente por el Sistema de Control de Almacén - Fundición v1.3<br>
+                💡 Diferencias dentro de ±2 piezas se consideran normales
+            </div>
+        </body>
+        </html>
+    `;
+    
+    return html;
+}
+
+// Funciones auxiliares para el reporte
+function calcularDiferenciasEncontradas(teorico, fisico, modelos) {
+    let diferencias = 0;
+    
+    modelos.forEach(modelo => {
+        const teo = teorico[modelo] || { fundidos: 0, acabados: 0 };
+        const fis = fisico[modelo] || { fundidos: 0, acabados: 0 };
+        
+        const difFund = Math.abs(fis.fundidos - teo.fundidos);
+        const difAcab = Math.abs(fis.acabados - teo.acabados);
+        
+        if (difFund > 0 || difAcab > 0) {
+            diferencias++;
+        }
+    });
+    
+    return diferencias;
+}
+
+function getStatusClass(diferencia) {
+    const abs = Math.abs(diferencia);
+    
+    if (abs === 0) {
+        return { class: 'diferencia-ok', text: '✅ Perfecto' };
+    } else if (abs <= 2) {
+        return { class: 'diferencia-warning', text: '⚠️ Revisar' };
+    } else {
+        return { class: 'diferencia-error', text: '❌ Crítico' };
+    }
+}
+
+function getGeneralStatus(difFund, difAcab) {
+    const totalDif = Math.abs(difFund) + Math.abs(difAcab);
+    
+    if (totalDif === 0) {
+        return { class: 'status-ok', text: '✅ Perfecto' };
+    } else if (totalDif <= 3) {
+        return { class: 'status-warning', text: '⚠️ Revisar' };
+    } else {
+        return { class: 'status-error', text: '❌ Crítico' };
+    }
+}
+
+// Función 5: Mostrar reporte en nueva ventana
+function mostrarReporteEnVentana(html) {
+    const reportWindow = window.open('', '_blank', 'width=1200,height=800,scrollbars=yes');
+    reportWindow.document.write(html);
+    reportWindow.document.close();
+    
+    // Enfocar la nueva ventana
+    reportWindow.focus();
+    
+    // Mostrar mensaje de éxito
+    setTimeout(() => {
+        alert('📊 Reporte generado exitosamente\n\n💡 El reporte se abrió en una nueva ventana.\n\nPuedes imprimirlo presionando Ctrl+P');
+    }, 500);
 }
 // Mostrar reporte completo de producción
 function showProductionReport() {
