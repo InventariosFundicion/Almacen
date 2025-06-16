@@ -393,6 +393,10 @@
                     <div class="stats-number" id="total-pallets">0</div>
                     <h3>📦 TARIMAS</h3>
                 </div>
+                <div class="card stats-card">
+                    <div class="stats-number" id="verification-count">0</div>
+                    <h3>🔍 VERIFICADAS</h3>
+                </div>                
             </div>
 
             <div style="text-align: center; margin-top: 30px;">
@@ -463,6 +467,7 @@
                 
                 <button class="btn btn-success" onclick="processQRCode()">✅ Procesar Código QR</button>
                 <button class="btn btn-info" onclick="clearForm()">🔄 Limpiar</button>
+                <button class="btn btn-warning" onclick="startNewShiftVerification()">🆕 Nuevo Turno</button>
             </div>
 
             <div id="process-result"></div>
@@ -540,16 +545,37 @@
 
         <!-- Theoretical vs Physical Tab -->
         <div id="theoretical" class="tab-content">
-            <h2>📊 Inventario Teórico vs Físico</h2>
-            
-            <div class="card">
-                <h3>⚙️ Configuración Base</h3>
-                <p>Configura el inventario inicial y producción para calcular el teórico.</p>
-                <button class="btn btn-info" onclick="alert('Función en desarrollo')">🧮 Calcular Teórico</button>
-            </div>
-        </div>
+    <h2>📊 Inventario Teórico vs Físico</h2>
+    
+    <div class="card">
+        <h3>🧮 Cálculo de Inventario Teórico</h3>
+        <button class="btn btn-primary" onclick="generateTheoreticalReport()">🔄 Generar Reporte Teórico</button>
+        <div id="theoretical-summary"></div>
     </div>
-
+    <div class="card">
+    <h3>📊 Progreso de Verificación Actual</h3>
+    <button class="btn btn-info" onclick="showCurrentVerification()">👀 Ver Verificaciones del Turno</button>
+    <div id="current-verification"></div>
+</div>
+    
+    <div class="card">
+        <h3>🔍 Verificación Física vs Teórica</h3>
+        <div id="verification-comparison"></div>
+    </div>
+    
+    <div class="card">
+        <h3>⚠️ Diferencias Detectadas</h3>
+        <div id="discrepancies-report"></div>
+    </div>
+    <div class="card">
+    <h3>⚠️ Diferencias Detectadas</h3>
+    <div id="discrepancies-report"></div>
+    <div style="text-align: center; margin-top: 20px;">
+        <button class="btn btn-success" onclick="exportVerificationReport()">📊 Exportar Reporte Completo</button>
+        <button class="btn btn-info" onclick="printVerificationSummary()">🖨️ Imprimir Resumen</button>
+    </div>
+</div>
+</div>
     <script>
         // Variables globales
         let inventory = [];
@@ -558,6 +584,9 @@
         let selectedWarehouse = '';
         let selectedMovement = '';
         let palletCounter = 1;
+        let theoreticalInventory = {}; // Para calcular inventario teórico
+        let physicalVerification = {}; // Para almacenar verificaciones físicas
+        let shiftReports = []; // Para reportes por turno
 
         const STATE_MAPPING = {
             'FUNDIDO': 'fundidos',
@@ -972,13 +1001,43 @@ const confirmTransfer = confirm(`${transferMessage}\n\n✅ Aceptar = Transferir\
                </div>
            `;
            
-       } else {
-           // Para inventarios iniciales o por turno
-           if (existingItem) {
-               if (existingItem.warehouse === individualState) {
-                   alert(`⚠️ CÓDIGO YA REGISTRADO\n\nEl código ${analysis.code} ya está registrado en ${getWarehouseName(individualState)}.\n\nCantidad actual: ${existingItem.quantity}\nÚltimo registro: ${formatLastMovement(existingItem.lastMovement)}`);
-                   return;
-               } else {
+       } else if (inventoryType === 'turno') {
+} else if (inventoryType === 'turno') {
+    // VERIFICACIÓN FÍSICA DE TARIMA COMPLETA
+    analysis.codes.forEach(code => {
+        const codeData = extractCodeData(code);
+        if (!physicalVerification[code]) {
+            physicalVerification[code] = {
+                code: code,
+                partNumber: codeData ? codeData.partNumber : 'Unknown',
+                type: analysis.type,
+                verifiedQuantity: 0,
+                lastVerified: new Date(),
+                shift: shift,
+                warehouse: analysis.detectedState || selectedWarehouse,
+                palletId: analysis.palletId
+            };
+        }
+        physicalVerification[code].verifiedQuantity += 1;
+        physicalVerification[code].lastVerified = new Date();
+    });
+    
+    resultDiv.innerHTML = `
+        <div class="alert alert-info">
+            🔍 <strong>Tarima verificada físicamente</strong><br>
+            📦 ID Original: ${analysis.palletId}<br>
+            📊 ${analysis.codes.length} piezas verificadas ${analysis.type}<br>
+            🏪 Estado verificado: ${getWarehouseName(analysis.detectedState || selectedWarehouse)}<br>
+            ⏰ Turno: ${shift} - Verificación física
+        </div>
+    `;
+} else {
+    // Para inventarios iniciales
+    if (existingItem) {
+        if (existingItem.warehouse === individualState) {
+            alert(`⚠️ CÓDIGO YA REGISTRADO\n\nEl código ${analysis.code} ya está registrado en ${getWarehouseName(individualState)}.\n\nCantidad actual: ${existingItem.quantity}\nÚltimo registro: ${formatLastMovement(existingItem.lastMovement)}`);
+            return;
+        } else {
                    const confirmChange = confirm(`🔄 CAMBIO DE ESTADO DETECTADO\n\nEl código ${analysis.code} está actualmente en:\n${getWarehouseName(existingItem.warehouse)}\n\n¿Quieres moverlo a ${getWarehouseName(individualState)}?\n\n✅ Aceptar = Mover\n❌ Cancelar = No hacer nada`);
                    
                    if (!confirmChange) {
@@ -1192,12 +1251,264 @@ function processIndividualCode(code, type, movementType, shift, warehouse, palle
     if (minutes < 1440) return `Hace ${Math.floor(minutes / 60)} hrs`;
     return date.toLocaleDateString();
 }
-        function updateAllDisplays() {
-            updateDashboard();
-            updateGroupedInventory();
-            updateDetailedInventory();
-            updatePalletsTable();
+        function calculateTheoreticalInventory() {
+    theoreticalInventory = {};
+    
+    // Procesar todos los movimientos por orden cronológico
+    const sortedMovements = movements.sort((a, b) => a.date - b.date);
+    
+    sortedMovements.forEach(movement => {
+        const key = movement.partNumber;
+        if (!theoreticalInventory[key]) {
+            theoreticalInventory[key] = {
+                fundidos: 0,
+                acabados: 0,
+                envios: 0,
+                retenciones: 0,
+                scrap: 0,
+                pruebas: 0
+            };
         }
+        
+        if (movement.type === 'inicial' || movement.type === 'movimiento') {
+            theoreticalInventory[key][movement.warehouse] += movement.quantity;
+        }
+    });
+    
+    return theoreticalInventory;
+}
+                function startNewShiftVerification() {
+    const confirmReset = confirm('🔄 NUEVO TURNO\n\n¿Quieres limpiar las verificaciones físicas del turno anterior para comenzar una nueva verificación?\n\n✅ Sí = Limpiar verificaciones\n❌ No = Mantener datos actuales');
+    
+    if (confirmReset) {
+        physicalVerification = {};
+        alert('✅ Verificaciones físicas limpiadas. Puedes comenzar el nuevo turno.');
+        updateAllDisplays();
+    }
+}
+        function showVerificationProgress() {
+    if (Object.keys(physicalVerification).length === 0) {
+        return '<div class="alert alert-info">No hay verificaciones físicas registradas en este turno.</div>';
+    }
+    
+    let progressHtml = '<h4>📊 Progreso de Verificación Física:</h4>';
+    progressHtml += '<table class="inventory-table"><thead><tr><th>Código</th><th>Número de Parte</th><th>Tipo</th><th>Estado</th><th>Cantidad Verificada</th></tr></thead><tbody>';
+    
+    Object.values(physicalVerification).forEach(item => {
+        progressHtml += `<tr>
+            <td style="font-family: monospace;">${item.code}</td>
+            <td>${item.partNumber}</td>
+            <td><span class="code-badge" style="background: #17a2b8;">${item.type}</span></td>
+            <td><span class="code-badge" style="background: ${item.warehouse === 'fundidos' ? '#e74c3c' : '#27ae60'};">${getWarehouseName(item.warehouse)}</span></td>
+            <td style="text-align: center; font-weight: bold;">${item.verifiedQuantity}</td>
+        </tr>`;
+    });
+    
+    progressHtml += '</tbody></table>';
+    return progressHtml;
+}
+        function showCurrentVerification() {
+    document.getElementById('current-verification').innerHTML = showVerificationProgress();
+}
+        function generateTheoreticalReport() {
+    const theoretical = calculateTheoreticalInventory();
+    const summaryDiv = document.getElementById('theoretical-summary');
+    const comparisonDiv = document.getElementById('verification-comparison');
+    const discrepanciesDiv = document.getElementById('discrepancies-report');
+    
+    // Mostrar inventario teórico
+    let theoreticalHtml = '<h4>📋 Inventario Teórico Calculado:</h4><table class="inventory-table"><thead><tr><th>Número de Parte</th><th>Fundidos</th><th>Acabados</th><th>Total Disponible</th></tr></thead><tbody>';
+    
+    Object.keys(theoretical).forEach(partNumber => {
+        const data = theoretical[partNumber];
+        const available = data.fundidos + data.acabados;
+        theoreticalHtml += `<tr><td>${partNumber}</td><td>🔥 ${data.fundidos}</td><td>✅ ${data.acabados}</td><td><strong>${available}</strong></td></tr>`;
+    });
+    
+    theoreticalHtml += '</tbody></table>';
+    summaryDiv.innerHTML = theoreticalHtml;
+    
+    // Generar comparación con verificación física
+    generateComparisonReport(theoretical, comparisonDiv, discrepanciesDiv);
+}
+
+function generateComparisonReport(theoretical, comparisonDiv, discrepanciesDiv) {
+    let comparisonHtml = '<h4>🔍 Comparación Físico vs Teórico:</h4>';
+    let discrepanciesHtml = '';
+    let hasDiscrepancies = false;
+    
+    // Agrupar verificaciones físicas por número de parte
+    const physicalByPart = {};
+    Object.values(physicalVerification).forEach(item => {
+        if (!physicalByPart[item.partNumber]) {
+            physicalByPart[item.partNumber] = { fundidos: 0, acabados: 0 };
+        }
+        if (item.warehouse === 'fundidos') {
+            physicalByPart[item.partNumber].fundidos += item.verifiedQuantity;
+        } else if (item.warehouse === 'acabados') {
+            physicalByPart[item.partNumber].acabados += item.verifiedQuantity;
+        }
+    });
+    
+    comparisonHtml += '<table class="inventory-table"><thead><tr><th>Número de Parte</th><th>Estado</th><th>Teórico</th><th>Físico</th><th>Diferencia</th><th>Status</th></tr></thead><tbody>';
+    
+    // Comparar cada número de parte
+    const allParts = new Set([...Object.keys(theoretical), ...Object.keys(physicalByPart)]);
+    
+    allParts.forEach(partNumber => {
+        const theo = theoretical[partNumber] || { fundidos: 0, acabados: 0 };
+        const phys = physicalByPart[partNumber] || { fundidos: 0, acabados: 0 };
+        
+        // Verificar fundidos
+        const diffFundidos = phys.fundidos - theo.fundidos;
+        const statusFundidos = diffFundidos === 0 ? '✅ OK' : (diffFundidos > 0 ? '⬆️ Exceso' : '⬇️ Faltante');
+        
+        comparisonHtml += `<tr><td>${partNumber}</td><td>🔥 Fundidos</td><td>${theo.fundidos}</td><td>${phys.fundidos}</td><td style="color: ${diffFundidos === 0 ? 'green' : 'red'};">${diffFundidos > 0 ? '+' : ''}${diffFundidos}</td><td>${statusFundidos}</td></tr>`;
+        
+        // Verificar acabados
+        const diffAcabados = phys.acabados - theo.acabados;
+        const statusAcabados = diffAcabados === 0 ? '✅ OK' : (diffAcabados > 0 ? '⬆️ Exceso' : '⬇️ Faltante');
+        
+        comparisonHtml += `<tr><td>${partNumber}</td><td>✅ Acabados</td><td>${theo.acabados}</td><td>${phys.acabados}</td><td style="color: ${diffAcabados === 0 ? 'green' : 'red'};">${diffAcabados > 0 ? '+' : ''}${diffAcabados}</td><td>${statusAcabados}</td></tr>`;
+        
+        // Registrar discrepancias
+        if (diffFundidos !== 0 || diffAcabados !== 0) {
+            hasDiscrepancies = true;
+            discrepanciesHtml += `<div class="alert" style="background: #f8d7da; color: #721c24; margin: 10px 0;"><strong>⚠️ ${partNumber}</strong><br>`;
+            if (diffFundidos !== 0) {
+                discrepanciesHtml += `🔥 Fundidos: ${diffFundidos > 0 ? 'Exceso' : 'Faltante'} de ${Math.abs(diffFundidos)} piezas<br>`;
+            }
+            if (diffAcabados !== 0) {
+                discrepanciesHtml += `✅ Acabados: ${diffAcabados > 0 ? 'Exceso' : 'Faltante'} de ${Math.abs(diffAcabados)} piezas<br>`;
+            }
+            discrepanciesHtml += '</div>';
+        }
+    });
+    
+    comparisonHtml += '</tbody></table>';
+    comparisonDiv.innerHTML = comparisonHtml;
+    
+    if (hasDiscrepancies) {
+        discrepanciesDiv.innerHTML = '<h4>⚠️ Diferencias Encontradas:</h4>' + discrepanciesHtml;
+    } else {
+        discrepanciesDiv.innerHTML = '<div class="alert alert-success"><h4>✅ ¡Perfecto!</h4>No se encontraron diferencias entre el inventario teórico y físico.</div>';
+    }
+}
+        function exportVerificationReport() {
+    const theoretical = calculateTheoreticalInventory();
+    const currentDate = new Date().toISOString().split('T')[0];
+    
+    // Crear reporte completo
+    const report = {
+        fecha: currentDate,
+        turno: document.getElementById('shift').value,
+        inventarioTeorico: theoretical,
+        verificacionFisica: physicalVerification,
+        diferencias: calculateDiscrepancies(theoretical),
+        resumen: {
+            totalTeorico: Object.values(theoretical).reduce((sum, item) => sum + item.fundidos + item.acabados, 0),
+            totalVerificado: Object.values(physicalVerification).reduce((sum, item) => sum + item.verifiedQuantity, 0),
+            codigosVerificados: Object.keys(physicalVerification).length
+        }
+    };
+    
+    const jsonString = JSON.stringify(report, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reporte-verificacion-${currentDate}-turno${report.turno}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert('📊 Reporte de verificación exportado exitosamente');
+}
+
+function calculateDiscrepancies(theoretical) {
+    const discrepancies = {};
+    
+    // Agrupar verificaciones físicas por número de parte
+    const physicalByPart = {};
+    Object.values(physicalVerification).forEach(item => {
+        if (!physicalByPart[item.partNumber]) {
+            physicalByPart[item.partNumber] = { fundidos: 0, acabados: 0 };
+        }
+        if (item.warehouse === 'fundidos') {
+            physicalByPart[item.partNumber].fundidos += item.verifiedQuantity;
+        } else if (item.warehouse === 'acabados') {
+            physicalByPart[item.partNumber].acabados += item.verifiedQuantity;
+        }
+    });
+    
+    // Calcular diferencias
+    const allParts = new Set([...Object.keys(theoretical), ...Object.keys(physicalByPart)]);
+    allParts.forEach(partNumber => {
+        const theo = theoretical[partNumber] || { fundidos: 0, acabados: 0 };
+        const phys = physicalByPart[partNumber] || { fundidos: 0, acabados: 0 };
+        
+        const diffFundidos = phys.fundidos - theo.fundidos;
+        const diffAcabados = phys.acabados - theo.acabados;
+        
+        if (diffFundidos !== 0 || diffAcabados !== 0) {
+            discrepancies[partNumber] = {
+                fundidos: { teorico: theo.fundidos, fisico: phys.fundidos, diferencia: diffFundidos },
+                acabados: { teorico: theo.acabados, fisico: phys.acabados, diferencia: diffAcabados }
+            };
+        }
+    });
+    
+    return discrepancies;
+}
+        function printVerificationSummary() {
+    const theoretical = calculateTheoreticalInventory();
+    const discrepancies = calculateDiscrepancies(theoretical);
+    const currentDate = new Date().toLocaleDateString();
+    const shift = document.getElementById('shift').value;
+    
+    let printContent = `
+        <h2>📊 REPORTE DE VERIFICACIÓN DE INVENTARIO</h2>
+        <p><strong>Fecha:</strong> ${currentDate} | <strong>Turno:</strong> ${shift}</p>
+        <hr>
+        
+        <h3>📋 RESUMEN EJECUTIVO</h3>
+        <p>• Códigos verificados: ${Object.keys(physicalVerification).length}</p>
+        <p>• Números de parte: ${Object.keys(theoretical).length}</p>
+        <p>• Diferencias encontradas: ${Object.keys(discrepancies).length}</p>
+        <hr>
+    `;
+    
+    if (Object.keys(discrepancies).length > 0) {
+        printContent += '<h3>⚠️ DIFERENCIAS CRÍTICAS</h3>';
+        Object.keys(discrepancies).forEach(partNumber => {
+            const diff = discrepancies[partNumber];
+            printContent += `<p><strong>${partNumber}:</strong><br>`;
+            if (diff.fundidos.diferencia !== 0) {
+                printContent += `&nbsp;&nbsp;🔥 Fundidos: ${diff.fundidos.diferencia > 0 ? '+' : ''}${diff.fundidos.diferencia}<br>`;
+            }
+            if (diff.acabados.diferencia !== 0) {
+                printContent += `&nbsp;&nbsp;✅ Acabados: ${diff.acabados.diferencia > 0 ? '+' : ''}${diff.acabados.diferencia}<br>`;
+            }
+            printContent += '</p>';
+        });
+    } else {
+        printContent += '<h3 style="color: green;">✅ SIN DIFERENCIAS ENCONTRADAS</h3>';
+    }
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`<html><head><title>Reporte Verificación</title></head><body>${printContent}</body></html>`);
+    printWindow.document.close();
+    printWindow.print();
+}
+        function updateAllDisplays() {
+    updateDashboard();
+    updateGroupedInventory();
+    updateDetailedInventory();
+    updatePalletsTable();
+    updateVerificationSummary(); // <- AGREGAR ESTA LÍNEA
+}
 
         function updateDashboard() {
             const fundidos = inventory.filter(function(i) {
@@ -1530,7 +1841,17 @@ function toggleModelSection(sectionId) {
             loadSampleData();
             updateAllDisplays();
         });
-
+        function updateVerificationSummary() {
+    // Actualizar contador de verificaciones en dashboard si existe
+    const verificationCount = Object.keys(physicalVerification).length;
+    
+    // Si hay un elemento para mostrar verificaciones, actualizarlo
+    const verificationElement = document.getElementById('verification-count');
+    if (verificationElement) {
+        verificationElement.textContent = verificationCount;
+    }
+}
+        
     </script>
 </body>
 </html>
