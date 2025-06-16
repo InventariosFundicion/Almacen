@@ -2877,127 +2877,162 @@ function updateProductionSummary() {
 }
 // Generar balance teórico
 function generateTheoreticalBalance() {
-    const currentShift = document.getElementById('shift').value;
-    const today = new Date().toISOString().split('T')[0];
+    // Obtener fecha actual para filtrar reportes del día
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
     
-    // Obtener reportes del turno actual
-    const currentReports = productionReports.filter(r => 
-        r.fecha === today && r.turno === currentShift
-    );
-    const currentMovements = movementReports.filter(m => 
-        m.fecha === today
-    );
-    
-    if (currentReports.length === 0) {
-        alert('⚠️ No hay reportes de producción para calcular el balance teórico.\n\nPrimero registra reportes de fundición y/o acabado.');
-        return;
-    }
-    
-    // Inicializar balance teórico
-    theoreticalBalance = {};
-    
-    // Obtener inventario inicial de todos los modelos únicos
-    const allModels = new Set();
-    currentReports.forEach(r => {
-        const modelo = r.modelo.replace('-FUN', '');
-        allModels.add(modelo);
+    // Filtrar reportes del día actual
+    const currentReports = productionReports.filter(reporte => {
+        const reportDate = new Date(reporte.fecha).toISOString().split('T')[0];
+        return reportDate === todayStr;
     });
     
-    // Inicializar con inventario inicial
-    allModels.forEach(modelo => {
-        theoreticalBalance[modelo] = {
-            inventarioInicial: {
-                fundidos: getInitialInventory(modelo + '-FUN', 'fundidos'),
-                acabados: getInitialInventory(modelo, 'acabados')
-            },
-            fundicion: { 
-                reportado: 0, 
-                teorico: 0 
-            },
-            acabado: { 
-                reportado: 0, 
-                teorico: 0 
-            },
-            movimientos: { 
-                scrap: 0, 
-                envios: 0, 
-                retenciones: 0, 
-                pruebas: 0 
-            },
-            balanceFinal: {
-                fundidos: 0,
-                acabados: 0
-            }
-        };
+    // Agrupar inventario por modelo y proceso
+    const inventoryByModel = {};
+    
+    // 1. INVENTARIO INICIAL - Todo lo que ya estaba antes del turno
+    inventory.forEach(item => {
+        const modelData = extractCodeData(item.code);
+        if (!modelData) return;
         
-        // Establecer balance inicial = inventario inicial
-        theoreticalBalance[modelo].balanceFinal.fundidos = theoreticalBalance[modelo].inventarioInicial.fundidos;
-        theoreticalBalance[modelo].balanceFinal.acabados = theoreticalBalance[modelo].inventarioInicial.acabados;
+        const modelo = modelData.partNumber;
+        if (!inventoryByModel[modelo]) {
+            inventoryByModel[modelo] = {
+                inventarioInicial: { fundidos: 0, acabados: 0 },
+                produccion: { fundidos: 0, acabados: 0 },
+                movimientos: { 
+                    scrap: 0, 
+                    retenciones: 0, 
+                    pruebas: 0, 
+                    envios: 0,
+                    acabadoProceso: 0  // UPR: fundidos → acabados
+                },
+                balanceCalculado: { fundidos: 0, acabados: 0 },
+                fisico: { fundidos: 0, acabados: 0 }
+            };
+        }
+        
+        // Contar inventario inicial por proceso
+        if (item.warehouse === 'fundidos' && item.quantity > 0) {
+            inventoryByModel[modelo].inventarioInicial.fundidos += item.quantity;
+        } else if (item.warehouse === 'acabados' && item.quantity > 0) {
+            inventoryByModel[modelo].inventarioInicial.acabados += item.quantity;
+        }
     });
     
-    // Procesar reportes de producción
+    // 2. PRODUCCIÓN DEL TURNO - Reportes del día actual
     currentReports.forEach(reporte => {
-        const modelo = reporte.modelo.replace('-FUN', '');
+        const modelo = reporte.modelo;
         
+        if (!inventoryByModel[modelo]) {
+            inventoryByModel[modelo] = {
+                inventarioInicial: { fundidos: 0, acabados: 0 },
+                produccion: { fundidos: 0, acabados: 0 },
+                movimientos: { 
+                    scrap: 0, 
+                    retenciones: 0, 
+                    pruebas: 0, 
+                    envios: 0,
+                    acabadoProceso: 0 
+                },
+                balanceCalculado: { fundidos: 0, acabados: 0 },
+                fisico: { fundidos: 0, acabados: 0 }
+            };
+        }
+        
+        // Sumar producción por tipo de reporte
         if (reporte.tipo === 'fundicion') {
-            theoreticalBalance[modelo].fundicion.reportado += reporte.piezasBuenas;
-            
-            // SUMAR piezas fundidas al balance de fundidos
-            theoreticalBalance[modelo].balanceFinal.fundidos += reporte.piezasBuenas;
-            
-            // Para LWR: las piezas fundidas van directo a acabado (mismo turno)
-            if (modelo.includes('382')) {
-                theoreticalBalance[modelo].balanceFinal.fundidos -= reporte.piezasBuenas; // Se van de fundidos
-                theoreticalBalance[modelo].balanceFinal.acabados += reporte.piezasBuenas; // Llegan a acabados
-            }
-            // Para UPR: se quedan en fundidos (van a tratamiento térmico)
-            
+            inventoryByModel[modelo].produccion.fundidos += reporte.piezasBuenas || 0;
         } else if (reporte.tipo === 'acabado') {
-            theoreticalBalance[modelo].acabado.reportado += reporte.piezasBuenas;
-            
-            // Para acabado: las piezas procesadas se RESTAN del inventario de acabados
-            // porque salen del almacén para enviarse
-            theoreticalBalance[modelo].balanceFinal.acabados -= reporte.cantidadTotal; // Total procesado
-            theoreticalBalance[modelo].balanceFinal.acabados += reporte.piezasBuenas; // Solo las buenas regresan
+            inventoryByModel[modelo].produccion.acabados += reporte.piezasBuenas || 0;
         }
     });
     
-    // Procesar movimientos
-    currentMovements.forEach(movimiento => {
-        const modelo = movimiento.modelo;
-        if (theoreticalBalance[modelo]) {
-            theoreticalBalance[modelo].movimientos[movimiento.tipo] += movimiento.cantidad;
-            
-            // Aplicar movimientos al balance final
-            switch(movimiento.tipo) {
-                case 'scrap':
-                    // Scrap se resta del almacén correspondiente
-                    if (modelo.includes('-FUN')) {
-                        theoreticalBalance[modelo.replace('-FUN', '')].balanceFinal.fundidos -= movimiento.cantidad;
-                    } else {
-                        theoreticalBalance[modelo].balanceFinal.acabados -= movimiento.cantidad;
-                    }
-                    break;
-                case 'envios':
-                    // Envíos se restan de acabados
-                    theoreticalBalance[modelo].balanceFinal.acabados -= movimiento.cantidad;
-                    break;
-                case 'retenciones':
-                    // Retenciones no afectan el balance (siguen en almacén)
-                    break;
-                case 'pruebas':
-                    // Pruebas se restan temporalmente
-                    theoreticalBalance[modelo].balanceFinal.acabados -= movimiento.cantidad;
-                    break;
-            }
+    // 3. MOVIMIENTOS DE SALIDA - Del día actual
+    const todayMovements = movements.filter(movement => {
+        const movDate = new Date(movement.date).toISOString().split('T')[0];
+        return movDate === todayStr;
+    });
+    
+    todayMovements.forEach(movement => {
+        const modelData = extractCodeData(movement.code);
+        if (!modelData) return;
+        
+        const modelo = modelData.partNumber;
+        if (!inventoryByModel[modelo]) return;
+        
+        // Contar movimientos por destino
+        switch (movement.warehouse) {
+            case 'scrap':
+                inventoryByModel[modelo].movimientos.scrap += movement.quantity;
+                break;
+            case 'retenciones':
+                inventoryByModel[modelo].movimientos.retenciones += movement.quantity;
+                break;
+            case 'pruebas':
+                inventoryByModel[modelo].movimientos.pruebas += movement.quantity;
+                break;
+            case 'envios':
+                inventoryByModel[modelo].movimientos.envios += movement.quantity;
+                break;
+            case 'acabados':
+                // Cuando fundidos se mueven a acabados (proceso UPR)
+                inventoryByModel[modelo].movimientos.acabadoProceso += movement.quantity;
+                break;
         }
     });
     
-    // Mostrar balance teórico
-    showTheoreticalBalanceReport();
+    // 4. INVENTARIO FÍSICO - Verificaciones del turno actual
+    Object.values(physicalVerification).forEach(verification => {
+        if (!verification.shift || verification.shift !== getCurrentShift()) return;
+        
+        const modelData = extractCodeData(verification.code);
+        if (!modelData) return;
+        
+        const modelo = modelData.partNumber;
+        if (!inventoryByModel[modelo]) return;
+        
+        // Contar verificaciones físicas por warehouse
+        if (verification.warehouse === 'fundidos') {
+            inventoryByModel[modelo].fisico.fundidos += verification.verifiedQuantity;
+        } else if (verification.warehouse === 'acabados') {
+            inventoryByModel[modelo].fisico.acabados += verification.verifiedQuantity;
+        }
+    });
+    
+    // 5. CALCULAR BALANCE TEÓRICO FINAL
+    Object.keys(inventoryByModel).forEach(modelo => {
+        const data = inventoryByModel[modelo];
+        
+        // FUNDIDOS: Inicial + Producción - Scrap - Retenciones - Pruebas - Envíos - Proceso_a_Acabado
+        data.balanceCalculado.fundidos = 
+            data.inventarioInicial.fundidos + 
+            data.produccion.fundidos - 
+            data.movimientos.scrap - 
+            data.movimientos.retenciones - 
+            data.movimientos.pruebas - 
+            data.movimientos.envios - 
+            data.movimientos.acabadoProceso;
+        
+        // ACABADOS: Inicial + Producción + Proceso_desde_Fundido - Scrap - Retenciones - Pruebas - Envíos  
+        data.balanceCalculado.acabados = 
+            data.inventarioInicial.acabados + 
+            data.produccion.acabados + 
+            data.movimientos.acabadoProceso - 
+            data.movimientos.scrap - 
+            data.movimientos.retenciones - 
+            data.movimientos.pruebas - 
+            data.movimientos.envios;
+    });
+    
+    return inventoryByModel;
 }
 
-// Función auxiliar para obtener inventario inicial
+// Función auxiliar para obtener el turno actual
+function getCurrentShift() {
+    const shiftSelect = document.getElementById('shift');
+    return shiftSelect ? shiftSelect.value : 'Primer Turno (07:00-19:00)';
+}
 function getInitialInventory(partNumber, warehouse) {
     let total = 0;
     Object.values(inventory).forEach(item => {
