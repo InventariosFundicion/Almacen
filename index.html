@@ -3031,44 +3031,25 @@ function generateCriticalAnalysis() {
     let criticalIssues = [];
     
     Object.keys(theoreticalBalance).forEach(modelo => {
-    const balance = theoreticalBalance[modelo];
+        const balance = theoreticalBalance[modelo];
+        
+        // Obtener verificación física para este modelo
+        const physicalFundidos = getPhysicalCountForModel(modelo, 'fundidos');
+        const physicalAcabados = getPhysicalCountForModel(modelo, 'acabados');
+        
+        // Verificar diferencias críticas en fundidos
+        const diffFund = balance.balanceFinal.fundidos - physicalFundidos;
+        if (Math.abs(diffFund) > 5) {
+            criticalIssues.push(`${modelo} - Fundidos: ${diffFund > 0 ? 'Exceso' : 'Faltante'} de ${Math.abs(diffFund)} piezas`);
+        }
+        
+        // Verificar diferencias críticas en acabados
+        const diffAcab = balance.balanceFinal.acabados - physicalAcabados;
+        if (Math.abs(diffAcab) > 5) {
+            criticalIssues.push(`${modelo} - Acabados: ${diffAcab > 0 ? 'Exceso' : 'Faltante'} de ${Math.abs(diffAcab)} piezas`);
+        }
+    });
     
-    // Obtener verificación física para este modelo
-    const physicalFundidos = getPhysicalCountForModel(modelo, 'fundidos');
-    const physicalAcabados = getPhysicalCountForModel(modelo, 'acabados');
-    
-    // Fila de fundición
-    const diffFund = balance.balanceFinal.fundidos - physicalFundidos;
-    const statusFund = Math.abs(diffFund) <= 5 ? '✅ OK' : '❌ Revisar';
-    
-    html += `
-        <tr>
-            <td rowspan="2"><strong>${modelo}</strong></td>
-            <td>🔥 Fundidos</td>
-            <td style="text-align: center;">${balance.inventarioInicial.fundidos}</td>
-            <td style="text-align: center;">+${balance.fundicion.reportado}</td>
-            <td style="text-align: center;"><strong>${balance.balanceFinal.fundidos}</strong></td>
-            <td style="text-align: center;">${physicalFundidos}</td>
-            <td style="text-align: center;" class="${getDifferenceClass(diffFund)}">${diffFund}</td>
-            <td>${statusFund}</td>
-        </tr>
-    `;
-    
-    // Fila de acabado
-    const diffAcab = balance.balanceFinal.acabados - physicalAcabados;
-    const statusAcab = Math.abs(diffAcab) <= 5 ? '✅ OK' : '❌ Revisar';
-    
-    html += `
-        <tr>
-            <td>✅ Acabados</td>
-            <td style="text-align: center;">${balance.inventarioInicial.acabados}</td>
-            <td style="text-align: center;">+${balance.acabado.reportado}</td>
-            <td style="text-align: center;"><strong>${balance.balanceFinal.acabados}</strong></td>
-            <td style="text-align: center;">${physicalAcabados}</td>
-            <td style="text-align: center;" class="${getDifferenceClass(diffAcab)}">${diffAcab}</td>
-            <td>${statusAcab}</td>
-        </tr>
-    `;
     if (criticalIssues.length > 0) {
         return `
             <div class="alert" style="background: #f8d7da; color: #721c24; margin-top: 20px;">
@@ -3087,7 +3068,6 @@ function generateCriticalAnalysis() {
         `;
     }
 }
-
 // Mostrar reporte completo de producción
 function showProductionReport() {
     const currentShift = document.getElementById('shift').value;
