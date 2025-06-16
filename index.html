@@ -2715,11 +2715,7 @@ async function saveProductionReport(tipo) {
     if (!evidencia) {
         alert('⚠️ EVIDENCIA REQUERIDA\n\nDebe adjuntar un archivo PDF como evidencia del reporte antes de guardar.\n\nPor favor, selecciona un archivo PDF.');
         return;
-    }
-    
-    // Obtener evidencia si existe
-    const evidencia = await getEvidenceFile(prefix + '-evidencia');
-    
+    }      
     const reporte = {
         id: Date.now(),
         tipo: tipo,
@@ -2772,9 +2768,6 @@ async function saveMovementReport() {
         alert('⚠️ EVIDENCIA REQUERIDA\n\nDebe adjuntar un archivo PDF como evidencia del movimiento antes de guardar.\n\nPor favor, selecciona un archivo PDF.');
         return;
     }
-    // Obtener evidencia si existe
-    const evidencia = await getEvidenceFile('mov-evidencia');
-    
     const movimiento = {
         id: Date.now(),
         tipo: document.getElementById('mov-tipo').value,
