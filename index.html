@@ -1267,31 +1267,25 @@ function processIndividualCode(code, type, movementType, shift, warehouse, palle
     if (minutes < 1440) return `Hace ${Math.floor(minutes / 60)} hrs`;
     return date.toLocaleDateString();
 }
-        function calculateTheoreticalInventory() {
-    theoreticalInventory = {};
+       function calculateTheoreticalInventory() {
+    const theoretical = {};
     
-    // Procesar todos los movimientos por orden cronológico
-    const sortedMovements = movements.sort((a, b) => a.date - b.date);
-    
-    sortedMovements.forEach(movement => {
-        const key = movement.partNumber;
-        if (!theoreticalInventory[key]) {
-            theoreticalInventory[key] = {
-                fundidos: 0,
-                acabados: 0,
-                envios: 0,
-                retenciones: 0,
-                scrap: 0,
-                pruebas: 0
-            };
-        }
-        
-        if (movement.type === 'inicial' || movement.type === 'movimiento') {
-            theoreticalInventory[key][movement.warehouse] += movement.quantity;
+    // 1. Partir del inventario actual real como base
+    inventory.forEach(item => {
+        if (item.quantity > 0) {
+            if (!theoretical[item.partNumber]) {
+                theoretical[item.partNumber] = { fundidos: 0, acabados: 0 };
+            }
+            
+            if (item.warehouse === 'fundidos') {
+                theoretical[item.partNumber].fundidos += item.quantity;
+            } else if (item.warehouse === 'acabados') {
+                theoretical[item.partNumber].acabados += item.quantity;
+            }
         }
     });
     
-    return theoreticalInventory;
+    return theoretical;
 }
                 function startNewShiftVerification() {
     const confirmReset = confirm('🔄 NUEVO TURNO\n\n¿Quieres limpiar las verificaciones físicas del turno anterior para comenzar una nueva verificación?\n\n✅ Sí = Limpiar verificaciones\n❌ No = Mantener datos actuales');
