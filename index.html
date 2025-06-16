@@ -350,6 +350,92 @@
         .collapsible-content {
             display: block;
         }
+        .file-management-container {
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 10px;
+    background: #f8f9fa;
+}
+
+.file-upload-area {
+    cursor: pointer;
+    text-align: center;
+    padding: 20px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.file-upload-area:hover {
+    background: #e9ecef;
+}
+
+.file-status {
+    font-size: 14px;
+}
+
+.file-placeholder {
+    color: #6c757d;
+}
+
+.file-info {
+    color: #495057;
+    font-weight: bold;
+}
+
+.file-success {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.file-actions {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.file-actions .btn {
+    margin: 0 5px;
+    font-size: 12px;
+    padding: 5px 10px;
+}
+
+.btn-sm {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.file-history-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.file-history-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 600px;
+    max-height: 70vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.file-history-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+}
     </style>
 </head>
 <body>
@@ -605,8 +691,23 @@
                     <input type="number" id="fund-buenas" readonly style="background: #e9ecef;">
                 </div>
             </div>
-            
-            <button type="button" class="btn btn-success" onclick="saveProductionReport('fundicion')">🔥 Guardar Reporte de Fundición</button>
+            <div class="form-group" style="margin-top: 20px;">
+    <label>📄 Evidencia (PDF del reporte escaneado):</label>
+    <div class="file-management-container">
+        <input type="file" id="fund-evidencia" accept=".pdf" onchange="handleFileSelection('fund-evidencia')" style="display: none;">
+        <div class="file-upload-area" onclick="document.getElementById('fund-evidencia').click()">
+            <div id="fund-evidencia-status" class="file-status">
+                <span class="file-placeholder">📎 Haz clic para seleccionar PDF (máx. 5MB)</span>
+            </div>
+        </div>
+        <div id="fund-evidencia-actions" class="file-actions" style="display: none;">
+            <button type="button" class="btn btn-sm btn-warning" onclick="replaceFile('fund-evidencia')">🔄 Reemplazar</button>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeFile('fund-evidencia')">🗑️ Eliminar</button>
+            <button type="button" class="btn btn-sm btn-info" onclick="viewFileHistory('fund-evidencia')">📋 Historial</button>
+        </div>
+    </div>
+</div>
+<button type="button" class="btn btn-success" onclick="saveProductionReport('fundicion')">🔥 Guardar Reporte de Fundición</button>
         </form>
     </div>
 
@@ -627,7 +728,18 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Modelo:</label>
+                    <label>Máquina de Acabado:</label>
+                    <select id="acab-maquina" required>
+                         <option value="">Seleccionar...</option>
+                         <option value="30">Acabado AC-30</option>
+                         <option value="31">Acabado AC-31</option>
+                         <option value="32">Acabado AC-32</option>
+                         <option value="33">Acabado AC-33</option>
+                         <option value="34">Acabado AC-34</option>
+                    </select>
+                </div>      
+                <div class="form-group">
+                    <label>Número de parte:</label>
                     <select id="acab-modelo" required>
                         <option value="">Seleccionar...</option>
                         <option value="PX13-10-382">PX13-10-382 (LWR)</option>
@@ -654,8 +766,23 @@
                     <input type="number" id="acab-buenas" readonly style="background: #e9ecef;">
                 </div>
             </div>
-            
-            <button type="button" class="btn btn-success" onclick="saveProductionReport('acabado')">✅ Guardar Reporte de Acabado</button>
+            <div class="form-group" style="margin-top: 20px;">
+    <label>📄 Evidencia (PDF del reporte escaneado):</label>
+    <div class="file-management-container">
+        <input type="file" id="acab-evidencia" accept=".pdf" onchange="handleFileSelection('acab-evidencia')" style="display: none;">
+        <div class="file-upload-area" onclick="document.getElementById('acab-evidencia').click()">
+            <div id="acab-evidencia-status" class="file-status">
+                <span class="file-placeholder">📎 Haz clic para seleccionar PDF (máx. 5MB)</span>
+            </div>
+        </div>
+        <div id="acab-evidencia-actions" class="file-actions" style="display: none;">
+            <button type="button" class="btn btn-sm btn-warning" onclick="replaceFile('acab-evidencia')">🔄 Reemplazar</button>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeFile('acab-evidencia')">🗑️ Eliminar</button>
+            <button type="button" class="btn btn-sm btn-info" onclick="viewFileHistory('acab-evidencia')">📋 Historial</button>
+        </div>
+    </div>
+</div>
+<button type="button" class="btn btn-success" onclick="saveProductionReport('acabado')">✅ Guardar Reporte de Acabado</button>
         </form>
     </div>
 
@@ -682,8 +809,26 @@
             
             <div class="grid" style="grid-template-columns: repeat(2, 1fr);">
                 <div class="form-group">
-                    <label>Modelo/Número de Parte:</label>
-                    <select id="mov-modelo" required>
+    <label>Máquina/Área:</label>
+    <select id="mov-maquina" required>
+        <option value="">Seleccionar...</option>
+        <option value="30">Máquina #30 (LWR)</option>
+        <option value="31">Máquina #31 (LWR)</option>
+        <option value="32">Máquina #32 (UPR)</option>
+        <option value="33">Máquina #33 (UPR)</option>
+        <option value="34">Máquina #34 (UPR)</option>
+        <option value="30">Acabado AC-30</option>
+        <option value="31">Acabado AC-31</option>
+        <option value="32">Acabado AC-32</option>
+        <option value="33">Acabado AC-33</option>
+        <option value="34">Acabado AC-34</option>
+        <option value="ALMACEN">Almacén General</option>
+        <option value="ENVIOS">Área de Envíos</option>
+    </select>
+</div>
+<div class="form-group">
+    <label>Modelo/Número de Parte:</label>
+    <select id="mov-modelo" required>
                         <option value="">Seleccionar...</option>
                         <option value="PX13-10-382">PX13-10-382 (LWR)</option>
                         <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
@@ -703,8 +848,23 @@
                 <label>Comentarios/Razón:</label>
                 <textarea id="mov-comentarios" rows="3" placeholder="Describe la razón del movimiento..."></textarea>
             </div>
-            
-            <button type="button" class="btn btn-success" onclick="saveMovementReport()">📦 Guardar Movimiento</button>
+            <div class="form-group" style="margin-top: 20px;">
+    <label>📄 Evidencia (PDF de la documentación):</label>
+    <div class="file-management-container">
+        <input type="file" id="mov-evidencia" accept=".pdf" onchange="handleFileSelection('mov-evidencia')" style="display: none;">
+        <div class="file-upload-area" onclick="document.getElementById('mov-evidencia').click()">
+            <div id="mov-evidencia-status" class="file-status">
+                <span class="file-placeholder">📎 Haz clic para seleccionar PDF (máx. 5MB)</span>
+            </div>
+        </div>
+        <div id="mov-evidencia-actions" class="file-actions" style="display: none;">
+            <button type="button" class="btn btn-sm btn-warning" onclick="replaceFile('mov-evidencia')">🔄 Reemplazar</button>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeFile('mov-evidencia')">🗑️ Eliminar</button>
+            <button type="button" class="btn btn-sm btn-info" onclick="viewFileHistory('mov-evidencia')">📋 Historial</button>
+        </div>
+    </div>
+</div>
+<button type="button" class="btn btn-success" onclick="saveMovementReport()">📦 Guardar Movimiento</button>
         </form>
     </div>
 
@@ -2436,7 +2596,7 @@ function calculateGoodParts(prefix) {
 }
 
 // Guardar reporte de producción
-function saveProductionReport(tipo) {
+async function saveProductionReport(tipo) {
     const prefix = tipo === 'fundicion' ? 'fund' : 'acab';
     const form = document.getElementById('production-' + tipo + '-form');
     
@@ -2444,6 +2604,9 @@ function saveProductionReport(tipo) {
         form.reportValidity();
         return;
     }
+    
+    // Obtener evidencia si existe
+    const evidencia = await getEvidenceFile(prefix + '-evidencia');
     
     const reporte = {
         id: Date.now(),
@@ -2454,6 +2617,7 @@ function saveProductionReport(tipo) {
         cantidadTotal: parseInt(document.getElementById(prefix + '-total').value),
         cantidadNG: parseInt(document.getElementById(prefix + '-ng').value),
         piezasBuenas: parseInt(document.getElementById(prefix + '-buenas').value),
+        evidencia: evidencia, // Archivo PDF
         timestamp: new Date()
     };
     
@@ -2461,19 +2625,29 @@ function saveProductionReport(tipo) {
     if (tipo === 'fundicion') {
         reporte.maquina = document.getElementById('fund-maquina').value;
         reporte.molde = document.getElementById('fund-molde').value;
+    } else {
+        // Para acabado agregar máquina de acabado
+        reporte.maquina = document.getElementById('acab-maquina').value;
     }
     
     productionReports.push(reporte);
     
-    alert(`✅ Reporte de ${tipo} guardado exitosamente!\n\n📊 Resumen:\n• Modelo: ${reporte.modelo}\n• Piezas buenas: ${reporte.piezasBuenas}\n• Fecha: ${reporte.fecha}\n• Turno: ${reporte.turno}`);
+    let alertMessage = `✅ Reporte de ${tipo} guardado exitosamente!\n\n📊 Resumen:\n• Modelo: ${reporte.modelo}\n• Máquina: ${reporte.maquina}\n• Piezas buenas: ${reporte.piezasBuenas}\n• Fecha: ${reporte.fecha}\n• Turno: ${reporte.turno}`;
+    
+    if (evidencia) {
+        alertMessage += `\n• 📄 Evidencia: ${evidencia.nombre}`;
+    }
+    
+    alert(alertMessage);
     
     // Limpiar formulario
     form.reset();
+    // Limpiar archivos después de guardar
+clearFormFiles('production-' + tipo + '-form'); // Para producción
     updateProductionSummary();
 }
-
 // Guardar movimiento de material
-function saveMovementReport() {
+async function saveMovementReport() {
     const form = document.getElementById('production-movimientos-form');
     
     if (!form.checkValidity()) {
@@ -2481,13 +2655,18 @@ function saveMovementReport() {
         return;
     }
     
+    // Obtener evidencia si existe
+    const evidencia = await getEvidenceFile('mov-evidencia');
+    
     const movimiento = {
         id: Date.now(),
         tipo: document.getElementById('mov-tipo').value,
         fecha: document.getElementById('mov-fecha').value,
+        maquina: document.getElementById('mov-maquina').value, // Nueva máquina
         modelo: document.getElementById('mov-modelo').value,
         cantidad: parseInt(document.getElementById('mov-cantidad').value),
         comentarios: document.getElementById('mov-comentarios').value,
+        evidencia: evidencia, // Archivo PDF
         timestamp: new Date()
     };
     
@@ -2500,13 +2679,20 @@ function saveMovementReport() {
         'pruebas': '🧪 Pruebas'
     };
     
-    alert(`✅ Movimiento registrado exitosamente!\n\n📊 Resumen:\n• Tipo: ${tipoNames[movimiento.tipo]}\n• Modelo: ${movimiento.modelo}\n• Cantidad: ${movimiento.cantidad}\n• Fecha: ${movimiento.fecha}`);
+    let alertMessage = `✅ Movimiento registrado exitosamente!\n\n📊 Resumen:\n• Tipo: ${tipoNames[movimiento.tipo]}\n• Máquina: ${movimiento.maquina}\n• Modelo: ${movimiento.modelo}\n• Cantidad: ${movimiento.cantidad}\n• Fecha: ${movimiento.fecha}`;
+    
+    if (evidencia) {
+        alertMessage += `\n• 📄 Evidencia: ${evidencia.nombre}`;
+    }
+    
+    alert(alertMessage);
     
     // Limpiar formulario
     form.reset();
+    // Limpiar archivos después de guardar
+    clearFormFiles('production-movimientos-form'); // Para movimientos
     updateProductionSummary();
 }
-
 // Actualizar resumen de producción
 function updateProductionSummary() {
     const summaryDiv = document.getElementById('production-summary');
@@ -2530,41 +2716,50 @@ function updateProductionSummary() {
     
     // Mostrar reportes de producción
     if (currentReports.length > 0) {
-        html += '<table class="inventory-table"><thead><tr><th>Tipo</th><th>Modelo</th><th>Máquina</th><th>Total</th><th>NG</th><th>Buenas</th><th>Hora</th></tr></thead><tbody>';
-        currentReports.forEach(r => {
-            html += `<tr>
-                <td><span class="code-badge" style="background: ${r.tipo === 'fundicion' ? '#e74c3c' : '#27ae60'};">${r.tipo.toUpperCase()}</span></td>
-                <td>${r.modelo}</td>
-                <td>${r.maquina || 'N/A'}</td>
-                <td>${r.cantidadTotal}</td>
-                <td style="color: #e74c3c;">${r.cantidadNG}</td>
-                <td style="color: #27ae60; font-weight: bold;">${r.piezasBuenas}</td>
-                <td>${r.timestamp.toLocaleTimeString()}</td>
-            </tr>`;
-        });
+        html += '<table class="inventory-table"><thead><tr><th>Tipo</th><th>Máquina</th><th>Modelo</th><th>Cantidad</th><th>Evidencia</th><th>Comentarios</th><th>Hora</th></tr></thead><tbody>';
+       // Para reportes de producción
+currentReports.forEach(r => {
+    const evidenciaIcon = r.evidencia ? 
+        `<button onclick="showEvidenceInfo('${r.id}')" class="btn btn-sm" style="background: #28a745; color: white;">📄</button>` : 
+        '—';
+    
+    html += `<tr>
+        <td>${r.tipo.toUpperCase()}</td>
+        <td>${r.modelo}</td>
+        <td>${r.maquina || 'N/A'}</td>
+        <td>${r.cantidadTotal}</td>
+        <td>${r.cantidadNG}</td>
+        <td><strong>${r.piezasBuenas}</strong></td>
+        <td>${evidenciaIcon}</td>
+        <td>${r.timestamp.toLocaleTimeString()}</td>
+    </tr>`;
+});
         html += '</tbody></table>';
     }
     
     // Mostrar movimientos
     if (currentMovements.length > 0) {
         html += '<h4>📦 Movimientos Registrados:</h4>';
-        html += '<table class="inventory-table"><thead><tr><th>Tipo</th><th>Modelo</th><th>Cantidad</th><th>Comentarios</th><th>Hora</th></tr></thead><tbody>';
-        currentMovements.forEach(m => {
-            const tipoIcons = {'scrap': '♻️', 'envios': '📦', 'retenciones': '⏸️', 'pruebas': '🧪'};
-            html += `<tr>
-                <td>${tipoIcons[m.tipo]} ${m.tipo.toUpperCase()}</td>
-                <td>${m.modelo}</td>
-                <td>${m.cantidad}</td>
-                <td>${m.comentarios || 'Sin comentarios'}</td>
-                <td>${m.timestamp.toLocaleTimeString()}</td>
-            </tr>`;
-        });
+       html += '<table class="inventory-table"><thead><tr><th>Tipo</th><th>Máquina</th><th>Modelo</th><th>Cantidad</th><th>Evidencia</th><th>Comentarios</th><th>Hora</th></tr></thead><tbody>';
+       currentMovements.forEach(m => {
+    const tipoIcons = {'scrap': '♻️', 'envios': '📦', 'retenciones': '⏸️', 'pruebas': '🧪'};
+    const evidenciaIcon = m.evidencia ? '📄' : '—';
+    html += `<tr>
+        <td>${tipoIcons[m.tipo]} ${m.tipo.toUpperCase()}</td>
+        <td>${m.maquina}</td>
+        <td>${m.modelo}</td>
+        <td>${m.cantidad}</td>
+        <td>${evidenciaIcon}</td>
+        <td>${m.comentarios || 'Sin comentarios'}</td>
+        <td>${m.timestamp.toLocaleTimeString()}</td>
+    </tr>`;
+});
         html += '</tbody></table>';
     }
     
     summaryDiv.innerHTML = html;
 }
-        // Generar balance teórico
+// Generar balance teórico
 function generateTheoreticalBalance() {
     const currentShift = document.getElementById('shift').value;
     const today = new Date().toISOString().split('T')[0];
@@ -2585,30 +2780,69 @@ function generateTheoreticalBalance() {
     // Inicializar balance teórico
     theoreticalBalance = {};
     
+    // Obtener inventario inicial de todos los modelos únicos
+    const allModels = new Set();
+    currentReports.forEach(r => {
+        const modelo = r.modelo.replace('-FUN', '');
+        allModels.add(modelo);
+    });
+    
+    // Inicializar con inventario inicial
+    allModels.forEach(modelo => {
+        theoreticalBalance[modelo] = {
+            inventarioInicial: {
+                fundidos: getInitialInventory(modelo + '-FUN', 'fundidos'),
+                acabados: getInitialInventory(modelo, 'acabados')
+            },
+            fundicion: { 
+                reportado: 0, 
+                teorico: 0 
+            },
+            acabado: { 
+                reportado: 0, 
+                teorico: 0 
+            },
+            movimientos: { 
+                scrap: 0, 
+                envios: 0, 
+                retenciones: 0, 
+                pruebas: 0 
+            },
+            balanceFinal: {
+                fundidos: 0,
+                acabados: 0
+            }
+        };
+        
+        // Establecer balance inicial = inventario inicial
+        theoreticalBalance[modelo].balanceFinal.fundidos = theoreticalBalance[modelo].inventarioInicial.fundidos;
+        theoreticalBalance[modelo].balanceFinal.acabados = theoreticalBalance[modelo].inventarioInicial.acabados;
+    });
+    
     // Procesar reportes de producción
     currentReports.forEach(reporte => {
-        const modelo = reporte.modelo.replace('-FUN', ''); // Convertir modelo de fundición a acabado
-        
-        if (!theoreticalBalance[modelo]) {
-            theoreticalBalance[modelo] = {
-                fundicion: { reportado: 0, teorico: 0 },
-                acabado: { reportado: 0, teorico: 0 },
-                movimientos: { scrap: 0, envios: 0, retenciones: 0, pruebas: 0 }
-            };
-        }
+        const modelo = reporte.modelo.replace('-FUN', '');
         
         if (reporte.tipo === 'fundicion') {
             theoreticalBalance[modelo].fundicion.reportado += reporte.piezasBuenas;
-            // Para UPR: no todo va directo a acabado (proceso de tratamiento térmico)
-            if (modelo.includes('301')) {
-                // UPR - puede quedar en buffer
-                theoreticalBalance[modelo].fundicion.teorico += reporte.piezasBuenas;
-            } else {
-                // LWR - va directo a acabado
-                theoreticalBalance[modelo].acabado.teorico += reporte.piezasBuenas;
+            
+            // SUMAR piezas fundidas al balance de fundidos
+            theoreticalBalance[modelo].balanceFinal.fundidos += reporte.piezasBuenas;
+            
+            // Para LWR: las piezas fundidas van directo a acabado (mismo turno)
+            if (modelo.includes('382')) {
+                theoreticalBalance[modelo].balanceFinal.fundidos -= reporte.piezasBuenas; // Se van de fundidos
+                theoreticalBalance[modelo].balanceFinal.acabados += reporte.piezasBuenas; // Llegan a acabados
             }
+            // Para UPR: se quedan en fundidos (van a tratamiento térmico)
+            
         } else if (reporte.tipo === 'acabado') {
             theoreticalBalance[modelo].acabado.reportado += reporte.piezasBuenas;
+            
+            // Para acabado: las piezas procesadas se RESTAN del inventario de acabados
+            // porque salen del almacén para enviarse
+            theoreticalBalance[modelo].balanceFinal.acabados -= reporte.cantidadTotal; // Total procesado
+            theoreticalBalance[modelo].balanceFinal.acabados += reporte.piezasBuenas; // Solo las buenas regresan
         }
     });
     
@@ -2617,6 +2851,29 @@ function generateTheoreticalBalance() {
         const modelo = movimiento.modelo;
         if (theoreticalBalance[modelo]) {
             theoreticalBalance[modelo].movimientos[movimiento.tipo] += movimiento.cantidad;
+            
+            // Aplicar movimientos al balance final
+            switch(movimiento.tipo) {
+                case 'scrap':
+                    // Scrap se resta del almacén correspondiente
+                    if (modelo.includes('-FUN')) {
+                        theoreticalBalance[modelo.replace('-FUN', '')].balanceFinal.fundidos -= movimiento.cantidad;
+                    } else {
+                        theoreticalBalance[modelo].balanceFinal.acabados -= movimiento.cantidad;
+                    }
+                    break;
+                case 'envios':
+                    // Envíos se restan de acabados
+                    theoreticalBalance[modelo].balanceFinal.acabados -= movimiento.cantidad;
+                    break;
+                case 'retenciones':
+                    // Retenciones no afectan el balance (siguen en almacén)
+                    break;
+                case 'pruebas':
+                    // Pruebas se restan temporalmente
+                    theoreticalBalance[modelo].balanceFinal.acabados -= movimiento.cantidad;
+                    break;
+            }
         }
     });
     
@@ -2624,6 +2881,16 @@ function generateTheoreticalBalance() {
     showTheoreticalBalanceReport();
 }
 
+// Función auxiliar para obtener inventario inicial
+function getInitialInventory(partNumber, warehouse) {
+    let total = 0;
+    Object.values(inventory).forEach(item => {
+        if (item.partNumber === partNumber && item.warehouse === warehouse) {
+            total += item.quantity;
+        }
+    });
+    return total;
+}
 // Mostrar reporte de balance teórico
 function showTheoreticalBalanceReport() {
     let html = `
@@ -2640,7 +2907,7 @@ function showTheoreticalBalanceReport() {
     if (Object.keys(theoreticalBalance).length === 0) {
         html += '<div class="alert alert-warning">No hay datos para mostrar. Genera primero el balance teórico.</div>';
     } else {
-        html += '<table class="inventory-table"><thead><tr><th>Modelo</th><th>Proceso</th><th>Reportado</th><th>Teórico</th><th>Físico</th><th>Dif. Rep-Teo</th><th>Dif. Teo-Fis</th><th>Status</th></tr></thead><tbody>';
+        html += '<table class="inventory-table"><thead><tr><th>Modelo</th><th>Proceso</th><th>Inv. Inicial</th><th>Producción</th><th>Balance Calculado</th><th>Físico</th><th>Diferencia</th><th>Status</th></tr></thead><tbody>';
         
         Object.keys(theoreticalBalance).forEach(modelo => {
             const balance = theoreticalBalance[modelo];
@@ -2711,9 +2978,32 @@ function showTheoreticalBalanceReport() {
     html += '</div>';
     
     // Mostrar el reporte
-    const summaryDiv = document.getElementById('production-summary');
-    summaryDiv.innerHTML = html;
-}
+   // Mostrar el reporte en una nueva ventana para no sobrescribir
+const reportWindow = window.open('', '_blank', 'width=1200,height=800');
+reportWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Balance Teórico vs Físico</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.4; }
+            .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            .inventory-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+            .inventory-table th, .inventory-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            .inventory-table th { background-color: #34495e; color: white; }
+            .alert { padding: 15px; margin: 15px 0; border-radius: 5px; }
+            .alert-info { background: #d1ecf1; border: 1px solid #bee5eb; }
+            .alert-success { background: #d4edda; border: 1px solid #c3e6cb; }
+            .difference-zero { color: #6c757d; }
+            .difference-positive { color: #28a745; font-weight: bold; }
+            .difference-negative { color: #dc3545; font-weight: bold; }
+        </style>
+    </head>
+    <body>${html}</body>
+    </html>
+`);
+reportWindow.document.close();
 
 // Funciones auxiliares
 function getPhysicalCountForModel(modelo, warehouse) {
@@ -2741,22 +3031,44 @@ function generateCriticalAnalysis() {
     let criticalIssues = [];
     
     Object.keys(theoreticalBalance).forEach(modelo => {
-        const balance = theoreticalBalance[modelo];
-        const physicalFundidos = getPhysicalCountForModel(modelo, 'fundidos');
-        const physicalAcabados = getPhysicalCountForModel(modelo, 'acabados');
-        
-        // Verificar diferencias críticas (más de 5 piezas)
-        const diffFundTeoFis = balance.fundicion.teorico - physicalFundidos;
-        const diffAcabTeoFis = balance.acabado.teorico - physicalAcabados;
-        
-        if (Math.abs(diffFundTeoFis) > 5) {
-            criticalIssues.push(`🔥 ${modelo} Fundición: ${diffFundTeoFis > 0 ? 'Faltan' : 'Sobran'} ${Math.abs(diffFundTeoFis)} piezas`);
-        }
-        if (Math.abs(diffAcabTeoFis) > 5) {
-            criticalIssues.push(`✅ ${modelo} Acabado: ${diffAcabTeoFis > 0 ? 'Faltan' : 'Sobran'} ${Math.abs(diffAcabTeoFis)} piezas`);
-        }
-    });
+    const balance = theoreticalBalance[modelo];
     
+    // Obtener verificación física para este modelo
+    const physicalFundidos = getPhysicalCountForModel(modelo, 'fundidos');
+    const physicalAcabados = getPhysicalCountForModel(modelo, 'acabados');
+    
+    // Fila de fundición
+    const diffFund = balance.balanceFinal.fundidos - physicalFundidos;
+    const statusFund = Math.abs(diffFund) <= 5 ? '✅ OK' : '❌ Revisar';
+    
+    html += `
+        <tr>
+            <td rowspan="2"><strong>${modelo}</strong></td>
+            <td>🔥 Fundidos</td>
+            <td style="text-align: center;">${balance.inventarioInicial.fundidos}</td>
+            <td style="text-align: center;">+${balance.fundicion.reportado}</td>
+            <td style="text-align: center;"><strong>${balance.balanceFinal.fundidos}</strong></td>
+            <td style="text-align: center;">${physicalFundidos}</td>
+            <td style="text-align: center;" class="${getDifferenceClass(diffFund)}">${diffFund}</td>
+            <td>${statusFund}</td>
+        </tr>
+    `;
+    
+    // Fila de acabado
+    const diffAcab = balance.balanceFinal.acabados - physicalAcabados;
+    const statusAcab = Math.abs(diffAcab) <= 5 ? '✅ OK' : '❌ Revisar';
+    
+    html += `
+        <tr>
+            <td>✅ Acabados</td>
+            <td style="text-align: center;">${balance.inventarioInicial.acabados}</td>
+            <td style="text-align: center;">+${balance.acabado.reportado}</td>
+            <td style="text-align: center;"><strong>${balance.balanceFinal.acabados}</strong></td>
+            <td style="text-align: center;">${physicalAcabados}</td>
+            <td style="text-align: center;" class="${getDifferenceClass(diffAcab)}">${diffAcab}</td>
+            <td>${statusAcab}</td>
+        </tr>
+    `;
     if (criticalIssues.length > 0) {
         return `
             <div class="alert" style="background: #f8d7da; color: #721c24; margin-top: 20px;">
@@ -2883,6 +3195,324 @@ function showProductionReport() {
     reportWindow.document.write(reportContent);
     reportWindow.document.close();
     reportWindow.print();
+}
+    // Validar archivo PDF
+function validatePDF(inputId) {
+    const fileInput = document.getElementById(inputId);
+    const file = fileInput.files[0];
+    
+    if (file) {
+        // Verificar que sea PDF
+        if (file.type !== 'application/pdf') {
+            alert('⚠️ Solo se permiten archivos PDF.');
+            fileInput.value = '';
+            return false;
+        }
+        
+        // Verificar tamaño (5MB máximo)
+        const maxSize = 5 * 1024 * 1024; // 5MB en bytes
+        if (file.size > maxSize) {
+            alert('⚠️ El archivo es demasiado grande. Máximo permitido: 5MB.');
+            fileInput.value = '';
+            return false;
+        }
+        
+        // Mostrar confirmación
+        const sizeInMB = (file.size / 1024 / 1024).toFixed(2);
+        console.log(`✅ Archivo válido: ${file.name} (${sizeInMB}MB)`);
+        return true;
+    }
+    return true;
+}
+
+// Convertir archivo a Base64 para almacenamiento
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+}
+
+// Función auxiliar para obtener archivo de evidencia
+async function getEvidenceFile(inputId) {
+    const fileInput = document.getElementById(inputId);
+    const file = fileInput.files[0];
+    
+    if (file && validatePDF(inputId)) {
+        try {
+            const base64 = await fileToBase64(file);
+            return {
+                nombre: file.name,
+                tamaño: file.size,
+                fecha: new Date().toISOString(),
+                contenido: base64
+            };
+        } catch (error) {
+            console.error('Error al procesar archivo:', error);
+            alert('❌ Error al procesar el archivo. Intenta de nuevo.');
+            return null;
+        }
+    }
+    return null;
+}
+    // Variables globales para gestión de archivos
+let currentFiles = {};
+let fileHistories = {};
+
+// Manejar selección de archivo
+async function handleFileSelection(inputId) {
+    const fileInput = document.getElementById(inputId);
+    const file = fileInput.files[0];
+    const statusDiv = document.getElementById(inputId + '-status');
+    const actionsDiv = document.getElementById(inputId + '-actions');
+    
+    if (file && validatePDF(inputId)) {
+        try {
+            // Mostrar estado de carga
+            statusDiv.innerHTML = '<span class="file-info">⏳ Procesando archivo...</span>';
+            
+            const fileData = await fileToBase64(file);
+            const sizeInMB = (file.size / 1024 / 1024).toFixed(2);
+            
+            // Crear objeto de archivo con metadatos
+            const fileObject = {
+                nombre: file.name,
+                tamaño: file.size,
+                fechaSubida: new Date().toISOString(),
+                contenido: fileData,
+                version: getNextVersion(inputId)
+            };
+            
+            // Guardar en historial
+            saveFileToHistory(inputId, fileObject);
+            
+            // Guardar archivo actual
+            currentFiles[inputId] = fileObject;
+            
+            // Actualizar interfaz
+            statusDiv.innerHTML = `<span class="file-success">✅ ${file.name} (${sizeInMB}MB) - v${fileObject.version}</span>`;
+            actionsDiv.style.display = 'block';
+            
+        } catch (error) {
+            console.error('Error al procesar archivo:', error);
+            statusDiv.innerHTML = '<span style="color: #dc3545;">❌ Error al procesar archivo</span>';
+            fileInput.value = '';
+        }
+    } else if (file) {
+        statusDiv.innerHTML = '<span style="color: #dc3545;">❌ Archivo inválido</span>';
+        fileInput.value = '';
+    }
+}
+
+// Obtener siguiente versión
+function getNextVersion(inputId) {
+    if (!fileHistories[inputId]) {
+        fileHistories[inputId] = [];
+    }
+    return fileHistories[inputId].length + 1;
+}
+
+// Guardar archivo en historial
+function saveFileToHistory(inputId, fileObject) {
+    if (!fileHistories[inputId]) {
+        fileHistories[inputId] = [];
+    }
+    
+    fileHistories[inputId].push({
+        ...fileObject,
+        accion: fileHistories[inputId].length === 0 ? 'Carga inicial' : 'Reemplazo',
+        fechaAccion: new Date().toISOString()
+    });
+}
+
+// Reemplazar archivo
+function replaceFile(inputId) {
+    if (confirm('¿Estás seguro de que quieres reemplazar el archivo actual?')) {
+        const fileInput = document.getElementById(inputId);
+        fileInput.click();
+    }
+}
+
+// Eliminar archivo
+function removeFile(inputId) {
+    if (confirm('¿Estás seguro de que quieres eliminar el archivo actual?')) {
+        const fileInput = document.getElementById(inputId);
+        const statusDiv = document.getElementById(inputId + '-status');
+        const actionsDiv = document.getElementById(inputId + '-actions');
+        
+        // Guardar eliminación en historial
+        if (currentFiles[inputId]) {
+            if (!fileHistories[inputId]) {
+                fileHistories[inputId] = [];
+            }
+            
+            fileHistories[inputId].push({
+                nombre: currentFiles[inputId].nombre,
+                accion: 'Eliminación',
+                fechaAccion: new Date().toISOString(),
+                eliminadoPor: 'Usuario'
+            });
+        }
+        
+        // Limpiar archivo actual
+        currentFiles[inputId] = null;
+        fileInput.value = '';
+        
+        // Resetear interfaz
+        statusDiv.innerHTML = '<span class="file-placeholder">📎 Haz clic para seleccionar PDF (máx. 5MB)</span>';
+        actionsDiv.style.display = 'none';
+        
+        alert('✅ Archivo eliminado correctamente.');
+    }
+}
+
+// Ver historial de archivos
+function viewFileHistory(inputId) {
+    const history = fileHistories[inputId] || [];
+    
+    if (history.length === 0) {
+        alert('📋 No hay historial de archivos para este campo.');
+        return;
+    }
+    
+    let modalHtml = `
+        <div class="file-history-modal" id="historyModal">
+            <div class="file-history-content">
+                <button class="file-history-close" onclick="closeFileHistory()">×</button>
+                <h3>📋 Historial de Archivos</h3>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                    <thead>
+                        <tr style="background: #f8f9fa;">
+                            <th style="border: 1px solid #ddd; padding: 8px;">Versión</th>
+                            <th style="border: 1px solid #ddd; padding: 8px;">Archivo</th>
+                            <th style="border: 1px solid #ddd; padding: 8px;">Acción</th>
+                            <th style="border: 1px solid #ddd; padding: 8px;">Fecha</th>
+                            <th style="border: 1px solid #ddd; padding: 8px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+    
+    history.forEach((item, index) => {
+        const isDeleted = item.accion === 'Eliminación';
+        const rowStyle = isDeleted ? 'background: #f8d7da;' : '';
+        const fecha = new Date(item.fechaAccion).toLocaleString();
+        const tamaño = item.tamaño ? `(${(item.tamaño / 1024 / 1024).toFixed(2)}MB)` : '';
+        
+        modalHtml += `
+            <tr style="${rowStyle}">
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">v${item.version || index + 1}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${item.nombre} ${tamaño}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">
+                    ${item.accion === 'Carga inicial' ? '📁' : item.accion === 'Reemplazo' ? '🔄' : '🗑️'} 
+                    ${item.accion}
+                </td>
+                <td style="border: 1px solid #ddd; padding: 8px; font-size: 0.9em;">${fecha}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">
+                    ${!isDeleted && item.contenido ? 
+                        `<button onclick="downloadFile('${inputId}', ${index})" class="btn btn-sm" style="background: #007bff; color: white; border: none; padding: 3px 8px; border-radius: 3px;">📥 Descargar</button>` : 
+                        '—'
+                    }
+                </td>
+            </tr>
+        `;
+    });
+    
+    modalHtml += `
+                    </tbody>
+                </table>
+                <div style="text-align: right; margin-top: 15px;">
+                    <button onclick="closeFileHistory()" class="btn" style="background: #6c757d; color: white; border: none; padding: 8px 15px; border-radius: 4px;">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Agregar modal al DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+// Cerrar modal de historial
+function closeFileHistory() {
+    const modal = document.getElementById('historyModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Descargar archivo del historial
+function downloadFile(inputId, historyIndex) {
+    const history = fileHistories[inputId];
+    if (history && history[historyIndex] && history[historyIndex].contenido) {
+        const fileData = history[historyIndex];
+        
+        // Crear enlace de descarga
+        const link = document.createElement('a');
+        link.href = fileData.contenido;
+        link.download = fileData.nombre;
+        link.style.display = 'none';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        alert(`📥 Descargando ${fileData.nombre}`);
+    } else {
+        alert('❌ No se puede descargar el archivo. Datos no disponibles.');
+    }
+}
+
+// Obtener archivo actual (actualizada)
+async function getEvidenceFile(inputId) {
+    return currentFiles[inputId] || null;
+}
+
+// Limpiar archivos al resetear formulario
+function clearFormFiles(formId) {
+    const form = document.getElementById(formId);
+    const inputs = form.querySelectorAll('input[type="file"]');
+    
+    inputs.forEach(input => {
+        const inputId = input.id;
+        currentFiles[inputId] = null;
+        
+        const statusDiv = document.getElementById(inputId + '-status');
+        const actionsDiv = document.getElementById(inputId + '-actions');
+        
+        if (statusDiv) {
+            statusDiv.innerHTML = '<span class="file-placeholder">📎 Haz clic para seleccionar PDF (máx. 5MB)</span>';
+        }
+        if (actionsDiv) {
+            actionsDiv.style.display = 'none';
+        }
+    });
+}
+    // Mostrar información de evidencia
+function showEvidenceInfo(reportId) {
+    const reporte = productionReports.find(r => r.id == reportId) || 
+                   movementReports.find(m => m.id == reportId);
+    
+    if (reporte && reporte.evidencia) {
+        const evidencia = reporte.evidencia;
+        const sizeInMB = (evidencia.tamaño / 1024 / 1024).toFixed(2);
+        const fecha = new Date(evidencia.fechaSubida).toLocaleString();
+        
+        if (confirm(`📄 Evidencia Adjunta:\n\n• Archivo: ${evidencia.nombre}\n• Tamaño: ${sizeInMB}MB\n• Subido: ${fecha}\n• Versión: v${evidencia.version || 1}\n\n¿Deseas descargar el archivo?`)) {
+            // Crear enlace de descarga
+            const link = document.createElement('a');
+            link.href = evidencia.contenido;
+            link.download = evidencia.nombre;
+            link.style.display = 'none';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    } else {
+        alert('❌ No hay evidencia disponible para este reporte.');
+    }
 }
         
     </script>
