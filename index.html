@@ -1187,7 +1187,7 @@ function processIndividualCode(code, type, movementType, shift, warehouse, palle
             URL.revokeObjectURL(url);
         }
 
-        function loadSampleData() {
+   function loadSampleData() {
     const samples = [
         { code: 'P6102448O2P52', type: 'UPR' },
         { code: '25E153003154276P5', type: 'LWR' },
@@ -1200,7 +1200,7 @@ function processIndividualCode(code, type, movementType, shift, warehouse, palle
         if (codeData) {
             inventory.push({
                 code: sample.code,
-                partNumber: codeData.partNumber, // Esto usa el extractCodeData actualizado
+                partNumber: codeData.partNumber,
                 type: sample.type,
                 state: 'ACABADOS',
                 warehouse: 'acabados',
@@ -1224,19 +1224,18 @@ function processIndividualCode(code, type, movementType, shift, warehouse, palle
         createdDate: new Date()
     };
     pallets.push(samplePallet);
-            const samplePallet = {
-                systemId: generatePalletId(),
-                originalId: 'TARM001',
-                state: 'acabados',
-                type: 'UPR',
-                codesCount: 3,
-                warehouse: 'acabados',
-                codes: ['P6102448O2P52', 'P6205362O3P54', 'P6308476O4P56'],
-                createdDate: new Date()
-            };
-            pallets.push(samplePallet);
-        }
-
+}
+        function formatLastMovement(date) {
+    if (!date) return 'N/A';
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    
+    if (minutes < 1) return 'Ahora mismo';
+    if (minutes < 60) return `Hace ${minutes} min`;
+    if (minutes < 1440) return `Hace ${Math.floor(minutes / 60)} hrs`;
+    return date.toLocaleDateString();
+}
         function updateAllDisplays() {
             updateDashboard();
             updateGroupedInventory();
