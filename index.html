@@ -1433,37 +1433,333 @@ function generateComparisonReport(theoretical, comparisonDiv, discrepanciesDiv) 
 }
         function exportVerificationReport() {
     const theoretical = calculateTheoreticalInventory();
-    const currentDate = new Date().toISOString().split('T')[0];
+    const discrepancies = calculateDiscrepancies(theoretical);
+    const currentDate = new Date().toLocaleDateString('es-ES');
+    const currentTime = new Date().toLocaleTimeString('es-ES');
+    const shift = document.getElementById('shift').value;
     
-    // Crear reporte completo
-    const report = {
-        fecha: currentDate,
-        turno: document.getElementById('shift').value,
-        inventarioTeorico: theoretical,
-        verificacionFisica: physicalVerification,
-        diferencias: calculateDiscrepancies(theoretical),
-        resumen: {
-            totalTeorico: Object.values(theoretical).reduce((sum, item) => sum + item.fundidos + item.acabados, 0),
-            totalVerificado: Object.values(physicalVerification).reduce((sum, item) => sum + item.verifiedQuantity, 0),
-            codigosVerificados: Object.keys(physicalVerification).length
+    // Agrupar verificaciones físicas por número de parte
+    const physicalByPart = {};
+    Object.values(physicalVerification).forEach(item => {
+        if (!physicalByPart[item.partNumber]) {
+            physicalByPart[item.partNumber] = { fundidos: 0, acabados: 0 };
         }
-    };
+        if (item.warehouse === 'fundidos') {
+            physicalByPart[item.partNumber].fundidos += item.verifiedQuantity;
+        } else if (item.warehouse === 'acabados') {
+            physicalByPart[item.partNumber].acabados += item.verifiedQuantity;
+        }
+    });
     
-    const jsonString = JSON.stringify(report, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
+    // Calcular totales
+    const totalTeorico = Object.values(theoretical).reduce((sum, item) => sum + item.fundidos + item.acabados, 0);
+    const totalVerificado = Object.values(physicalVerification).reduce((sum, item) => sum + item.verifiedQuantity, 0);
+    const codigosVerificados = Object.keys(physicalVerification).length;
+    
+    // Crear contenido HTML para el PDF
+    let htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Reporte de Verificación de Inventario</title>
+            <style>
+                body { 
+                    font-family: Arial, sans-serif; 
+                    margin: 20px; 
+                    line-height: 1.4;
+                    color: #333;
+                }
+                .header { 
+                    text-align: center; 
+                    border-bottom: 3px solid #e74c3c; 
+                    padding-bottom: 20px; 
+                    margin-bottom: 30px;
+                }
+                .company-name {
+                    font-size: 24px;
+                    font-weight: bold;
+                    color: #e74c3c;
+                    margin-bottom: 5px;
+                }
+                .report-title {
+                    font-size: 18px;
+                    color: #2c3e50;
+                    margin-bottom: 10px;
+                }
+                .report-info {
+                    font-size: 14px;
+                    color: #666;
+                }
+                .section { 
+                    margin: 25px 0; 
+                    page-break-inside: avoid;
+                }
+                .section-title { 
+                    font-size: 16px; 
+                    font-weight: bold; 
+                    color: #2c3e50; 
+                    border-bottom: 2px solid #3498db;
+                    padding-bottom: 5px;
+                    margin-bottom: 15px;
+                }
+                .summary-grid {
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 20px;
+                    margin: 20px 0;
+                }
+                .summary-card {
+                    border: 1px solid #ddd;
+                    border-radius: 8px;
+                    padding: 15px;
+                    text-align: center;
+                    background: #f8f9fa;
+                }
+                .summary-number {
+                    font-size: 24px;
+                    font-weight: bold;
+                    color: #e74c3c;
+                }
+                .summary-label {
+                    font-size: 12px;
+                    color: #666;
+                    margin-top: 5px;
+                }
+                table { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    margin: 15px 0;
+                    font-size: 12px;
+                }
+                th, td { 
+                    border: 1px solid #ddd; 
+                    padding: 8px; 
+                    text-align: left; 
+                }
+                th { 
+                    background-color: #34495e; 
+                    color: white; 
+                    font-weight: bold;
+                }
+                tr:nth-child(even) { 
+                    background-color: #f9f9f9; 
+                }
+                .difference-positive { color: #27ae60; font-weight: bold; }
+                .difference-negative { color: #e74c3c; font-weight: bold; }
+                .difference-zero { color: #2c3e50; }
+                .status-ok { color: #27ae60; font-weight: bold; }
+                .status-issue { color: #e74c3c; font-weight: bold; }
+                .alert-success {
+                    background: #d4edda;
+                    border: 1px solid #c3e6cb;
+                    color: #155724;
+                    padding: 15px;
+                    border-radius: 8px;
+                    margin: 15px 0;
+                }
+                .alert-warning {
+                    background: #fff3cd;
+                    border: 1px solid #ffeaa7;
+                    color: #856404;
+                    padding: 15px;
+                    border-radius: 8px;
+                    margin: 15px 0;
+                }
+                .footer {
+                    margin-top: 40px;
+                    padding-top: 20px;
+                    border-top: 1px solid #ddd;
+                    font-size: 12px;
+                    color: #666;
+                    text-align: center;
+                }
+                @media print {
+                    body { margin: 0; }
+                    .no-print { display: none; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div class="company-name">🏭 CONTROL DE ALMACÉN - FUNDICIÓN</div>
+                <div class="report-title">📊 REPORTE DE VERIFICACIÓN DE INVENTARIO</div>
+                <div class="report-info">
+                    📅 Fecha: ${currentDate} | ⏰ Hora: ${currentTime} | 🔄 Turno: ${shift}
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📋 RESUMEN EJECUTIVO</div>
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <div class="summary-number">${codigosVerificados}</div>
+                        <div class="summary-label">Códigos Verificados</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-number">${Object.keys(theoretical).length}</div>
+                        <div class="summary-label">Números de Parte</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-number">${Object.keys(discrepancies).length}</div>
+                        <div class="summary-label">Diferencias Encontradas</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">📊 INVENTARIO TEÓRICO</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Número de Parte</th>
+                            <th>🔥 Fundidos</th>
+                            <th>✅ Acabados</th>
+                            <th>Total Disponible</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+    
+    // Agregar datos del inventario teórico
+    Object.keys(theoretical).forEach(partNumber => {
+        const data = theoretical[partNumber];
+        const available = data.fundidos + data.acabados;
+        htmlContent += `
+            <tr>
+                <td><strong>${partNumber}</strong></td>
+                <td style="text-align: center;">${data.fundidos}</td>
+                <td style="text-align: center;">${data.acabados}</td>
+                <td style="text-align: center;"><strong>${available}</strong></td>
+            </tr>
+        `;
+    });
+    
+    htmlContent += `
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section">
+                <div class="section-title">🔍 COMPARACIÓN FÍSICO vs TEÓRICO</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Número de Parte</th>
+                            <th>Estado</th>
+                            <th>Teórico</th>
+                            <th>Físico</th>
+                            <th>Diferencia</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+    
+    // Agregar comparación
+    const allParts = new Set([...Object.keys(theoretical), ...Object.keys(physicalByPart)]);
+    allParts.forEach(partNumber => {
+        const theo = theoretical[partNumber] || { fundidos: 0, acabados: 0 };
+        const phys = physicalByPart[partNumber] || { fundidos: 0, acabados: 0 };
+        
+        // Fila de fundidos
+        const diffFundidos = phys.fundidos - theo.fundidos;
+        const statusFundidos = diffFundidos === 0 ? '✅ OK' : (diffFundidos > 0 ? '⬆️ Exceso' : '⬇️ Faltante');
+        const classFundidos = diffFundidos === 0 ? 'difference-zero' : (diffFundidos > 0 ? 'difference-positive' : 'difference-negative');
+        const statusClassFundidos = diffFundidos === 0 ? 'status-ok' : 'status-issue';
+        
+        htmlContent += `
+            <tr>
+                <td><strong>${partNumber}</strong></td>
+                <td>🔥 Fundidos</td>
+                <td style="text-align: center;">${theo.fundidos}</td>
+                <td style="text-align: center;">${phys.fundidos}</td>
+                <td style="text-align: center;" class="${classFundidos}">${diffFundidos > 0 ? '+' : ''}${diffFundidos}</td>
+                <td class="${statusClassFundidos}">${statusFundidos}</td>
+            </tr>
+        `;
+        
+        // Fila de acabados
+        const diffAcabados = phys.acabados - theo.acabados;
+        const statusAcabados = diffAcabados === 0 ? '✅ OK' : (diffAcabados > 0 ? '⬆️ Exceso' : '⬇️ Faltante');
+        const classAcabados = diffAcabados === 0 ? 'difference-zero' : (diffAcabados > 0 ? 'difference-positive' : 'difference-negative');
+        const statusClassAcabados = diffAcabados === 0 ? 'status-ok' : 'status-issue';
+        
+        htmlContent += `
+            <tr>
+                <td></td>
+                <td>✅ Acabados</td>
+                <td style="text-align: center;">${theo.acabados}</td>
+                <td style="text-align: center;">${phys.acabados}</td>
+                <td style="text-align: center;" class="${classAcabados}">${diffAcabados > 0 ? '+' : ''}${diffAcabados}</td>
+                <td class="${statusClassAcabados}">${statusAcabados}</td>
+            </tr>
+        `;
+    });
+    
+    htmlContent += `
+                    </tbody>
+                </table>
+            </div>
+    `;
+    
+    // Sección de diferencias
+    if (Object.keys(discrepancies).length > 0) {
+        htmlContent += `
+            <div class="section">
+                <div class="section-title">⚠️ DIFERENCIAS CRÍTICAS DETECTADAS</div>
+        `;
+        
+        Object.keys(discrepancies).forEach(partNumber => {
+            const diff = discrepancies[partNumber];
+            htmlContent += `
+                <div class="alert-warning">
+                    <strong>⚠️ ${partNumber}</strong><br>
+            `;
+            if (diff.fundidos.diferencia !== 0) {
+                htmlContent += `&nbsp;&nbsp;🔥 Fundidos: ${diff.fundidos.diferencia > 0 ? 'Exceso' : 'Faltante'} de ${Math.abs(diff.fundidos.diferencia)} piezas<br>`;
+            }
+            if (diff.acabados.diferencia !== 0) {
+                htmlContent += `&nbsp;&nbsp;✅ Acabados: ${diff.acabados.diferencia > 0 ? 'Exceso' : 'Faltante'} de ${Math.abs(diff.acabados.diferencia)} piezas<br>`;
+            }
+            htmlContent += `</div>`;
+        });
+        
+        htmlContent += `</div>`;
+    } else {
+        htmlContent += `
+            <div class="section">
+                <div class="alert-success">
+                    <h3>✅ ¡VERIFICACIÓN PERFECTA!</h3>
+                    <p>No se encontraron diferencias entre el inventario teórico y físico.</p>
+                </div>
+            </div>
+        `;
+    }
+    
+    htmlContent += `
+            <div class="footer">
+                Reporte generado automáticamente por el Sistema de Control de Almacén - Fundición v1.3<br>
+                📧 Para soporte técnico contacte al administrador del sistema
+            </div>
+        </body>
+        </html>
+    `;
+    
+    // Crear y descargar el archivo HTML que puede abrirse como PDF
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     
     const a = document.createElement('a');
     a.href = url;
-    a.download = `reporte-verificacion-${currentDate}-turno${report.turno}.json`;
+    a.download = `reporte-verificacion-${currentDate.replace(/\//g, '-')}-turno${shift}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    alert('📊 Reporte de verificación exportado exitosamente');
+    alert('📊 Reporte exportado como HTML.\n\n💡 Instrucciones:\n1. Abre el archivo descargado en tu navegador\n2. Presiona Ctrl+P (o Cmd+P en Mac)\n3. Selecciona "Guardar como PDF"\n4. ¡Listo! Tendrás tu reporte en PDF');
 }
-
 function calculateDiscrepancies(theoretical) {
     const discrepancies = {};
     
