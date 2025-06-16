@@ -477,6 +477,9 @@
         <div id="inventory" class="tab-content">
             <h2>📋 Inventario Detallado</h2>
             
+            <div style="text-align: center; margin-bottom: 20px;">
+    <button class="btn btn-danger" onclick="clearAllData()">🗑️ Limpiar Todos los Datos</button>
+</div>
             <div class="card">
                 <h3>📊 Inventario por Modelo y Estado</h3>
                 <div id="detailed-inventory"></div>
@@ -1001,9 +1004,20 @@ const confirmTransfer = confirm(`${transferMessage}\n\n✅ Aceptar = Transferir\
                </div>
            `;
            
-       } else if (inventoryType === 'turno') {
 } else if (inventoryType === 'turno') {
     // VERIFICACIÓN FÍSICA DE TARIMA COMPLETA
+    let targetWarehouse = '';
+    
+    if (analysis.detectedState) {
+        targetWarehouse = analysis.detectedState;
+    } else {
+        if (!selectedWarehouse) {
+            alert('Por favor selecciona Fundidos o Acabados para la verificación física');
+            return;
+        }
+        targetWarehouse = selectedWarehouse;
+    }
+    
     analysis.codes.forEach(code => {
         const codeData = extractCodeData(code);
         if (!physicalVerification[code]) {
@@ -1014,7 +1028,7 @@ const confirmTransfer = confirm(`${transferMessage}\n\n✅ Aceptar = Transferir\
                 verifiedQuantity: 0,
                 lastVerified: new Date(),
                 shift: shift,
-                warehouse: analysis.detectedState || selectedWarehouse,
+                warehouse: targetWarehouse,
                 palletId: analysis.palletId
             };
         }
@@ -1027,7 +1041,7 @@ const confirmTransfer = confirm(`${transferMessage}\n\n✅ Aceptar = Transferir\
             🔍 <strong>Tarima verificada físicamente</strong><br>
             📦 ID Original: ${analysis.palletId}<br>
             📊 ${analysis.codes.length} piezas verificadas ${analysis.type}<br>
-            🏪 Estado verificado: ${getWarehouseName(analysis.detectedState || selectedWarehouse)}<br>
+            🏪 Estado verificado: ${getWarehouseName(targetWarehouse)}<br>
             ⏰ Turno: ${shift} - Verificación física
         </div>
     `;
@@ -1501,6 +1515,23 @@ function calculateDiscrepancies(theoretical) {
     printWindow.document.write(`<html><head><title>Reporte Verificación</title></head><body>${printContent}</body></html>`);
     printWindow.document.close();
     printWindow.print();
+}
+        function clearAllData() {
+    const confirmClear = confirm('⚠️ LIMPIAR TODOS LOS DATOS\n\n¿Estás SEGURO de que quieres eliminar:\n• Todo el inventario\n• Todos los movimientos\n• Todas las tarimas\n• Todas las verificaciones físicas\n\nEsta acción NO se puede deshacer.\n\n✅ Aceptar = Eliminar todo\n❌ Cancelar = Mantener datos');
+    
+    if (confirmClear) {
+        // Limpiar todas las variables
+        inventory = [];
+        movements = [];
+        pallets = [];
+        physicalVerification = {};
+        theoreticalInventory = {};
+        
+        // Actualizar displays
+        updateAllDisplays();
+        
+        alert('🗑️ Todos los datos han sido eliminados.\n\nPuedes comenzar con datos frescos.');
+    }
 }
         function updateAllDisplays() {
     updateDashboard();
