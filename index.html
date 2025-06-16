@@ -751,12 +751,12 @@ function parseQRCode(input) {
             // Mejorar detección de estado
             let detectedState = null;
             const stateUpper = state.toUpperCase();
-            if (stateUpper.includes('FUNDIDO') || stateUpper.includes('CAST') || stateUpper.includes('MOLTEN')) {
+            console.log('DEBUG - State original:', state, 'State upper:', stateUpper, 'Detected:', detectedState);
+            if (stateUpper.includes('FUNDIDO') || stateUpper.includes('CAST') || stateUpper.includes('MOLTEN') || stateUpper === 'W4') {
                 detectedState = 'fundidos';
-            } else if (stateUpper.includes('ACABADO') || stateUpper.includes('FINISHED') || stateUpper.includes('ACABADOS')) {
-                detectedState = 'acabados';
-            }
-            
+            } else if (stateUpper.includes('ACABADO') || stateUpper.includes('FINISHED') || stateUpper.includes('ACABADOS') || stateUpper === 'ACABADOS' || stateUpper.includes('W4')) {
+        detectedState = 'acabados';
+        }
             return {
                 isPallet: true,
                 isValid: true,
@@ -854,7 +854,16 @@ if (inventoryType === 'turno') {
         }
         targetWarehouse = selectedWarehouse;
     }
-    
+    // Verificar si ya fue escaneada en este turno
+const alreadyScanned = analysis.codes.some(code => 
+    physicalVerification[code] && 
+    physicalVerification[code].shift === shift
+);
+
+if (alreadyScanned) {
+    alert(`⚠️ TARIMA YA VERIFICADA\n\nEsta tarima ya fue escaneada en el turno ${shift}.\n\nNo se permite verificar la misma tarima dos veces en el mismo turno.`);
+    return;
+}
     analysis.codes.forEach(code => {
         const codeData = extractCodeData(code);
         if (!physicalVerification[code]) {
@@ -1048,6 +1057,37 @@ const confirmTransfer = confirm(`${transferMessage}\n\n✅ Aceptar = Transferir\
                </div>
            `;
 } else {
+           } else if (inventoryType === 'turno') {
+    // VERIFICACIÓN FÍSICA DE PIEZA INDIVIDUAL
+    let targetWarehouse = individualState;
+    
+    // Verificar si ya fue escaneada
+    if (physicalVerification[analysis.code] && 
+        physicalVerification[analysis.code].shift === shift) {
+        alert(`⚠️ PIEZA YA VERIFICADA\n\nEsta pieza ya fue verificada en el turno ${shift}.`);
+        return;
+    }
+    
+    const codeData = extractCodeData(analysis.code);
+    physicalVerification[analysis.code] = {
+        code: analysis.code,
+        partNumber: codeData ? codeData.partNumber : 'Unknown',
+        type: 'individual',
+        verifiedQuantity: 1,
+        lastVerified: new Date(),
+        shift: shift,
+        warehouse: targetWarehouse,
+        palletId: null
+    };
+    
+    resultDiv.innerHTML = `
+        <div class="alert alert-info">
+            🔍 <strong>Pieza individual verificada</strong><br>
+            📦 Código: ${analysis.code}<br>
+            🏪 Estado verificado: ${getWarehouseName(targetWarehouse)}<br>
+            ⏰ Turno: ${shift} - Verificación física
+        </div>
+    `;
     // Para inventarios iniciales
     if (existingItem) {
         if (existingItem.warehouse === individualState) {
