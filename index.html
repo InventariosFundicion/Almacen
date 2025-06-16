@@ -841,7 +841,51 @@ function processQRCode() {
    
    if (analysis.isPallet) {
        const codeCheck = checkExistingCodes(analysis.codes);
-       
+       // VERIFICACIÓN FÍSICA - Inventario por Turno
+if (inventoryType === 'turno') {
+    let targetWarehouse = '';
+    
+    if (analysis.detectedState) {
+        targetWarehouse = analysis.detectedState;
+    } else {
+        if (!selectedWarehouse) {
+            alert('Por favor selecciona Fundidos o Acabados para la verificación física');
+            return;
+        }
+        targetWarehouse = selectedWarehouse;
+    }
+    
+    analysis.codes.forEach(code => {
+        const codeData = extractCodeData(code);
+        if (!physicalVerification[code]) {
+            physicalVerification[code] = {
+                code: code,
+                partNumber: codeData ? codeData.partNumber : 'Unknown',
+                type: analysis.type,
+                verifiedQuantity: 0,
+                lastVerified: new Date(),
+                shift: shift,
+                warehouse: targetWarehouse,
+                palletId: analysis.palletId
+            };
+        }
+        physicalVerification[code].verifiedQuantity += 1;
+        physicalVerification[code].lastVerified = new Date();
+    });
+    
+    resultDiv.innerHTML = `
+        <div class="alert alert-info">
+            🔍 <strong>Tarima verificada físicamente</strong><br>
+            📦 ID Original: ${analysis.palletId}<br>
+            📊 ${analysis.codes.length} piezas verificadas ${analysis.type}<br>
+            🏪 Estado verificado: ${getWarehouseName(targetWarehouse)}<br>
+            ⏰ Turno: ${shift} - Verificación física (NO modifica inventario)
+        </div>
+    `;
+    
+    updateAllDisplays();
+    return; // Salir aquí para evitar el resto del procesamiento
+}
        if (inventoryType === 'movimiento') {
            if (!selectedMovement) {
                alert('Por favor selecciona el destino del movimiento');
@@ -1003,48 +1047,6 @@ const confirmTransfer = confirm(`${transferMessage}\n\n✅ Aceptar = Transferir\
                    📊 Cantidad total: ${existingItem.quantity}
                </div>
            `;
-           
-} else if (inventoryType === 'turno') {
-    // VERIFICACIÓN FÍSICA DE TARIMA COMPLETA
-    let targetWarehouse = '';
-    
-    if (analysis.detectedState) {
-        targetWarehouse = analysis.detectedState;
-    } else {
-        if (!selectedWarehouse) {
-            alert('Por favor selecciona Fundidos o Acabados para la verificación física');
-            return;
-        }
-        targetWarehouse = selectedWarehouse;
-    }
-    
-    analysis.codes.forEach(code => {
-        const codeData = extractCodeData(code);
-        if (!physicalVerification[code]) {
-            physicalVerification[code] = {
-                code: code,
-                partNumber: codeData ? codeData.partNumber : 'Unknown',
-                type: analysis.type,
-                verifiedQuantity: 0,
-                lastVerified: new Date(),
-                shift: shift,
-                warehouse: targetWarehouse,
-                palletId: analysis.palletId
-            };
-        }
-        physicalVerification[code].verifiedQuantity += 1;
-        physicalVerification[code].lastVerified = new Date();
-    });
-    
-    resultDiv.innerHTML = `
-        <div class="alert alert-info">
-            🔍 <strong>Tarima verificada físicamente</strong><br>
-            📦 ID Original: ${analysis.palletId}<br>
-            📊 ${analysis.codes.length} piezas verificadas ${analysis.type}<br>
-            🏪 Estado verificado: ${getWarehouseName(targetWarehouse)}<br>
-            ⏰ Turno: ${shift} - Verificación física
-        </div>
-    `;
 } else {
     // Para inventarios iniciales
     if (existingItem) {
