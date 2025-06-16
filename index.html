@@ -3469,7 +3469,6 @@ function clearFormFiles(formId) {
         }
     });
 }
-// Mostrar información de evidencia
 function showEvidenceInfo(reportId) {
     const reporte = productionReports.find(r => r.id == reportId) || 
                    movementReports.find(m => m.id == reportId);
@@ -3480,7 +3479,6 @@ function showEvidenceInfo(reportId) {
         const fecha = new Date(evidencia.fechaSubida).toLocaleString();
         
         if (confirm(`📄 Evidencia Adjunta:\n\n• Archivo: ${evidencia.nombre}\n• Tamaño: ${sizeInMB}MB\n• Subido: ${fecha}\n• Versión: v${evidencia.version || 1}\n\n¿Deseas descargar el archivo?`)) {
-            // Crear enlace de descarga
             const link = document.createElement('a');
             link.href = evidencia.contenido;
             link.download = evidencia.nombre;
@@ -3495,8 +3493,6 @@ function showEvidenceInfo(reportId) {
     }
 }
 
-        });
-        
-    </script>
+</script>
 </body>
 </html>
