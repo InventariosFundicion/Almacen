@@ -465,7 +465,7 @@
                     </div>
                 </div>
                 
-                <button class="btn btn-success" onclick="processQRCode()">✅ Procesar Código QR</button>
+                <button class="btn btn-success" onclick="()">✅ Procesar Código QR</button>
                 <button class="btn btn-info" onclick="clearForm()">🔄 Limpiar</button>
                 <button class="btn btn-warning" onclick="startNewShiftVerification()">🆕 Nuevo Turno</button>
             </div>
@@ -1055,7 +1055,8 @@ const confirmTransfer = confirm(`${transferMessage}\n\n✅ Aceptar = Transferir\
                    📊 Cantidad total: ${existingItem.quantity}
                </div>
            `;
-} else {
+    }
+}
    } else if (inventoryType === 'turno') {
     // VERIFICACIÓN FÍSICA DE PIEZA INDIVIDUAL
     let targetWarehouse = individualState;
