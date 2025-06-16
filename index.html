@@ -3469,7 +3469,7 @@ function clearFormFiles(formId) {
         }
     });
 }
-    // Mostrar información de evidencia
+// Mostrar información de evidencia
 function showEvidenceInfo(reportId) {
     const reporte = productionReports.find(r => r.id == reportId) || 
                    movementReports.find(m => m.id == reportId);
@@ -3493,10 +3493,10 @@ function showEvidenceInfo(reportId) {
     } else {
         alert('❌ No hay evidencia disponible para este reporte.');
     }
-}  // ← Llave para cerrar showEvidenceInfo
+}
 
-});  // ← Llave para cerrar document.addEventListener
+        }); // ← Esta línea debe tener 8 espacios antes de });
         
-</script>
+    </script>
 </body>
 </html>
