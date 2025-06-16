@@ -3042,7 +3042,10 @@ function getInitialInventory(partNumber, warehouse) {
     });
     return total;
 }
-// Mostrar reporte de balance teórico - VERSIÓN CORREGIDA
+// Mantener la función generateTheoreticalBalance() del código nuevo (la avanzada)
+// Solo corregir showTheoreticalBalanceReport() y las funciones auxiliares
+
+// Mostrar reporte de balance teórico - VERSIÓN CORREGIDA para la nueva estructura
 function showTheoreticalBalanceReport() {
     // USAR LA FUNCIÓN CORREGIDA para generar los datos
     const balanceData = generateTheoreticalBalance();
@@ -3070,8 +3073,12 @@ function showTheoreticalBalanceReport() {
         Object.keys(balanceData).forEach(modelo => {
             const data = balanceData[modelo];
             
+            // Obtener verificación física para este modelo
+            const physicalFundidos = getPhysicalCountForModel(modelo, 'fundidos');
+            const physicalAcabados = getPhysicalCountForModel(modelo, 'acabados');
+            
             // Fila de FUNDICIÓN
-            const difFundidos = data.balanceCalculado.fundidos - data.fisico.fundidos;
+            const difFundidos = data.balanceCalculado.fundidos - physicalFundidos;
             const statusFundidos = Math.abs(difFundidos) <= 5 ? 
                 '<span style="color: #28a745; font-weight: bold;">✅ Perfecto</span>' : 
                 '<span style="color: #dc3545; font-weight: bold;">❌ Crítico</span>';
@@ -3087,14 +3094,14 @@ function showTheoreticalBalanceReport() {
                     <td style="text-align: center;">${data.inventarioInicial.fundidos}</td>
                     <td style="text-align: center;">${data.produccion.fundidos}</td>
                     <td style="text-align: center; font-weight: bold;">${data.balanceCalculado.fundidos}</td>
-                    <td style="text-align: center;">${data.fisico.fundidos}</td>
+                    <td style="text-align: center;">${physicalFundidos}</td>
                     <td style="text-align: center;" class="${getDifferenceClass(difFundidos)}">${difFundidos}</td>
                     <td style="text-align: center;">${statusFundidos}</td>
                 </tr>
             `;
             
             // Fila de ACABADO
-            const difAcabados = data.balanceCalculado.acabados - data.fisico.acabados;
+            const difAcabados = data.balanceCalculado.acabados - physicalAcabados;
             const statusAcabados = Math.abs(difAcabados) <= 5 ? 
                 '<span style="color: #28a745; font-weight: bold;">✅ Perfecto</span>' : 
                 '<span style="color: #dc3545; font-weight: bold;">❌ Crítico</span>';
@@ -3109,7 +3116,7 @@ function showTheoreticalBalanceReport() {
                     <td style="text-align: center;">${data.inventarioInicial.acabados}</td>
                     <td style="text-align: center;">${data.produccion.acabados}</td>
                     <td style="text-align: center; font-weight: bold;">${data.balanceCalculado.acabados}</td>
-                    <td style="text-align: center;">${data.fisico.acabados}</td>
+                    <td style="text-align: center;">${physicalAcabados}</td>
                     <td style="text-align: center;" class="${getDifferenceClass(difAcabados)}">${difAcabados}</td>
                     <td style="text-align: center;">${statusAcabados}</td>
                 </tr>
@@ -3189,10 +3196,10 @@ function showTheoreticalBalanceReport() {
         <body>${html}</body>
         </html>
     `);
-reportWindow.document.close();
+    reportWindow.document.close();
 }
 
-// Funciones auxiliares
+// Funciones auxiliares CORREGIDAS
 function getPhysicalCountForModel(modelo, warehouse) {
     let count = 0;
     Object.values(physicalVerification).forEach(item => {
