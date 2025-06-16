@@ -902,14 +902,14 @@ const MACHINE_MODELS = {
     '34': ['PX13-10-301-FUN', 'PEDD-10-301-A-FUN', 'P54G-10-301-A-FUN']
 };
 
-// Moldes disponibles (simplificado - puedes expandir según necesites)
+// Moldes disponibles (actualizados)
 const MODEL_MOLDS = {
-    'PX13-10-382-FUN': ['A', 'B', 'C'],
-    'PEDD-10-382-A-FUN': ['A', 'B'],
-    'P54G-10-382-FUN': ['A', 'B'],
-    'PX13-10-301-FUN': ['A', 'B', 'C'],
-    'PEDD-10-301-A-FUN': ['A', 'B'],
-    'P54G-10-301-A-FUN': ['A', 'B']
+    'PX13-10-382-FUN': ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '1.1', '2.1', '3.1', '5.1', '5.2'],
+    'PEDD-10-382-A-FUN': ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '1.1', '2.1', '3.1', '5.1', '5.2'],
+    'P54G-10-382-FUN': ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '1.1', '2.1', '3.1', '5.1', '5.2'],
+    'PX13-10-301-FUN': ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '1.1', '2.1', '3.1', '5.1', '5.2'],
+    'PEDD-10-301-A-FUN': ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '1.1', '2.1', '3.1', '5.1', '5.2'],
+    'P54G-10-301-A-FUN': ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '1.1', '2.1', '3.1', '5.1', '5.2']
 };
 
         const STATE_MAPPING = {
@@ -1155,7 +1155,62 @@ function processQRCode() {
         alert('Código QR no válido');
         return;
     }
+    // ========== NUEVAS VALIDACIONES ==========
     
+    // Validación para movimientos a envíos
+    if (inventoryType === 'movimiento' && selectedMovement === 'envios') {
+        if (analysis.isPallet) {
+            // Para tarimas: verificar que todas las piezas estén acabadas
+            const codesInWrongState = analysis.codes.filter(code => {
+                const item = inventory.find(i => i.code === code && i.quantity > 0);
+                return item && item.warehouse !== 'acabados';
+            });
+            
+            if (codesInWrongState.length > 0) {
+                alert('⚠️ ENVÍO NO PERMITIDO\n\nEsta tarima contiene piezas que NO están acabadas.\n\nSolo se pueden enviar piezas ACABADAS.\n\nVerifica el estado de todas las piezas de la tarima.');
+                return;
+            }
+        } else {
+            // Para piezas individuales: verificar que esté acabada
+            const existingItem = inventory.find(item => item.code === analysis.code && item.quantity > 0);
+            if (existingItem && existingItem.warehouse !== 'acabados') {
+                alert('⚠️ ENVÍO NO PERMITIDO\n\nEsta pieza NO está acabada.\n\nEstado actual: ' + getWarehouseName(existingItem.warehouse) + '\n\nSolo se pueden enviar piezas ACABADAS.');
+                return;
+            }
+        }
+    }
+    
+    // Validación para evitar mover piezas desde estados restringidos
+    if (inventoryType === 'movimiento') {
+        const restrictedStates = ['scrap', 'retenciones', 'pruebas'];
+        
+        if (analysis.isPallet) {
+            // Para tarimas: verificar que no vengan de estados restringidos
+            const codesInRestrictedState = analysis.codes.filter(code => {
+                const item = inventory.find(i => i.code === code && i.quantity > 0);
+                return item && restrictedStates.includes(item.warehouse);
+            });
+            
+            if (codesInRestrictedState.length > 0) {
+                const restrictedItem = inventory.find(i => i.code === codesInRestrictedState[0] && i.quantity > 0);
+                alert('⚠️ MOVIMIENTO NO PERMITIDO\n\nEsta tarima contiene piezas en estado restringido:\n\nEstado: ' + getWarehouseName(restrictedItem.warehouse) + '\n\nLas piezas en Scrap, Retenciones o Pruebas no se pueden mover.');
+                return;
+            }
+        } else {
+            // Para piezas individuales: verificar que no esté en estado restringido
+            const existingItem = inventory.find(item => item.code === analysis.code && item.quantity > 0);
+            if (existingItem && restrictedStates.includes(existingItem.warehouse)) {
+                alert('⚠️ MOVIMIENTO NO PERMITIDO\n\nEsta pieza está en estado restringido:\n\nEstado actual: ' + getWarehouseName(existingItem.warehouse) + '\n\nLas piezas en Scrap, Retenciones o Pruebas no se pueden mover.');
+                return;
+            }
+        }
+    }
+    
+    // ========== FIN DE VALIDACIONES ==========
+    
+    // Continúa con el resto del código original...
+    let processedCount = 0;
+    let targetWarehouse = '';
     let processedCount = 0;
     let targetWarehouse = '';
     
@@ -1501,33 +1556,86 @@ function processIndividualCode(code, type, movementType, shift, warehouse, palle
         palletId: palletId
     });
 }
-        function movePallet(palletId) {
-            const newWarehouse = prompt('Almacén destino (fundidos/acabados/scrap/retenciones/envios/pruebas):');
-            
-            if (newWarehouse && ['fundidos', 'acabados', 'scrap', 'retenciones', 'envios', 'pruebas'].includes(newWarehouse.toLowerCase())) {
-                const warehouse = newWarehouse.toLowerCase();
-                const pallet = pallets.find(function(p) {
-                    return p.systemId === palletId;
-                });
+function movePallet(palletId) {
+    const pallet = pallets.find(p => p.systemId === palletId);
+    if (!pallet) {
+        alert('Tarima no encontrada');
+        return;
+    }
+    
+    // Crear modal con selector
+    const modalHtml = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;" id="moveModal">
+            <div style="background: white; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%;">
+                <h3>📦 Mover Tarima ${palletId}</h3>
+                <p style="margin: 15px 0; color: #666;">Estado actual: ${getWarehouseName(pallet.warehouse)}</p>
                 
-                if (pallet) {
-                    pallet.warehouse = warehouse;
-                    
-                    inventory.forEach(function(item) {
-                        if (item.palletId === palletId) {
-                            item.warehouse = warehouse;
-                            item.state = warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
-                            item.lastMovement = new Date();
-                        }
-                    });
-                    
-                    alert('✅ Tarima ' + palletId + ' movida a ' + getWarehouseName(warehouse));
-                    updateAllDisplays();
-                }
-            } else if (newWarehouse !== null) {
-                alert('Almacén no válido');
-            }
+                <div style="margin: 20px 0;">
+                    <label style="display: block; margin-bottom: 10px; font-weight: bold;">Selecciona el almacén destino:</label>
+                    <div class="warehouse-selector" id="move-warehouse-selector">
+                        <div class="warehouse-btn" data-warehouse="fundidos">🔥 FUNDIDOS</div>
+                        <div class="warehouse-btn" data-warehouse="acabados">✅ ACABADOS</div>
+                        <div class="warehouse-btn" data-warehouse="scrap">♻️ SCRAP</div>
+                        <div class="warehouse-btn" data-warehouse="retenciones">⏸️ RETENCIONES</div>
+                        <div class="warehouse-btn" data-warehouse="envios">📦 ENVÍOS</div>
+                        <div class="warehouse-btn" data-warehouse="pruebas">🧪 PRUEBAS</div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 25px;">
+                    <button class="btn btn-success" onclick="confirmPalletMove('${palletId}')" id="confirmMoveBtn" disabled>✅ Confirmar Movimiento</button>
+                    <button class="btn btn-danger" onclick="closeMoveModal()" style="margin-left: 10px;">❌ Cancelar</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Event listener para selector
+    document.getElementById('move-warehouse-selector').addEventListener('click', function(e) {
+        if (e.target.classList.contains('warehouse-btn')) {
+            this.querySelectorAll('.warehouse-btn').forEach(btn => btn.classList.remove('selected'));
+            e.target.classList.add('selected');
+            document.getElementById('confirmMoveBtn').disabled = false;
+            window.selectedMoveWarehouse = e.target.dataset.warehouse;
         }
+    });
+}
+
+function confirmPalletMove(palletId) {
+    if (!window.selectedMoveWarehouse) return;
+    
+    const pallet = pallets.find(p => p.systemId === palletId);
+    const newWarehouse = window.selectedMoveWarehouse;
+    
+    // VALIDACIÓN: Solo acabadas pueden ir a envíos
+    if (newWarehouse === 'envios' && pallet.state !== 'acabados') {
+        alert('⚠️ MOVIMIENTO NO PERMITIDO\n\nSolo las tarimas ACABADAS pueden enviarse.\n\nEsta tarima está en estado: ' + getWarehouseName(pallet.state));
+        return;
+    }
+    
+    pallet.warehouse = newWarehouse;
+    pallet.state = newWarehouse;
+    
+    inventory.forEach(item => {
+        if (item.palletId === palletId) {
+            item.warehouse = newWarehouse;
+            item.state = newWarehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
+            item.lastMovement = new Date();
+        }
+    });
+    
+    alert('✅ Tarima ' + palletId + ' movida a ' + getWarehouseName(newWarehouse));
+    updateAllDisplays();
+    closeMoveModal();
+}
+
+function closeMoveModal() {
+    const modal = document.getElementById('moveModal');
+    if (modal) modal.remove();
+    window.selectedMoveWarehouse = null;
+}
 
         function viewPalletDetails(palletId) {
             const pallet = pallets.find(function(p) {
@@ -2604,6 +2712,12 @@ async function saveProductionReport(tipo) {
         form.reportValidity();
         return;
     }
+     // VALIDACIÓN OBLIGATORIA DE EVIDENCIA
+    const evidencia = await getEvidenceFile(prefix + '-evidencia');
+    if (!evidencia) {
+        alert('⚠️ EVIDENCIA REQUERIDA\n\nDebe adjuntar un archivo PDF como evidencia del reporte antes de guardar.\n\nPor favor, selecciona un archivo PDF.');
+        return;
+    }
     
     // Obtener evidencia si existe
     const evidencia = await getEvidenceFile(prefix + '-evidencia');
@@ -2654,7 +2768,12 @@ async function saveMovementReport() {
         form.reportValidity();
         return;
     }
-    
+     // VALIDACIÓN OBLIGATORIA DE EVIDENCIA
+    const evidencia = await getEvidenceFile('mov-evidencia');
+    if (!evidencia) {
+        alert('⚠️ EVIDENCIA REQUERIDA\n\nDebe adjuntar un archivo PDF como evidencia del movimiento antes de guardar.\n\nPor favor, selecciona un archivo PDF.');
+        return;
+    }
     // Obtener evidencia si existe
     const evidencia = await getEvidenceFile('mov-evidencia');
     
@@ -2716,44 +2835,50 @@ function updateProductionSummary() {
     
     // Mostrar reportes de producción
     if (currentReports.length > 0) {
-        html += '<table class="inventory-table"><thead><tr><th>Tipo</th><th>Máquina</th><th>Modelo</th><th>Cantidad</th><th>Evidencia</th><th>Comentarios</th><th>Hora</th></tr></thead><tbody>';
-       // Para reportes de producción
-currentReports.forEach(r => {
-    const evidenciaIcon = r.evidencia ? 
-        `<button onclick="showEvidenceInfo('${r.id}')" class="btn btn-sm" style="background: #28a745; color: white;">📄</button>` : 
-        '—';
-    
-    html += `<tr>
-        <td>${r.tipo.toUpperCase()}</td>
-        <td>${r.modelo}</td>
-        <td>${r.maquina || 'N/A'}</td>
-        <td>${r.cantidadTotal}</td>
-        <td>${r.cantidadNG}</td>
-        <td><strong>${r.piezasBuenas}</strong></td>
-        <td>${evidenciaIcon}</td>
-        <td>${r.timestamp.toLocaleTimeString()}</td>
-    </tr>`;
-});
+        html += '<table class="inventory-table"><thead><tr><th>Tipo</th><th>Modelo</th><th>Máquina</th><th>Molde</th><th>Total</th><th>NG</th><th>Buenas</th><th>Evidencia</th><th>Hora</th></tr></thead><tbody>';
+        
+        // TABLA CORREGIDA - Para reportes de producción
+        currentReports.forEach(r => {
+            const evidenciaIcon = r.evidencia ? 
+                `<button onclick="showEvidenceInfo('${r.id}')" class="btn btn-sm" style="background: #28a745; color: white;">📄</button>` : 
+                '—';
+            
+            html += `<tr>
+                <td>${r.tipo.toUpperCase()}</td>
+                <td>${r.modelo}</td>
+                <td>${r.maquina || 'N/A'}</td>
+                <td>${r.molde || 'N/A'}</td>
+                <td>${r.cantidadTotal}</td>
+                <td>${r.cantidadNG}</td>
+                <td><strong>${r.piezasBuenas}</strong></td>
+                <td>${evidenciaIcon}</td>
+                <td>${r.timestamp.toLocaleTimeString()}</td>
+            </tr>`;
+        });
         html += '</tbody></table>';
     }
     
     // Mostrar movimientos
     if (currentMovements.length > 0) {
         html += '<h4>📦 Movimientos Registrados:</h4>';
-       html += '<table class="inventory-table"><thead><tr><th>Tipo</th><th>Máquina</th><th>Modelo</th><th>Cantidad</th><th>Evidencia</th><th>Comentarios</th><th>Hora</th></tr></thead><tbody>';
-       currentMovements.forEach(m => {
-    const tipoIcons = {'scrap': '♻️', 'envios': '📦', 'retenciones': '⏸️', 'pruebas': '🧪'};
-    const evidenciaIcon = m.evidencia ? '📄' : '—';
-    html += `<tr>
-        <td>${tipoIcons[m.tipo]} ${m.tipo.toUpperCase()}</td>
-        <td>${m.maquina}</td>
-        <td>${m.modelo}</td>
-        <td>${m.cantidad}</td>
-        <td>${evidenciaIcon}</td>
-        <td>${m.comentarios || 'Sin comentarios'}</td>
-        <td>${m.timestamp.toLocaleTimeString()}</td>
-    </tr>`;
-});
+        html += '<table class="inventory-table"><thead><tr><th>Tipo</th><th>Máquina</th><th>Modelo</th><th>Cantidad</th><th>Evidencia</th><th>Comentarios</th><th>Hora</th></tr></thead><tbody>';
+        
+        currentMovements.forEach(m => {
+            const tipoIcons = {'scrap': '♻️', 'envios': '📦', 'retenciones': '⏸️', 'pruebas': '🧪'};
+            const evidenciaIcon = m.evidencia ? 
+                `<button onclick="showEvidenceInfo('${m.id}')" class="btn btn-sm" style="background: #28a745; color: white;">📄</button>` : 
+                '—';
+            
+            html += `<tr>
+                <td>${tipoIcons[m.tipo]} ${m.tipo.toUpperCase()}</td>
+                <td>${m.maquina}</td>
+                <td>${m.modelo}</td>
+                <td>${m.cantidad}</td>
+                <td>${evidenciaIcon}</td>
+                <td>${m.comentarios || 'Sin comentarios'}</td>
+                <td>${m.timestamp.toLocaleTimeString()}</td>
+            </tr>`;
+        });
         html += '</tbody></table>';
     }
     
