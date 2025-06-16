@@ -530,54 +530,193 @@
         </div>
 
         <!-- Production Tab -->
-        <div id="production" class="tab-content">
-            <h2>🏭 Control de Producción</h2>
-            
-            <div class="card">
-                <h3>🔥 Reporte de Fundición</h3>
-                <p>Funcionalidad completa en desarrollo...</p>
-                <button class="btn btn-success" onclick="alert('Reporte guardado')">🔥 Guardar Reporte</button>
-            </div>
-
-            <div class="card">
-                <h3>✅ Reporte de Acabado</h3>
-                <p>Funcionalidad completa en desarrollo...</p>
-                <button class="btn btn-success" onclick="alert('Reporte guardado')">✅ Guardar Reporte</button>
-            </div>
+<div id="production" class="tab-content">
+    <h2>🏭 Control de Producción</h2>
+    
+    <!-- Selector de Proceso -->
+    <div class="card">
+        <h3>📋 Seleccionar Proceso</h3>
+        <div class="form-group">
+            <label>Tipo de Reporte:</label>
+            <select id="production-type" onchange="showProductionForm()">
+                <option value="">Selecciona un proceso...</option>
+                <option value="fundicion">🔥 Reporte de Fundición</option>
+                <option value="acabado">✅ Reporte de Acabado</option>
+                <option value="movimientos">📦 Movimientos de Material</option>
+            </select>
         </div>
+    </div>
 
-        <!-- Theoretical vs Physical Tab -->
-        <div id="theoretical" class="tab-content">
-    <h2>📊 Inventario Teórico vs Físico</h2>
-    
-    <div class="card">
-        <h3>🧮 Cálculo de Inventario Teórico</h3>
-        <button class="btn btn-primary" onclick="generateTheoreticalReport()">🔄 Generar Reporte Teórico</button>
-        <div id="theoretical-summary"></div>
+    <!-- Formulario de Fundición -->
+    <div id="fundicion-form" class="card" style="display: none;">
+        <h3>🔥 Reporte de Fundición</h3>
+        <form id="production-fundicion-form">
+            <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+                <div class="form-group">
+                    <label>Fecha de Producción:</label>
+                    <input type="date" id="fund-fecha" required>
+                </div>
+                <div class="form-group">
+                    <label>Turno:</label>
+                    <select id="fund-turno" required>
+                        <option value="1">Primer Turno (07:00-19:00)</option>
+                        <option value="2">Segundo Turno (19:00-07:00)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Máquina:</label>
+                    <select id="fund-maquina" onchange="updateModelOptions('fund')" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="30">Máquina #30 (LWR)</option>
+                        <option value="31">Máquina #31 (LWR)</option>
+                        <option value="32">Máquina #32 (UPR)</option>
+                        <option value="33">Máquina #33 (UPR)</option>
+                        <option value="34">Máquina #34 (UPR)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="grid" style="grid-template-columns: repeat(2, 1fr);">
+                <div class="form-group">
+                    <label>Modelo:</label>
+                    <select id="fund-modelo" onchange="updateMoldeOptions('fund')" required>
+                        <option value="">Primero selecciona máquina...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Molde:</label>
+                    <select id="fund-molde" required>
+                        <option value="">Primero selecciona modelo...</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+                <div class="form-group">
+                    <label>Cantidad Total Producida:</label>
+                    <input type="number" id="fund-total" min="0" oninput="calculateGoodParts('fund')" required>
+                </div>
+                <div class="form-group">
+                    <label>Cantidad NG (No Good):</label>
+                    <input type="number" id="fund-ng" min="0" oninput="calculateGoodParts('fund')" required>
+                </div>
+                <div class="form-group">
+                    <label>Piezas Buenas (Automático):</label>
+                    <input type="number" id="fund-buenas" readonly style="background: #e9ecef;">
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-success" onclick="saveProductionReport('fundicion')">🔥 Guardar Reporte de Fundición</button>
+        </form>
     </div>
-    <div class="card">
-    <h3>📊 Progreso de Verificación Actual</h3>
-    <button class="btn btn-info" onclick="showCurrentVerification()">👀 Ver Verificaciones del Turno</button>
-    <div id="current-verification"></div>
-</div>
-    
-    <div class="card">
-        <h3>🔍 Verificación Física vs Teórica</h3>
-        <div id="verification-comparison"></div>
+
+    <!-- Formulario de Acabado -->
+    <div id="acabado-form" class="card" style="display: none;">
+        <h3>✅ Reporte de Acabado</h3>
+        <form id="production-acabado-form">
+            <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+                <div class="form-group">
+                    <label>Fecha de Producción:</label>
+                    <input type="date" id="acab-fecha" required>
+                </div>
+                <div class="form-group">
+                    <label>Turno:</label>
+                    <select id="acab-turno" required>
+                        <option value="1">Primer Turno (07:00-19:00)</option>
+                        <option value="2">Segundo Turno (19:00-07:00)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Modelo:</label>
+                    <select id="acab-modelo" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="PX13-10-382">PX13-10-382 (LWR)</option>
+                        <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
+                        <option value="P54G-10-382">P54G-10-382 (LWR)</option>
+                        <option value="PX13-10-301">PX13-10-301 (UPR)</option>
+                        <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
+                        <option value="P54G-10-301-A">P54G-10-301-A (UPR)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+                <div class="form-group">
+                    <label>Cantidad Total Procesada:</label>
+                    <input type="number" id="acab-total" min="0" oninput="calculateGoodParts('acab')" required>
+                </div>
+                <div class="form-group">
+                    <label>Cantidad NG (No Good):</label>
+                    <input type="number" id="acab-ng" min="0" oninput="calculateGoodParts('acab')" required>
+                </div>
+                <div class="form-group">
+                    <label>Piezas Buenas (Automático):</label>
+                    <input type="number" id="acab-buenas" readonly style="background: #e9ecef;">
+                </div>
+            </div>
+            
+            <button type="button" class="btn btn-success" onclick="saveProductionReport('acabado')">✅ Guardar Reporte de Acabado</button>
+        </form>
     </div>
-    
-    <div class="card">
-        <h3>⚠️ Diferencias Detectadas</h3>
-        <div id="discrepancies-report"></div>
+
+    <!-- Formulario de Movimientos -->
+    <div id="movimientos-form" class="card" style="display: none;">
+        <h3>📦 Movimientos de Material</h3>
+        <form id="production-movimientos-form">
+            <div class="grid" style="grid-template-columns: repeat(2, 1fr);">
+                <div class="form-group">
+                    <label>Tipo de Movimiento:</label>
+                    <select id="mov-tipo" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="scrap">♻️ Scrap Adicional</option>
+                        <option value="envios">📦 Envíos</option>
+                        <option value="retenciones">⏸️ Retenciones</option>
+                        <option value="pruebas">🧪 Pruebas</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Fecha:</label>
+                    <input type="date" id="mov-fecha" required>
+                </div>
+            </div>
+            
+            <div class="grid" style="grid-template-columns: repeat(2, 1fr);">
+                <div class="form-group">
+                    <label>Modelo/Número de Parte:</label>
+                    <select id="mov-modelo" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="PX13-10-382">PX13-10-382 (LWR)</option>
+                        <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
+                        <option value="P54G-10-382">P54G-10-382 (LWR)</option>
+                        <option value="PX13-10-301">PX13-10-301 (UPR)</option>
+                        <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
+                        <option value="P54G-10-301-A">P54G-10-301-A (UPR)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Cantidad:</label>
+                    <input type="number" id="mov-cantidad" min="1" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Comentarios/Razón:</label>
+                <textarea id="mov-comentarios" rows="3" placeholder="Describe la razón del movimiento..."></textarea>
+            </div>
+            
+            <button type="button" class="btn btn-success" onclick="saveMovementReport()">📦 Guardar Movimiento</button>
+        </form>
     </div>
+
+    <!-- Resumen de Reportes -->
     <div class="card">
-    <h3>⚠️ Diferencias Detectadas</h3>
-    <div id="discrepancies-report"></div>
-    <div style="text-align: center; margin-top: 20px;">
-        <button class="btn btn-success" onclick="exportVerificationReport()">📊 Exportar Reporte Completo</button>
-        <button class="btn btn-info" onclick="printVerificationSummary()">🖨️ Imprimir Resumen</button>
+        <h3>📊 Reportes del Turno Actual</h3>
+        <div id="production-summary"></div>
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="btn btn-primary" onclick="generateTheoreticalBalance()">🧮 Calcular Balance Teórico</button>
+            <button class="btn btn-info" onclick="showProductionReport()">📋 Ver Reporte Completo</button>
+        </div>
     </div>
-</div>
 </div>
     <script>
         // Variables globales
@@ -590,6 +729,28 @@
         let theoreticalInventory = {}; // Para calcular inventario teórico
         let physicalVerification = {}; // Para almacenar verificaciones físicas
         let shiftReports = []; // Para reportes por turno
+        let productionReports = []; // Para almacenar reportes de producción
+let movementReports = []; // Para almacenar movimientos de material
+let theoreticalBalance = {}; // Para el balance teórico calculado
+
+// Configuración de modelos por máquina
+const MACHINE_MODELS = {
+    '30': ['PX13-10-382-FUN', 'PEDD-10-382-A-FUN', 'P54G-10-382-FUN'],
+    '31': ['PX13-10-382-FUN', 'PEDD-10-382-A-FUN', 'P54G-10-382-FUN'],
+    '32': ['PX13-10-301-FUN', 'PEDD-10-301-A-FUN', 'P54G-10-301-A-FUN'],
+    '33': ['PX13-10-301-FUN', 'PEDD-10-301-A-FUN', 'P54G-10-301-A-FUN'],
+    '34': ['PX13-10-301-FUN', 'PEDD-10-301-A-FUN', 'P54G-10-301-A-FUN']
+};
+
+// Moldes disponibles (simplificado - puedes expandir según necesites)
+const MODEL_MOLDS = {
+    'PX13-10-382-FUN': ['A', 'B', 'C'],
+    'PEDD-10-382-A-FUN': ['A', 'B'],
+    'P54G-10-382-FUN': ['A', 'B'],
+    'PX13-10-301-FUN': ['A', 'B', 'C'],
+    'PEDD-10-301-A-FUN': ['A', 'B'],
+    'P54G-10-301-A-FUN': ['A', 'B']
+};
 
         const STATE_MAPPING = {
             'FUNDIDO': 'fundidos',
@@ -1858,6 +2019,7 @@ function calculateDiscrepancies(theoretical) {
     updateDetailedInventory();
     updatePalletsTable();
     updateVerificationSummary(); // <- AGREGAR ESTA LÍNEA
+    updateProductionSummary(); // ⬅️ AGREGAR ESTA LÍNEA
 }
 
         function updateDashboard() {
@@ -2200,6 +2362,527 @@ function toggleModelSection(sectionId) {
     if (verificationElement) {
         verificationElement.textContent = verificationCount;
     }
+}
+        // Mostrar formulario según el tipo seleccionado
+function showProductionForm() {
+    const productionType = document.getElementById('production-type').value;
+    
+    // Ocultar todos los formularios
+    document.getElementById('fundicion-form').style.display = 'none';
+    document.getElementById('acabado-form').style.display = 'none';
+    document.getElementById('movimientos-form').style.display = 'none';
+    
+    // Mostrar el formulario seleccionado
+    if (productionType) {
+        document.getElementById(productionType + '-form').style.display = 'block';
+        
+        // Establecer fecha actual por defecto
+        const today = new Date().toISOString().split('T')[0];
+        if (productionType === 'fundicion') {
+            document.getElementById('fund-fecha').value = today;
+        } else if (productionType === 'acabado') {
+            document.getElementById('acab-fecha').value = today;
+        } else if (productionType === 'movimientos') {
+            document.getElementById('mov-fecha').value = today;
+        }
+    }
+}
+
+// Actualizar opciones de modelo según la máquina seleccionada
+function updateModelOptions(prefix) {
+    const maquina = document.getElementById(prefix + '-maquina').value;
+    const modeloSelect = document.getElementById(prefix + '-modelo');
+    const moldeSelect = document.getElementById(prefix + '-molde');
+    
+    // Limpiar opciones
+    modeloSelect.innerHTML = '<option value="">Seleccionar modelo...</option>';
+    moldeSelect.innerHTML = '<option value="">Primero selecciona modelo...</option>';
+    
+    if (maquina && MACHINE_MODELS[maquina]) {
+        MACHINE_MODELS[maquina].forEach(modelo => {
+            const option = document.createElement('option');
+            option.value = modelo;
+            option.textContent = modelo;
+            modeloSelect.appendChild(option);
+        });
+    }
+}
+
+// Actualizar opciones de molde según el modelo seleccionado
+function updateMoldeOptions(prefix) {
+    const modelo = document.getElementById(prefix + '-modelo').value;
+    const moldeSelect = document.getElementById(prefix + '-molde');
+    
+    // Limpiar opciones
+    moldeSelect.innerHTML = '<option value="">Seleccionar molde...</option>';
+    
+    if (modelo && MODEL_MOLDS[modelo]) {
+        MODEL_MOLDS[modelo].forEach(molde => {
+            const option = document.createElement('option');
+            option.value = molde;
+            option.textContent = 'Molde ' + molde;
+            moldeSelect.appendChild(option);
+        });
+    }
+}
+
+// Calcular piezas buenas automáticamente
+function calculateGoodParts(prefix) {
+    const total = parseInt(document.getElementById(prefix + '-total').value) || 0;
+    const ng = parseInt(document.getElementById(prefix + '-ng').value) || 0;
+    const buenas = Math.max(0, total - ng);
+    
+    document.getElementById(prefix + '-buenas').value = buenas;
+}
+
+// Guardar reporte de producción
+function saveProductionReport(tipo) {
+    const prefix = tipo === 'fundicion' ? 'fund' : 'acab';
+    const form = document.getElementById('production-' + tipo + '-form');
+    
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const reporte = {
+        id: Date.now(),
+        tipo: tipo,
+        fecha: document.getElementById(prefix + '-fecha').value,
+        turno: document.getElementById(prefix + '-turno').value,
+        modelo: document.getElementById(prefix + '-modelo').value,
+        cantidadTotal: parseInt(document.getElementById(prefix + '-total').value),
+        cantidadNG: parseInt(document.getElementById(prefix + '-ng').value),
+        piezasBuenas: parseInt(document.getElementById(prefix + '-buenas').value),
+        timestamp: new Date()
+    };
+    
+    // Para fundición agregar máquina y molde
+    if (tipo === 'fundicion') {
+        reporte.maquina = document.getElementById('fund-maquina').value;
+        reporte.molde = document.getElementById('fund-molde').value;
+    }
+    
+    productionReports.push(reporte);
+    
+    alert(`✅ Reporte de ${tipo} guardado exitosamente!\n\n📊 Resumen:\n• Modelo: ${reporte.modelo}\n• Piezas buenas: ${reporte.piezasBuenas}\n• Fecha: ${reporte.fecha}\n• Turno: ${reporte.turno}`);
+    
+    // Limpiar formulario
+    form.reset();
+    updateProductionSummary();
+}
+
+// Guardar movimiento de material
+function saveMovementReport() {
+    const form = document.getElementById('production-movimientos-form');
+    
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+    }
+    
+    const movimiento = {
+        id: Date.now(),
+        tipo: document.getElementById('mov-tipo').value,
+        fecha: document.getElementById('mov-fecha').value,
+        modelo: document.getElementById('mov-modelo').value,
+        cantidad: parseInt(document.getElementById('mov-cantidad').value),
+        comentarios: document.getElementById('mov-comentarios').value,
+        timestamp: new Date()
+    };
+    
+    movementReports.push(movimiento);
+    
+    const tipoNames = {
+        'scrap': '♻️ Scrap',
+        'envios': '📦 Envíos',
+        'retenciones': '⏸️ Retenciones',
+        'pruebas': '🧪 Pruebas'
+    };
+    
+    alert(`✅ Movimiento registrado exitosamente!\n\n📊 Resumen:\n• Tipo: ${tipoNames[movimiento.tipo]}\n• Modelo: ${movimiento.modelo}\n• Cantidad: ${movimiento.cantidad}\n• Fecha: ${movimiento.fecha}`);
+    
+    // Limpiar formulario
+    form.reset();
+    updateProductionSummary();
+}
+
+// Actualizar resumen de producción
+function updateProductionSummary() {
+    const summaryDiv = document.getElementById('production-summary');
+    const currentShift = document.getElementById('shift').value;
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Filtrar reportes del turno actual
+    const currentReports = productionReports.filter(r => 
+        r.fecha === today && r.turno === currentShift
+    );
+    const currentMovements = movementReports.filter(m => 
+        m.fecha === today
+    );
+    
+    if (currentReports.length === 0 && currentMovements.length === 0) {
+        summaryDiv.innerHTML = '<div class="alert alert-info">No hay reportes registrados para el turno actual.</div>';
+        return;
+    }
+    
+    let html = '<h4>📋 Reportes del Turno:</h4>';
+    
+    // Mostrar reportes de producción
+    if (currentReports.length > 0) {
+        html += '<table class="inventory-table"><thead><tr><th>Tipo</th><th>Modelo</th><th>Máquina</th><th>Total</th><th>NG</th><th>Buenas</th><th>Hora</th></tr></thead><tbody>';
+        currentReports.forEach(r => {
+            html += `<tr>
+                <td><span class="code-badge" style="background: ${r.tipo === 'fundicion' ? '#e74c3c' : '#27ae60'};">${r.tipo.toUpperCase()}</span></td>
+                <td>${r.modelo}</td>
+                <td>${r.maquina || 'N/A'}</td>
+                <td>${r.cantidadTotal}</td>
+                <td style="color: #e74c3c;">${r.cantidadNG}</td>
+                <td style="color: #27ae60; font-weight: bold;">${r.piezasBuenas}</td>
+                <td>${r.timestamp.toLocaleTimeString()}</td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+    }
+    
+    // Mostrar movimientos
+    if (currentMovements.length > 0) {
+        html += '<h4>📦 Movimientos Registrados:</h4>';
+        html += '<table class="inventory-table"><thead><tr><th>Tipo</th><th>Modelo</th><th>Cantidad</th><th>Comentarios</th><th>Hora</th></tr></thead><tbody>';
+        currentMovements.forEach(m => {
+            const tipoIcons = {'scrap': '♻️', 'envios': '📦', 'retenciones': '⏸️', 'pruebas': '🧪'};
+            html += `<tr>
+                <td>${tipoIcons[m.tipo]} ${m.tipo.toUpperCase()}</td>
+                <td>${m.modelo}</td>
+                <td>${m.cantidad}</td>
+                <td>${m.comentarios || 'Sin comentarios'}</td>
+                <td>${m.timestamp.toLocaleTimeString()}</td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+    }
+    
+    summaryDiv.innerHTML = html;
+}
+        // Generar balance teórico
+function generateTheoreticalBalance() {
+    const currentShift = document.getElementById('shift').value;
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Obtener reportes del turno actual
+    const currentReports = productionReports.filter(r => 
+        r.fecha === today && r.turno === currentShift
+    );
+    const currentMovements = movementReports.filter(m => 
+        m.fecha === today
+    );
+    
+    if (currentReports.length === 0) {
+        alert('⚠️ No hay reportes de producción para calcular el balance teórico.\n\nPrimero registra reportes de fundición y/o acabado.');
+        return;
+    }
+    
+    // Inicializar balance teórico
+    theoreticalBalance = {};
+    
+    // Procesar reportes de producción
+    currentReports.forEach(reporte => {
+        const modelo = reporte.modelo.replace('-FUN', ''); // Convertir modelo de fundición a acabado
+        
+        if (!theoreticalBalance[modelo]) {
+            theoreticalBalance[modelo] = {
+                fundicion: { reportado: 0, teorico: 0 },
+                acabado: { reportado: 0, teorico: 0 },
+                movimientos: { scrap: 0, envios: 0, retenciones: 0, pruebas: 0 }
+            };
+        }
+        
+        if (reporte.tipo === 'fundicion') {
+            theoreticalBalance[modelo].fundicion.reportado += reporte.piezasBuenas;
+            // Para UPR: no todo va directo a acabado (proceso de tratamiento térmico)
+            if (modelo.includes('301')) {
+                // UPR - puede quedar en buffer
+                theoreticalBalance[modelo].fundicion.teorico += reporte.piezasBuenas;
+            } else {
+                // LWR - va directo a acabado
+                theoreticalBalance[modelo].acabado.teorico += reporte.piezasBuenas;
+            }
+        } else if (reporte.tipo === 'acabado') {
+            theoreticalBalance[modelo].acabado.reportado += reporte.piezasBuenas;
+        }
+    });
+    
+    // Procesar movimientos
+    currentMovements.forEach(movimiento => {
+        const modelo = movimiento.modelo;
+        if (theoreticalBalance[modelo]) {
+            theoreticalBalance[modelo].movimientos[movimiento.tipo] += movimiento.cantidad;
+        }
+    });
+    
+    // Mostrar balance teórico
+    showTheoreticalBalanceReport();
+}
+
+// Mostrar reporte de balance teórico
+function showTheoreticalBalanceReport() {
+    let html = `
+        <div class="card" style="margin-top: 20px;">
+            <h3>🧮 Balance Teórico Calculado</h3>
+            <div class="alert alert-info">
+                <strong>💡 Interpretación:</strong><br>
+                • <strong>Reportado:</strong> Lo que el personal reportó en producción<br>
+                • <strong>Teórico:</strong> Lo que debería haber según flujo de proceso<br>
+                • <strong>Físico:</strong> Lo que se encontró al escanear (de verificaciones físicas)
+            </div>
+    `;
+    
+    if (Object.keys(theoreticalBalance).length === 0) {
+        html += '<div class="alert alert-warning">No hay datos para mostrar. Genera primero el balance teórico.</div>';
+    } else {
+        html += '<table class="inventory-table"><thead><tr><th>Modelo</th><th>Proceso</th><th>Reportado</th><th>Teórico</th><th>Físico</th><th>Dif. Rep-Teo</th><th>Dif. Teo-Fis</th><th>Status</th></tr></thead><tbody>';
+        
+        Object.keys(theoreticalBalance).forEach(modelo => {
+            const balance = theoreticalBalance[modelo];
+            
+            // Obtener verificación física para este modelo
+            const physicalFundidos = getPhysicalCountForModel(modelo, 'fundidos');
+            const physicalAcabados = getPhysicalCountForModel(modelo, 'acabados');
+            
+            // Fila de fundición
+            const diffRepTeoFund = balance.fundicion.reportado - balance.fundicion.teorico;
+            const diffTeoFisFund = balance.fundicion.teorico - physicalFundidos;
+            const statusFund = getStatusIcon(diffRepTeoFund, diffTeoFisFund);
+            
+            html += `
+                <tr>
+                    <td rowspan="2"><strong>${modelo}</strong></td>
+                    <td>🔥 Fundición</td>
+                    <td style="text-align: center;">${balance.fundicion.reportado}</td>
+                    <td style="text-align: center;">${balance.fundicion.teorico}</td>
+                    <td style="text-align: center;">${physicalFundidos}</td>
+                    <td style="text-align: center;" class="${getDifferenceClass(diffRepTeoFund)}">${diffRepTeoFund}</td>
+                    <td style="text-align: center;" class="${getDifferenceClass(diffTeoFisFund)}">${diffTeoFisFund}</td>
+                    <td>${statusFund}</td>
+                </tr>
+            `;
+            
+            // Fila de acabado
+            const diffRepTeoAcab = balance.acabado.reportado - balance.acabado.teorico;
+            const diffTeoFisAcab = balance.acabado.teorico - physicalAcabados;
+            const statusAcab = getStatusIcon(diffRepTeoAcab, diffTeoFisAcab);
+            
+            html += `
+                <tr>
+                    <td>✅ Acabado</td>
+                    <td style="text-align: center;">${balance.acabado.reportado}</td>
+                    <td style="text-align: center;">${balance.acabado.teorico}</td>
+                    <td style="text-align: center;">${physicalAcabados}</td>
+                    <td style="text-align: center;" class="${getDifferenceClass(diffRepTeoAcab)}">${diffRepTeoAcab}</td>
+                    <td style="text-align: center;" class="${getDifferenceClass(diffTeoFisAcab)}">${diffTeoFisAcab}</td>
+                    <td>${statusAcab}</td>
+                </tr>
+            `;
+            
+            // Mostrar movimientos si existen
+            const totalMovements = balance.movimientos.scrap + balance.movimientos.envios + 
+                                 balance.movimientos.retenciones + balance.movimientos.pruebas;
+            if (totalMovements > 0) {
+                html += `
+                    <tr style="background: #f8f9fa;">
+                        <td colspan="2"><em>📦 Movimientos:</em></td>
+                        <td colspan="6" style="font-size: 0.9em;">
+                            ♻️ Scrap: ${balance.movimientos.scrap} | 
+                            📦 Envíos: ${balance.movimientos.envios} | 
+                            ⏸️ Retenciones: ${balance.movimientos.retenciones} | 
+                            🧪 Pruebas: ${balance.movimientos.pruebas}
+                        </td>
+                    </tr>
+                `;
+            }
+        });
+        
+        html += '</tbody></table>';
+        
+        // Agregar análisis de diferencias críticas
+        html += generateCriticalAnalysis();
+    }
+    
+    html += '</div>';
+    
+    // Mostrar el reporte
+    const summaryDiv = document.getElementById('production-summary');
+    summaryDiv.innerHTML = html;
+}
+
+// Funciones auxiliares
+function getPhysicalCountForModel(modelo, warehouse) {
+    let count = 0;
+    Object.values(physicalVerification).forEach(item => {
+        if (item.partNumber && item.partNumber.includes(modelo) && item.warehouse === warehouse) {
+            count += item.verifiedQuantity;
+        }
+    });
+    return count;
+}
+
+function getDifferenceClass(diff) {
+    if (diff === 0) return 'difference-zero';
+    return diff > 0 ? 'difference-positive' : 'difference-negative';
+}
+
+function getStatusIcon(diffRepTeo, diffTeoFis) {
+    if (diffRepTeo === 0 && diffTeoFis === 0) return '✅ Perfecto';
+    if (Math.abs(diffRepTeo) <= 2 && Math.abs(diffTeoFis) <= 2) return '⚠️ Revisar';
+    return '❌ Crítico';
+}
+
+function generateCriticalAnalysis() {
+    let criticalIssues = [];
+    
+    Object.keys(theoreticalBalance).forEach(modelo => {
+        const balance = theoreticalBalance[modelo];
+        const physicalFundidos = getPhysicalCountForModel(modelo, 'fundidos');
+        const physicalAcabados = getPhysicalCountForModel(modelo, 'acabados');
+        
+        // Verificar diferencias críticas (más de 5 piezas)
+        const diffFundTeoFis = balance.fundicion.teorico - physicalFundidos;
+        const diffAcabTeoFis = balance.acabado.teorico - physicalAcabados;
+        
+        if (Math.abs(diffFundTeoFis) > 5) {
+            criticalIssues.push(`🔥 ${modelo} Fundición: ${diffFundTeoFis > 0 ? 'Faltan' : 'Sobran'} ${Math.abs(diffFundTeoFis)} piezas`);
+        }
+        if (Math.abs(diffAcabTeoFis) > 5) {
+            criticalIssues.push(`✅ ${modelo} Acabado: ${diffAcabTeoFis > 0 ? 'Faltan' : 'Sobran'} ${Math.abs(diffAcabTeoFis)} piezas`);
+        }
+    });
+    
+    if (criticalIssues.length > 0) {
+        return `
+            <div class="alert" style="background: #f8d7da; color: #721c24; margin-top: 20px;">
+                <h4>🚨 Diferencias Críticas Detectadas (>5 piezas):</h4>
+                <ul style="margin: 10px 0;">
+                    ${criticalIssues.map(issue => `<li>${issue}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+    } else {
+        return `
+            <div class="alert alert-success" style="margin-top: 20px;">
+                <h4>✅ Balance Aceptable</h4>
+                <p>No se detectaron diferencias críticas. Todas las variaciones están dentro del rango normal (≤5 piezas).</p>
+            </div>
+        `;
+    }
+}
+
+// Mostrar reporte completo de producción
+function showProductionReport() {
+    const currentShift = document.getElementById('shift').value;
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Generar reporte completo en una nueva ventana
+    const reportWindow = window.open('', '_blank');
+    
+    let reportContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Reporte Completo de Producción</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.4; }
+                .header { text-align: center; border-bottom: 2px solid #e74c3c; padding-bottom: 20px; margin-bottom: 30px; }
+                table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                th { background-color: #34495e; color: white; }
+                .section { margin: 25px 0; page-break-inside: avoid; }
+                .alert { padding: 15px; margin: 15px 0; border-radius: 5px; }
+                .alert-info { background: #d1ecf1; border: 1px solid #bee5eb; }
+                @media print { body { margin: 0; } }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>🏭 REPORTE COMPLETO DE PRODUCCIÓN</h1>
+                <p>📅 Fecha: ${today} | ⏰ Turno: ${currentShift} | 🕐 Generado: ${new Date().toLocaleString()}</p>
+            </div>
+            
+            <div class="section">
+                <h2>📊 Reportes de Producción Registrados</h2>
+    `;
+    
+    // Agregar reportes de producción
+    const currentReports = productionReports.filter(r => r.fecha === today && r.turno === currentShift);
+    if (currentReports.length > 0) {
+        reportContent += `
+            <table>
+                <thead>
+                    <tr><th>Tipo</th><th>Modelo</th><th>Máquina</th><th>Molde</th><th>Total</th><th>NG</th><th>Buenas</th><th>Hora</th></tr>
+                </thead>
+                <tbody>
+        `;
+        currentReports.forEach(r => {
+            reportContent += `
+                <tr>
+                    <td>${r.tipo.toUpperCase()}</td>
+                    <td>${r.modelo}</td>
+                    <td>${r.maquina || 'N/A'}</td>
+                    <td>${r.molde || 'N/A'}</td>
+                    <td>${r.cantidadTotal}</td>
+                    <td>${r.cantidadNG}</td>
+                    <td><strong>${r.piezasBuenas}</strong></td>
+                    <td>${r.timestamp.toLocaleTimeString()}</td>
+                </tr>
+            `;
+        });
+        reportContent += '</tbody></table>';
+    } else {
+        reportContent += '<div class="alert alert-info">No hay reportes de producción registrados.</div>';
+    }
+    
+    reportContent += `
+            </div>
+            
+            <div class="section">
+                <h2>📦 Movimientos de Material</h2>
+    `;
+    
+    // Agregar movimientos
+    const currentMovements = movementReports.filter(m => m.fecha === today);
+    if (currentMovements.length > 0) {
+        reportContent += `
+            <table>
+                <thead>
+                    <tr><th>Tipo</th><th>Modelo</th><th>Cantidad</th><th>Comentarios</th><th>Hora</th></tr>
+                </thead>
+                <tbody>
+        `;
+        currentMovements.forEach(m => {
+            reportContent += `
+                <tr>
+                    <td>${m.tipo.toUpperCase()}</td>
+                    <td>${m.modelo}</td>
+                    <td>${m.cantidad}</td>
+                    <td>${m.comentarios || 'Sin comentarios'}</td>
+                    <td>${m.timestamp.toLocaleTimeString()}</td>
+                </tr>
+            `;
+        });
+        reportContent += '</tbody></table>';
+    } else {
+        reportContent += '<div class="alert alert-info">No hay movimientos registrados.</div>';
+    }
+    
+    reportContent += `
+            </div>
+        </body>
+        </html>
+    `;
+    
+    reportWindow.document.write(reportContent);
+    reportWindow.document.close();
+    reportWindow.print();
 }
         
     </script>
