@@ -751,7 +751,6 @@ function parseQRCode(input) {
             // Mejorar detección de estado
             let detectedState = null;
             const stateUpper = state.toUpperCase();
-            console.log('🔍 DEBUG - State:', state, '→ Detected:', detectedState);
             if (stateUpper.includes('FUNDIDO') || stateUpper.includes('CAST') || stateUpper.includes('MOLTEN')) {
     detectedState = 'fundidos';
 } else if (stateUpper.includes('ACABADO') || stateUpper.includes('FINISHED')) {
