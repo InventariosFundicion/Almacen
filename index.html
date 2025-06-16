@@ -1217,7 +1217,7 @@ function processQRCode() {
         
         // VERIFICACIÓN FÍSICA - Inventario por Turno
         if (inventoryType === 'turno') {
-            let targetWarehouse = '';
+            targetWarehouse = '';
             
             if (analysis.detectedState) {
                 targetWarehouse = analysis.detectedState;
@@ -1419,7 +1419,7 @@ function processQRCode() {
             
         } else if (inventoryType === 'turno') {
             // VERIFICACIÓN FÍSICA DE PIEZA INDIVIDUAL
-            let targetWarehouse = individualState;
+            targetWarehouse = individualState;
             
             // Verificar si ya fue escaneada
             if (physicalVerification[analysis.code] && 
