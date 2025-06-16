@@ -567,51 +567,7 @@
             'FINISHED': 'acabados',
             'CAST': 'fundidos'
         };
-
-        // Función para extraer información del código
-        function extractCodeInfo(code) {
-            if (code.length === 13) {
-                // UPR: P6102448O2P52
-                const lote = code.substring(0, 3);
-                const numeroDisparo = code.substring(3, 8);
-                const maquinaRaw = parseInt(code.substring(8, 10));
-                const maquina = maquinaRaw + 30;
-                const modelo = code.substring(10, 12);
-                const molde = code.substring(12, 13);
-                
-                return {
-                    type: 'UPR',
-                    lote: lote,
-                    numeroDisparo: numeroDisparo,
-                    maquina: maquina,
-                    modelo: modelo,
-                    molde: molde,
-                    partNumber: 'UPR-' + modelo,
-                    displayInfo: 'UPR-' + modelo + ' | L:' + lote + ' | M:' + maquina + ' | Mo:' + molde
-                };
-            } else if (code.length === 17) {
-                // LWR: 25E153003154276P5
-                const lote = code.substring(0, 5);
-                const maquina = parseInt(code.substring(5, 7));
-                const molde = code.substring(7, 9);
-                const numeroDisparo = code.substring(9, 15);
-                const modelo = code.substring(15, 17);
-                
-                return {
-                    type: 'LWR',
-                    lote: lote,
-                    numeroDisparo: numeroDisparo,
-                    maquina: maquina,
-                    modelo: modelo,
-                    molde: molde,
-                    partNumber: 'LWR-' + modelo,
-                    displayInfo: 'LWR-' + modelo + ' | L:' + lote + ' | M:' + maquina + ' | Mo:' + molde
-                };
-            }
-            
-            return null;
-        }
-
+        
         // Función para cambiar pestañas
         function showTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
