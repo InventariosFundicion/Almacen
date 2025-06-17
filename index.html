@@ -2598,7 +2598,6 @@ function calculateDiscrepancies(theoretical) {
     updatePalletsTable();
     updateVerificationSummary(); // <- AGREGAR ESTA LÍNEA
     updateProductionSummary(); // ⬅️ AGREGAR ESTA LÍNEA
-           updateValidationInfo();
 
 }
 
@@ -4490,7 +4489,6 @@ async function pasteCodesFromClipboard() {
         
         let addedCount = 0;
         lines.forEach(line => {
-        updateValidationInfo(); // ← AGREGAR ESTA LÍNEA   
     const code = line.trim();
     if (code) {
         const existsBefore = generatedCodes.some(item => item.code === code);
@@ -4503,7 +4501,7 @@ async function pasteCodesFromClipboard() {
         }
     }
 });
-        
+    updateValidationInfo(); // ← AGREGAR ESTA LÍNEA   
 if (addedCount > 0) {
     showTemporaryMessage(`✅ ${addedCount} códigos agregados desde portapapeles`, 'success');
 }
@@ -4628,15 +4626,7 @@ setTimeout(() => {
     
     showTemporaryMessage('✅ Código QR de tarima generado exitosamente', 'success');
 }
-       // Asegurar que el resultado sea visible
-resultDiv.style.display = 'block';
-resultDiv.style.zIndex = '1000';
-
-// Hacer scroll hacia el resultado
-setTimeout(() => {
-    resultDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}, 200);
-
+       
 // Descargar imagen QR
 async function downloadQRImage() {
     if (!window.currentQRData) {
