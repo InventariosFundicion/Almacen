@@ -4845,23 +4845,36 @@ document.addEventListener('DOMContentLoaded', function() {
     // Mostrar modo scanner por defecto
     showScannerMode();
 });
-       // FUNCIÓN TEMPORAL PARA DEBUG - Agregar al final del script
+// FUNCIÓN TEMPORAL PARA DEBUG - Agregar al final del script
 function debugQRGenerator() {
     console.log('=== DEBUG QR GENERATOR ===');
     console.log('generatedCodes:', generatedCodes);
     console.log('duplicateAttempts:', duplicateAttempts);
-    console.log('QR result div:', document.getElementById('qr-result'));
-    console.log('QR result display:', document.getElementById('qr-result').style.display);
     
-    // Verificar elementos
+    const qrResult = document.getElementById('qr-result');
+    console.log('QR result div:', qrResult);
+    console.log('QR result display:', qrResult ? qrResult.style.display : 'ELEMENTO NO ENCONTRADO');
+    console.log('QR result computed style:', qrResult ? window.getComputedStyle(qrResult).display : 'N/A');
+    console.log('QR result visibility:', qrResult ? window.getComputedStyle(qrResult).visibility : 'N/A');
+    console.log('QR result opacity:', qrResult ? window.getComputedStyle(qrResult).opacity : 'N/A');
+    console.log('QR result offsetHeight:', qrResult ? qrResult.offsetHeight : 'N/A');
+    console.log('QR result offsetWidth:', qrResult ? qrResult.offsetWidth : 'N/A');
+    
+    // Verificar elementos hijos
     const elementos = {
-        qrResult: document.getElementById('qr-result'),
         qrInfo: document.getElementById('qr-info'),
         qrDisplay: document.getElementById('qr-display'),
         qrText: document.getElementById('qr-text')
     };
     
     console.log('Elementos HTML:', elementos);
+    
+    // Verificar si está dentro del viewport
+    if (qrResult) {
+        const rect = qrResult.getBoundingClientRect();
+        console.log('Posición del elemento:', rect);
+        console.log('Está en viewport:', rect.top >= 0 && rect.left >= 0 && rect.bottom <= window.innerHeight && rect.right <= window.innerWidth);
+    }
 }
 
 // Ejecutar en consola: debugQRGenerator()
