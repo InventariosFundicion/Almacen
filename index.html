@@ -4301,7 +4301,7 @@ function addCodeToList(code) {
     updateCodesValidationList();
     
     // Actualizar info de resumen
-    updateValidationInfo();
+    ();
     
     // Habilitar/deshabilitar botón de generar
     updateGenerateButton();
@@ -4490,7 +4490,7 @@ function showQRResult(zona, tipo, codes, qrText) {
     `;
     
     // Generar imagen QR usando una API pública
-    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrText)}&size=300x300&format=png`;
+    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrText)}&size=300x300&format=png&ecc=M`;
     
     displayDiv.innerHTML = `
         <div class="qr-display-container">
@@ -4501,12 +4501,14 @@ function showQRResult(zona, tipo, codes, qrText) {
     // Texto del QR
     textArea.value = qrText;
     
-    // Mostrar resultado y ocultar generador
+// Mostrar resultado y ocultar generador
 resultDiv.style.display = 'block';
 document.getElementById('generator-mode').style.display = 'none';
 
 // Hacer scroll hacia el resultado
-resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+setTimeout(() => {
+    resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}, 100);
     
     // Guardar datos para descarga
     window.currentQRData = {
