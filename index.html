@@ -1108,6 +1108,8 @@
         let generatorScanner = null;
         let generatedCodes = [];
         let palletHistory = [];
+        let duplicateAttempts = 0;
+
 
 // Configuración de modelos por máquina
 const MACHINE_MODELS = {
@@ -1320,11 +1322,11 @@ function parseQRCode(input) {
 function extractCodeData(code) {
     if (code.length === 13) { // UPR
         const lote = code.substring(0, 3);
-        const disparo = code.substring(3, 8);
-        const maquinaRaw = parseInt(code.substring(8, 10));
+        const disparo = code.substring(6, 8);
+        const maquinaRaw = parseInt(code.substring(5));
         const maquina = maquinaRaw + 30;
-        const modelo = code.substring(10, 12);
-        const molde = code.substring(12, 13);
+        const modelo = code.substring(11, 12);
+        const molde = code.substring(13);
         
         return {
             type: 'UPR',
@@ -4275,10 +4277,11 @@ function addCodeToList(code) {
     // Verificar si ya existe
     const exists = generatedCodes.some(item => item.code === cleanCode);
     if (exists) {
-        showTemporaryMessage('⚠️ Código ya agregado: ' + cleanCode, 'warning');
-        return;
-    }
-    
+    duplicateAttempts++;
+    showTemporaryMessage('⚠️ Código duplicado omitido: ' + cleanCode, 'warning');
+    updateValidationInfo(); // Agregar esta línea
+    return;
+}
     // Validar formato del código
     const isValid = (cleanCode.length === 13 || cleanCode.length === 17);
     const type = cleanCode.length === 13 ? 'UPR' : cleanCode.length === 17 ? 'LWR' : 'UNKNOWN';
@@ -4350,7 +4353,7 @@ function updateValidationInfo() {
     if (totalCodes > 0) {
         infoDiv.style.display = 'block';
         countSpan.textContent = totalCodes;
-        duplicatesSpan.textContent = '0'; // Ya manejamos duplicados al agregar
+        duplicatesSpan.textContent = duplicateAttempts;
         invalidSpan.textContent = invalidCodes;
     } else {
         infoDiv.style.display = 'none';
@@ -4427,6 +4430,7 @@ function clearAllCodes() {
     
     if (confirm(`¿Eliminar todos los ${generatedCodes.length} códigos de la lista?`)) {
         generatedCodes = [];
+        duplicateAttempts = 0;
         updateCodesTextarea();
         updateCodesValidationList();
         updateValidationInfo();
@@ -4498,8 +4502,11 @@ function showQRResult(zona, tipo, codes, qrText) {
     textArea.value = qrText;
     
     // Mostrar resultado y ocultar generador
-    resultDiv.style.display = 'block';
-    document.getElementById('generator-mode').style.display = 'none';
+resultDiv.style.display = 'block';
+document.getElementById('generator-mode').style.display = 'none';
+
+// Hacer scroll hacia el resultado
+resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
     
     // Guardar datos para descarga
     window.currentQRData = {
@@ -4631,6 +4638,7 @@ function clearGeneratorForm() {
     document.getElementById('gen-tipo').value = '';
     document.getElementById('gen-codigos').value = '';
     generatedCodes = [];
+    duplicateAttempts = 0;
     updateCodesValidationList();
     updateValidationInfo();
     updateGenerateButton();
