@@ -478,6 +478,58 @@
     text-align: center;
     font-size: 14px;
 }
+.mode-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.codes-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 10px;
+    background: #f8f9fa;
+}
+
+.code-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    margin: 3px 0;
+    border-radius: 5px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+}
+
+.code-valid {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.code-duplicate {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+
+.code-invalid {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+}
+
+.qr-display-container {
+    border: 2px solid #28a745;
+    border-radius: 10px;
+    padding: 20px;
+    background: white;
+    display: inline-block;
+}
     </style>
 </head>
 <body>
@@ -532,88 +584,181 @@
             </div>
         </div>
 
-        <!-- Scanner Tab -->
-        <div id="scanner" class="tab-content">
-            <h2>📱 Procesamiento de Códigos QR</h2>
-            
-            <div class="card">
-    <h3>Procesar Código QR</h3>
+<!-- Scanner Tab -->
+<div id="scanner" class="tab-content">
+    <h2>📱 Procesamiento de Códigos QR</h2>
     
-    <div class="scanner-hint">
-        💡 <strong>Opciones disponibles:</strong> 
-        📱 Usa la cámara para escanear QR, 🖥️ usa scanner físico, o ✍️ pega el código manualmente.
+    <!-- Selector de Modo -->
+    <div class="card">
+        <h3>Selecciona el Modo de Trabajo</h3>
+        <div class="warehouse-selector">
+            <div class="warehouse-btn" id="mode-scanner" onclick="showScannerMode()">📱 Escanear QR Existente</div>
+            <div class="warehouse-btn" id="mode-generator" onclick="showGeneratorMode()">🏷️ Generar QR de Tarima</div>
+        </div>
     </div>
-    
-    <!-- Controles de cámara -->
-    <div class="camera-controls">
-        <button class="btn btn-success" id="start-camera-btn" onclick="startCamera()">📷 Activar Cámara</button>
-        <button class="btn btn-danger" id="stop-camera-btn" onclick="stopCamera()" style="display: none;">⏹️ Detener Cámara</button>
-        <button class="btn btn-info" id="switch-camera-btn" onclick="switchCamera()" style="display: none;">🔄 Cambiar Cámara</button>
-    </div>
-    
-    <!-- Contenedor de la cámara -->
-    <div id="camera-container" class="camera-container" style="display: none;">
-        <video id="camera-video" class="camera-video" autoplay muted playsinline></video>
-        <div class="camera-overlay"></div>
-        <div id="camera-status" class="camera-status">📷 Posiciona el código QR dentro del recuadro verde</div>
-    </div>
-    
-    <div class="form-group">
-        <label>Código QR (Tarima o Individual):</label>
-        <textarea id="qr-input" rows="4" placeholder="El código aparecerá aquí automáticamente al escanearlo, o puedes pegarlo manualmente..." autofocus></textarea>
-        <div id="qr-analysis"></div>
-    </div>   
-                <div class="form-group">
-                    <label>Tipo de Inventario:</label>
-                    <select id="inventory-type">
-                        <option value="movimiento">📦 Movimiento Normal</option>
-                        <option value="inicial">🎯 Inventario Inicial</option>
-                        <option value="turno">⏰ Inventario por Turno</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Turno:</label>
-                    <select id="shift">
-                        <option value="1">Primer Turno (07:00 am - 07:00 pm)</option>
-                        <option value="2">Segundo Turno (07:00 pm - 07:00 am)</option>
-                    </select>
-                </div>
-                
-                <div class="form-group" id="individual-state-section" style="display: none;">
-                    <label>Estado del Material (Pieza Individual):</label>
-                    <select id="individual-state">
-                        <option value="fundidos">🔥 Fundido</option>
-                        <option value="acabados">✅ Acabado</option>
-                    </select>
-                </div>
-                
-                <div class="form-group" id="movement-destination-section" style="display: none;">
-                    <label>Destino del Movimiento:</label>
-                    <div class="warehouse-selector" id="movement-selector">
-                        <div class="warehouse-btn" data-movement="envios">📦 ENVÍOS</div>
-                        <div class="warehouse-btn" data-movement="retenciones">⏸️ RETENCIONES</div>
-                        <div class="warehouse-btn" data-movement="scrap">♻️ SCRAP</div>
-                        <div class="warehouse-btn" data-movement="pruebas">🧪 PRUEBAS</div>
-                    </div>
-                </div>
-                
-                <div class="form-group" id="warehouse-override-section" style="display: none;">
-                    <label>Forzar Almacén (Tarima sin estado detectado):</label>
-                    <div class="warehouse-selector" id="warehouse-selector">
-                        <div class="warehouse-btn" data-warehouse="fundidos">🔥 FUNDIDOS</div>
-                        <div class="warehouse-btn" data-warehouse="acabados">✅ ACABADOS</div>
-                    </div>
-                </div>
-                
-                <button class="btn btn-success" onclick="processQRCode()">✅ Procesar Código QR</button>
-                <button class="btn btn-info" onclick="clearForm()">🔄 Limpiar</button>
-                <button class="btn btn-warning" onclick="startNewShiftVerification()">🆕 Nuevo Turno</button>
-            </div>
 
-            <div id="process-result"></div>
+    <!-- Modo Scanner (Original) -->
+    <div id="scanner-mode" class="card">
+        <h3>Procesar Código QR</h3>
+        
+        <div class="scanner-hint">
+            💡 <strong>Opciones disponibles:</strong> 
+            📱 Usa la cámara para escanear QR, 🖥️ usa scanner físico, o ✍️ pega el código manualmente.
+        </div>
+        
+        <!-- Controles de cámara -->
+        <div class="camera-controls">
+            <button class="btn btn-success" id="start-camera-btn" onclick="startCamera()">📷 Activar Cámara</button>
+            <button class="btn btn-danger" id="stop-camera-btn" onclick="stopCamera()" style="display: none;">⏹️ Detener Cámara</button>
+            <button class="btn btn-info" id="switch-camera-btn" onclick="switchCamera()" style="display: none;">🔄 Cambiar Cámara</button>
+        </div>
+        
+        <!-- Contenedor de la cámara -->
+        <div id="camera-container" class="camera-container" style="display: none;">
+            <video id="camera-video" class="camera-video" autoplay muted playsinline></video>
+            <div class="camera-overlay"></div>
+            <div id="camera-status" class="camera-status">📷 Posiciona el código QR dentro del recuadro verde</div>
+        </div>
+        
+        <div class="form-group">
+            <label>Código QR (Tarima o Individual):</label>
+            <textarea id="qr-input" rows="4" placeholder="El código aparecerá aquí automáticamente al escanearlo, o puedes pegarlo manualmente..." autofocus></textarea>
+            <div id="qr-analysis"></div>
+        </div>   
+        
+        <div class="form-group">
+            <label>Tipo de Inventario:</label>
+            <select id="inventory-type">
+                <option value="movimiento">📦 Movimiento Normal</option>
+                <option value="inicial">🎯 Inventario Inicial</option>
+                <option value="turno">⏰ Inventario por Turno</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Turno:</label>
+            <select id="shift">
+                <option value="1">Primer Turno (07:00 am - 07:00 pm)</option>
+                <option value="2">Segundo Turno (07:00 pm - 07:00 am)</option>
+            </select>
+        </div>
+        
+        <div class="form-group" id="individual-state-section" style="display: none;">
+            <label>Estado del Material (Pieza Individual):</label>
+            <select id="individual-state">
+                <option value="fundidos">🔥 Fundido</option>
+                <option value="acabados">✅ Acabado</option>
+            </select>
+        </div>
+        
+        <div class="form-group" id="movement-destination-section" style="display: none;">
+            <label>Destino del Movimiento:</label>
+            <div class="warehouse-selector" id="movement-selector">
+                <div class="warehouse-btn" data-movement="envios">📦 ENVÍOS</div>
+                <div class="warehouse-btn" data-movement="retenciones">⏸️ RETENCIONES</div>
+                <div class="warehouse-btn" data-movement="scrap">♻️ SCRAP</div>
+                <div class="warehouse-btn" data-movement="pruebas">🧪 PRUEBAS</div>
+            </div>
+        </div>
+        
+        <div class="form-group" id="warehouse-override-section" style="display: none;">
+            <label>Forzar Almacén (Tarima sin estado detectado):</label>
+            <div class="warehouse-selector" id="warehouse-selector">
+                <div class="warehouse-btn" data-warehouse="fundidos">🔥 FUNDIDOS</div>
+                <div class="warehouse-btn" data-warehouse="acabados">✅ ACABADOS</div>
+            </div>
+        </div>
+        
+        <button class="btn btn-success" onclick="processQRCode()">✅ Procesar Código QR</button>
+        <button class="btn btn-info" onclick="clearForm()">🔄 Limpiar</button>
+        <button class="btn btn-warning" onclick="startNewShiftVerification()">🆕 Nuevo Turno</button>
+    </div>
+
+    <!-- Modo Generador (Nuevo) -->
+    <div id="generator-mode" class="card" style="display: none;">
+        <h3>🏷️ Generar Código QR de Tarima</h3>
+        
+        <div class="grid" style="grid-template-columns: repeat(2, 1fr);">
+            <div class="form-group">
+                <label>🏭 Zona/ID de Tarima:</label>
+                <input type="text" id="gen-zona" placeholder="Ej: A3, B7, TARM001..." required>
+            </div>
+            <div class="form-group">
+                <label>📦 Tipo de Material:</label>
+                <select id="gen-tipo" required>
+                    <option value="">Seleccionar...</option>
+                    <option value="FUNDIDO">🔥 Fundido</option>
+                    <option value="ACABADO">✅ Acabado</option>
+                    <option value="MIXED">🔀 Mixto</option>
+                </select>
+            </div>
         </div>
 
+        <!-- Entrada de códigos con cámara -->
+        <div class="form-group">
+            <label>📋 Códigos de Piezas Individuales:</label>
+            <div class="camera-controls">
+                <button class="btn btn-success" id="gen-start-camera-btn" onclick="startGeneratorCamera()">📷 Usar Cámara</button>
+                <button class="btn btn-danger" id="gen-stop-camera-btn" onclick="stopGeneratorCamera()" style="display: none;">⏹️ Detener</button>
+                <button class="btn btn-info" onclick="pasteCodesFromClipboard()">📋 Pegar desde Portapapeles</button>
+                <button class="btn btn-warning" onclick="clearAllCodes()">🗑️ Limpiar Todo</button>
+            </div>
+            
+            <!-- Cámara para códigos individuales -->
+            <div id="gen-camera-container" class="camera-container" style="display: none;">
+                <video id="gen-camera-video" class="camera-video" autoplay muted playsinline></video>
+                <div class="camera-overlay"></div>
+                <div id="gen-camera-status" class="camera-status">📷 Escanea los códigos individuales uno por uno</div>
+            </div>
+            
+            <textarea id="gen-codigos" rows="8" placeholder="Los códigos aparecerán aquí conforme los escanees, o puedes pegarlos manualmente (uno por línea)..."></textarea>
+            <div id="gen-validation-info" class="auto-detect" style="display: none;">
+                <strong>📊 Resumen:</strong> <span id="codes-count">0</span> códigos | 
+                <span id="duplicates-count">0</span> duplicados | 
+                <span id="invalid-count">0</span> inválidos
+            </div>
+        </div>
+
+        <!-- Lista de códigos con validación visual -->
+        <div class="form-group">
+            <label>🔍 Códigos Validados:</label>
+            <div id="codes-validation-list" class="pallet-preview">
+                <p style="color: #6c757d; font-style: italic;">Los códigos aparecerán aquí conforme los agregues...</p>
+            </div>
+        </div>
+
+        <button class="btn btn-success" onclick="generatePalletQR()" id="generate-qr-btn" disabled>🏷️ Generar Código QR de Tarima</button>
+        <button class="btn btn-info" onclick="clearGeneratorForm()">🔄 Limpiar Formulario</button>
+    </div>
+
+    <!-- Resultado de QR Generado -->
+    <div id="qr-result" class="card" style="display: none;">
+        <h3>✅ Código QR de Tarima Generado</h3>
+        
+        <div class="grid" style="grid-template-columns: 1fr 1fr;">
+            <div>
+                <h4>📋 Información de la Tarima:</h4>
+                <div id="qr-info"></div>
+            </div>
+            <div style="text-align: center;">
+                <h4>🏷️ Código QR:</h4>
+                <div id="qr-display"></div>
+                <div style="margin-top: 15px;">
+                    <button class="btn btn-primary" onclick="downloadQRImage()">📥 Descargar Imagen</button>
+                    <button class="btn btn-info" onclick="copyQRText()">📋 Copiar Texto</button>
+                    <button class="btn btn-warning" onclick="printQR()">🖨️ Imprimir</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>📝 Texto del QR (para verificación):</label>
+            <textarea id="qr-text" rows="3" readonly style="background: #f8f9fa;"></textarea>
+        </div>
+    </div>
+
+    <div id="process-result"></div>
+</div>
         <!-- Inventory Tab -->
         <div id="inventory" class="tab-content">
             <h2>📋 Inventario Detallado</h2>
@@ -957,8 +1102,12 @@
         let physicalVerification = {}; // Para almacenar verificaciones físicas
         let shiftReports = []; // Para reportes por turno
         let productionReports = []; // Para almacenar reportes de producción
-let movementReports = []; // Para almacenar movimientos de material
-let theoreticalBalance = {}; // Para el balance teórico calculado
+        let movementReports = []; // Para almacenar movimientos de material
+        let theoreticalBalance = {}; // Para el balance teórico calculado
+        // Variables para el generador de QR
+        let generatorScanner = null;
+        let generatedCodes = [];
+        let palletHistory = [];
 
 // Configuración de modelos por máquina
 const MACHINE_MODELS = {
@@ -3891,6 +4040,8 @@ document.addEventListener('DOMContentLoaded', function() {
     updateAllDisplays();
     // Verificar disponibilidad de cámara  ← AQUÍ
     checkCameraAvailability();
+   // Inicializar modo del generador
+    showScannerMode();
 });
 // Variables para la cámara
 let qrScanner = null;
@@ -4012,6 +4163,548 @@ async function checkCameraAvailability() {
         console.error('Error verificando cámara:', error);
     }
 }
+// Funciones de navegación entre modos
+function showScannerMode() {
+    document.getElementById('scanner-mode').style.display = 'block';
+    document.getElementById('generator-mode').style.display = 'none';
+    document.getElementById('qr-result').style.display = 'none';
+    
+    // Actualizar botones
+    document.getElementById('mode-scanner').classList.add('selected');
+    document.getElementById('mode-generator').classList.remove('selected');
+    
+    // Detener cámara del generador si está activa
+    stopGeneratorCamera();
+}
+
+function showGeneratorMode() {
+    document.getElementById('scanner-mode').style.display = 'none';
+    document.getElementById('generator-mode').style.display = 'block';
+    document.getElementById('qr-result').style.display = 'none';
+    
+    // Actualizar botones
+    document.getElementById('mode-generator').classList.add('selected');
+    document.getElementById('mode-scanner').classList.remove('selected');
+    
+    // Detener cámara del scanner si está activa
+    stopCamera();
+}
+
+// Cámara para el generador
+async function startGeneratorCamera() {
+    try {
+        const videoElement = document.getElementById('gen-camera-video');
+        const containerElement = document.getElementById('gen-camera-container');
+        const statusElement = document.getElementById('gen-camera-status');
+        
+        containerElement.style.display = 'block';
+        statusElement.textContent = '📷 Iniciando cámara para códigos individuales...';
+        
+        generatorScanner = new QrScanner(
+            videoElement,
+            result => handleGeneratorScan(result.data),
+            {
+                returnDetailedScanResult: true,
+                highlightScanRegion: true,
+                highlightCodeOutline: true,
+                preferredCamera: 'environment'
+            }
+        );
+        
+        await generatorScanner.start();
+        
+        document.getElementById('gen-start-camera-btn').style.display = 'none';
+        document.getElementById('gen-stop-camera-btn').style.display = 'inline-block';
+        statusElement.textContent = '📷 Escanea códigos individuales - Se agregarán automáticamente';
+        
+    } catch (error) {
+        console.error('Error al iniciar cámara del generador:', error);
+        alert('❌ Error al acceder a la cámara.\n\nVerifica los permisos de cámara.');
+        document.getElementById('gen-camera-container').style.display = 'none';
+    }
+}
+
+function stopGeneratorCamera() {
+    if (generatorScanner) {
+        generatorScanner.stop();
+        generatorScanner.destroy();
+        generatorScanner = null;
+    }
+    
+    document.getElementById('gen-camera-container').style.display = 'none';
+    document.getElementById('gen-start-camera-btn').style.display = 'inline-block';
+    document.getElementById('gen-stop-camera-btn').style.display = 'none';
+}
+
+// Manejar código escaneado en el generador
+function handleGeneratorScan(qrData) {
+    if (qrData && qrData.trim().length > 0) {
+        const code = qrData.trim();
+        
+        // Verificar si es un código individual válido (no tarima)
+        if (code.includes('|')) {
+            showTemporaryMessage('⚠️ Este es un código de tarima, no individual', 'warning');
+            return;
+        }
+        
+        // Agregar código a la lista
+        addCodeToList(code);
+        
+        // Feedback visual
+        const statusElement = document.getElementById('gen-camera-status');
+        statusElement.style.background = '#d4edda';
+        statusElement.style.color = '#155724';
+        statusElement.textContent = '✅ Código agregado: ' + code.substring(0, 10) + '...';
+        
+        // Resetear status después de 2 segundos
+        setTimeout(() => {
+            if (generatorScanner) {
+                statusElement.style.background = '#e3f2fd';
+                statusElement.style.color = '#0c5460';
+                statusElement.textContent = '📷 Escanea códigos individuales - Se agregarán automáticamente';
+            }
+        }, 2000);
+    }
+}
+
+// Agregar código a la lista
+function addCodeToList(code) {
+    const cleanCode = code.trim();
+    if (!cleanCode) return;
+    
+    // Verificar si ya existe
+    const exists = generatedCodes.some(item => item.code === cleanCode);
+    if (exists) {
+        showTemporaryMessage('⚠️ Código ya agregado: ' + cleanCode, 'warning');
+        return;
+    }
+    
+    // Validar formato del código
+    const isValid = (cleanCode.length === 13 || cleanCode.length === 17);
+    const type = cleanCode.length === 13 ? 'UPR' : cleanCode.length === 17 ? 'LWR' : 'UNKNOWN';
+    
+    // Agregar a la lista
+    generatedCodes.push({
+        code: cleanCode,
+        type: type,
+        valid: isValid,
+        timestamp: new Date()
+    });
+    
+    // Actualizar textarea
+    updateCodesTextarea();
+    
+    // Actualizar lista visual
+    updateCodesValidationList();
+    
+    // Actualizar info de resumen
+    updateValidationInfo();
+    
+    // Habilitar/deshabilitar botón de generar
+    updateGenerateButton();
+}
+
+// Actualizar textarea con códigos
+function updateCodesTextarea() {
+    const textarea = document.getElementById('gen-codigos');
+    textarea.value = generatedCodes.map(item => item.code).join('\n');
+}
+
+// Actualizar lista visual de validación
+function updateCodesValidationList() {
+    const listDiv = document.getElementById('codes-validation-list');
+    
+    if (generatedCodes.length === 0) {
+        listDiv.innerHTML = '<p style="color: #6c757d; font-style: italic;">Los códigos aparecerán aquí conforme los agregues...</p>';
+        return;
+    }
+    
+    let html = '<div class="codes-list">';
+    generatedCodes.forEach((item, index) => {
+        const className = item.valid ? 'code-valid' : 'code-invalid';
+        const icon = item.valid ? '✅' : '❌';
+        const typeLabel = item.type !== 'UNKNOWN' ? `[${item.type}]` : '[INVÁLIDO]';
+        
+        html += `
+            <div class="code-item ${className}">
+                <span>${icon} ${typeLabel} ${item.code}</span>
+                <button onclick="removeCode(${index})" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 16px;">🗑️</button>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    listDiv.innerHTML = html;
+}
+
+// Actualizar información de validación
+function updateValidationInfo() {
+    const infoDiv = document.getElementById('gen-validation-info');
+    const countSpan = document.getElementById('codes-count');
+    const duplicatesSpan = document.getElementById('duplicates-count');
+    const invalidSpan = document.getElementById('invalid-count');
+    
+    const totalCodes = generatedCodes.length;
+    const invalidCodes = generatedCodes.filter(item => !item.valid).length;
+    
+    if (totalCodes > 0) {
+        infoDiv.style.display = 'block';
+        countSpan.textContent = totalCodes;
+        duplicatesSpan.textContent = '0'; // Ya manejamos duplicados al agregar
+        invalidSpan.textContent = invalidCodes;
+    } else {
+        infoDiv.style.display = 'none';
+    }
+}
+
+// Actualizar estado del botón generar
+function updateGenerateButton() {
+    const button = document.getElementById('generate-qr-btn');
+    const zona = document.getElementById('gen-zona').value.trim();
+    const tipo = document.getElementById('gen-tipo').value;
+    const validCodes = generatedCodes.filter(item => item.valid).length;
+    
+    if (zona && tipo && validCodes > 0) {
+        button.disabled = false;
+        button.textContent = `🏷️ Generar QR de Tarima (${validCodes} códigos)`;
+    } else {
+        button.disabled = true;
+        button.textContent = '🏷️ Generar Código QR de Tarima';
+    }
+}
+
+// Remover código específico
+function removeCode(index) {
+    if (confirm('¿Eliminar este código de la lista?')) {
+        generatedCodes.splice(index, 1);
+        updateCodesTextarea();
+        updateCodesValidationList();
+        updateValidationInfo();
+        updateGenerateButton();
+    }
+}
+
+// Pegar códigos desde portapapeles
+async function pasteCodesFromClipboard() {
+    try {
+        const text = await navigator.clipboard.readText();
+        const lines = text.split('\n').filter(line => line.trim().length > 0);
+        
+        let addedCount = 0;
+        lines.forEach(line => {
+            const code = line.trim();
+            if (code && !generatedCodes.some(item => item.code === code)) {
+                addCodeToList(code);
+                addedCount++;
+            }
+        });
+        
+        if (addedCount > 0) {
+            showTemporaryMessage(`✅ ${addedCount} códigos agregados desde portapapeles`, 'success');
+        } else {
+            showTemporaryMessage('ℹ️ No se encontraron códigos nuevos para agregar', 'info');
+        }
+        
+    } catch (error) {
+        console.error('Error al leer portapapeles:', error);
+        
+        // Método alternativo: pedir al usuario que pegue manualmente
+        const codes = prompt('Pega los códigos aquí (uno por línea):');
+        if (codes) {
+            const lines = codes.split('\n').filter(line => line.trim().length > 0);
+            lines.forEach(line => addCodeToList(line.trim()));
+            showTemporaryMessage(`✅ Códigos procesados manualmente`, 'success');
+        }
+    }
+}
+
+// Limpiar todos los códigos
+function clearAllCodes() {
+    if (generatedCodes.length === 0) {
+        showTemporaryMessage('ℹ️ No hay códigos para limpiar', 'info');
+        return;
+    }
+    
+    if (confirm(`¿Eliminar todos los ${generatedCodes.length} códigos de la lista?`)) {
+        generatedCodes = [];
+        updateCodesTextarea();
+        updateCodesValidationList();
+        updateValidationInfo();
+        updateGenerateButton();
+        showTemporaryMessage('🗑️ Todos los códigos eliminados', 'info');
+    }
+}
+
+// Generar código QR de tarima
+function generatePalletQR() {
+    const zona = document.getElementById('gen-zona').value.trim();
+    const tipo = document.getElementById('gen-tipo').value;
+    const validCodes = generatedCodes.filter(item => item.valid);
+    
+    if (!zona || !tipo || validCodes.length === 0) {
+        alert('⚠️ Completa todos los campos:\n• Zona/ID de tarima\n• Tipo de material\n• Al menos un código válido');
+        return;
+    }
+    
+    // Crear texto del QR en formato: zona|tipo|codigo1|codigo2|...
+    const codesText = validCodes.map(item => item.code).join('|');
+    const qrText = `${zona}|${tipo}|${codesText}`;
+    
+    // Mostrar resultado
+    showQRResult(zona, tipo, validCodes, qrText);
+    
+    // Agregar al historial
+    palletHistory.push({
+        id: generatePalletId(),
+        zona: zona,
+        tipo: tipo,
+        codes: validCodes.map(item => item.code),
+        qrText: qrText,
+        timestamp: new Date(),
+        codesCount: validCodes.length
+    });
+    
+    // Limpiar formulario
+    clearGeneratorForm();
+}
+
+// Mostrar resultado del QR generado
+function showQRResult(zona, tipo, codes, qrText) {
+    const resultDiv = document.getElementById('qr-result');
+    const infoDiv = document.getElementById('qr-info');
+    const displayDiv = document.getElementById('qr-display');
+    const textArea = document.getElementById('qr-text');
+    
+    // Información de la tarima
+    infoDiv.innerHTML = `
+        <p><strong>🏭 Zona/ID:</strong> ${zona}</p>
+        <p><strong>📦 Tipo:</strong> ${tipo}</p>
+        <p><strong>📊 Total códigos:</strong> ${codes.length}</p>
+        <p><strong>🔺 UPR:</strong> ${codes.filter(c => c.type === 'UPR').length}</p>
+        <p><strong>🔻 LWR:</strong> ${codes.filter(c => c.type === 'LWR').length}</p>
+        <p><strong>📅 Generado:</strong> ${new Date().toLocaleString()}</p>
+    `;
+    
+    // Generar imagen QR usando una API pública
+    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrText)}&size=300x300&format=png`;
+    
+    displayDiv.innerHTML = `
+        <div class="qr-display-container">
+            <img src="${qrImageUrl}" alt="Código QR de Tarima" style="max-width: 300px; height: auto;" id="qr-image">
+        </div>
+    `;
+    
+    // Texto del QR
+    textArea.value = qrText;
+    
+    // Mostrar resultado y ocultar generador
+    resultDiv.style.display = 'block';
+    document.getElementById('generator-mode').style.display = 'none';
+    
+    // Guardar datos para descarga
+    window.currentQRData = {
+        zona: zona,
+        tipo: tipo,
+        codes: codes,
+        qrText: qrText,
+        imageUrl: qrImageUrl
+    };
+    
+    showTemporaryMessage('✅ Código QR de tarima generado exitosamente', 'success');
+}
+
+// Descargar imagen QR
+async function downloadQRImage() {
+    if (!window.currentQRData) {
+        alert('❌ No hay código QR para descargar');
+        return;
+    }
+    
+    try {
+        const response = await fetch(window.currentQRData.imageUrl);
+        const blob = await response.blob();
+        
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `QR_${window.currentQRData.zona}_${window.currentQRData.tipo}_${new Date().toISOString().split('T')[0]}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        showTemporaryMessage('📥 Imagen QR descargada exitosamente', 'success');
+        
+    } catch (error) {
+        console.error('Error al descargar imagen:', error);
+        alert('❌ Error al descargar la imagen. Intenta hacer clic derecho en la imagen y "Guardar como..."');
+    }
+}
+
+// Copiar texto del QR
+async function copyQRText() {
+    if (!window.currentQRData) {
+        alert('❌ No hay código QR para copiar');
+        return;
+    }
+    
+    try {
+        await navigator.clipboard.writeText(window.currentQRData.qrText);
+        showTemporaryMessage('📋 Texto del QR copiado al portapapeles', 'success');
+    } catch (error) {
+        // Método alternativo
+        const textArea = document.getElementById('qr-text');
+        textArea.select();
+        document.execCommand('copy');
+        showTemporaryMessage('📋 Texto copiado (método alternativo)', 'success');
+    }
+}
+
+// Imprimir QR
+function printQR() {
+    if (!window.currentQRData) {
+        alert('❌ No hay código QR para imprimir');
+        return;
+    }
+    
+    const printWindow = window.open('', '_blank');
+    const data = window.currentQRData;
+    
+    const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Código QR - Tarima ${data.zona}</title>
+            <style>
+                body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+                .header { margin-bottom: 20px; }
+                .qr-container { margin: 20px 0; }
+                .info { text-align: left; margin: 20px auto; max-width: 400px; }
+                .codes-list { font-family: monospace; font-size: 12px; text-align: left; }
+                @media print { body { margin: 0; } }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>🏭 CÓDIGO QR - TARIMA</h1>
+                <h2>Zona: ${data.zona} | Tipo: ${data.tipo}</h2>
+            </div>
+            
+            <div class="qr-container">
+                <img src="${data.imageUrl}" alt="Código QR" style="max-width: 300px;">
+            </div>
+            
+            <div class="info">
+                <p><strong>📅 Fecha:</strong> ${new Date().toLocaleString()}</p>
+                <p><strong>📊 Total códigos:</strong> ${data.codes.length}</p>
+                <p><strong>🔺 UPR:</strong> ${data.codes.filter(c => c.type === 'UPR').length}</p>
+                <p><strong>🔻 LWR:</strong> ${data.codes.filter(c => c.type === 'LWR').length}</p>
+            </div>
+            
+            <div class="codes-list">
+                <h3>📋 Códigos incluidos:</h3>
+                ${data.codes.map((c, i) => `<p>${i + 1}. [${c.type}] ${c.code}</p>`).join('')}
+            </div>
+            
+            <p style="margin-top: 30px; font-size: 12px; color: #666;">
+                Generado por Sistema de Control de Almacén - Fundición v1.3
+            </p>
+        </body>
+        </html>
+    `;
+    
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    
+    // Pequeño delay para asegurar que la imagen se cargue antes de imprimir
+    setTimeout(() => {
+        printWindow.print();
+    }, 1000);
+    
+    showTemporaryMessage('🖨️ Enviando a imprimir...', 'info');
+}
+
+// Limpiar formulario del generador
+function clearGeneratorForm() {
+    document.getElementById('gen-zona').value = '';
+    document.getElementById('gen-tipo').value = '';
+    document.getElementById('gen-codigos').value = '';
+    generatedCodes = [];
+    updateCodesValidationList();
+    updateValidationInfo();
+    updateGenerateButton();
+    
+    // Ocultar resultado si está visible
+    document.getElementById('qr-result').style.display = 'none';
+    document.getElementById('generator-mode').style.display = 'block';
+}
+
+// Función para mostrar mensajes temporales
+function showTemporaryMessage(message, type = 'info') {
+    const resultDiv = document.getElementById('process-result');
+    
+    const alertClass = type === 'success' ? 'alert-success' : 
+                     type === 'warning' ? 'alert' : 
+                     'alert-info';
+    
+    resultDiv.innerHTML = `<div class="${alertClass}">${message}</div>`;
+    
+    setTimeout(() => {
+        resultDiv.innerHTML = '';
+    }, 4000);
+}
+
+// Event listeners adicionales para el generador
+document.addEventListener('DOMContentLoaded', function() {
+    // Event listener para cambios en el textarea de códigos
+    const codigosTextarea = document.getElementById('gen-codigos');
+    if (codigosTextarea) {
+        codigosTextarea.addEventListener('input', function() {
+            // Procesar cambios manuales en el textarea
+            const lines = this.value.split('\n').filter(line => line.trim().length > 0);
+            
+            // Sincronizar con la lista generatedCodes
+            const newCodes = lines.filter(line => 
+                !generatedCodes.some(item => item.code === line.trim())
+            );
+            
+            newCodes.forEach(code => {
+                const cleanCode = code.trim();
+                if (cleanCode) {
+                    const isValid = (cleanCode.length === 13 || cleanCode.length === 17);
+                    const type = cleanCode.length === 13 ? 'UPR' : cleanCode.length === 17 ? 'LWR' : 'UNKNOWN';
+                    
+                    generatedCodes.push({
+                        code: cleanCode,
+                        type: type,
+                        valid: isValid,
+                        timestamp: new Date()
+                    });
+                }
+            });
+            
+            updateCodesValidationList();
+            updateValidationInfo();
+            updateGenerateButton();
+        });
+    }
+    
+    // Event listeners para campos del formulario
+    const zonaInput = document.getElementById('gen-zona');
+    const tipoSelect = document.getElementById('gen-tipo');
+    
+    if (zonaInput) {
+        zonaInput.addEventListener('input', updateGenerateButton);
+    }
+    
+    if (tipoSelect) {
+        tipoSelect.addEventListener('change', updateGenerateButton);
+    }
+    
+    // Mostrar modo scanner por defecto
+    showScannerMode();
+});
 </script>
 </body>
 </html>
