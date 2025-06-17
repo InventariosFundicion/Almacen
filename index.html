@@ -4369,14 +4369,18 @@ function addCodeToList(code) {
     const cleanCode = code.trim();
     if (!cleanCode) return;
     
+    console.log('Intentando agregar código:', cleanCode); // DEBUG
+    
     // Verificar si ya existe
     const exists = generatedCodes.some(item => item.code === cleanCode);
     if (exists) {
-    duplicateAttempts++;
-    showTemporaryMessage('⚠️ Código duplicado omitido: ' + cleanCode, 'warning');
-    updateValidationInfo(); // Agregar esta línea
-    return;
-}
+        duplicateAttempts++;
+        console.log('Duplicado detectado. Total duplicados:', duplicateAttempts); // DEBUG
+        showTemporaryMessage('⚠️ Código duplicado omitido: ' + cleanCode, 'warning');
+        updateValidationInfo(); // CRÍTICO: Actualizar info inmediatamente
+        return;
+    }
+    
     // Validar formato del código
     const isValid = (cleanCode.length === 13 || cleanCode.length === 17);
     const type = cleanCode.length === 13 ? 'UPR' : cleanCode.length === 17 ? 'LWR' : 'UNKNOWN';
@@ -4389,18 +4393,14 @@ function addCodeToList(code) {
         timestamp: new Date()
     });
     
-    // Actualizar textarea
+    console.log('Código agregado. Total códigos:', generatedCodes.length); // DEBUG
+    
+    // Actualizar TODOS los elementos
     updateCodesTextarea();
-    
-    // Actualizar lista visual
     updateCodesValidationList();
-    
-    // Actualizar info de resumen
-    updateValidationInfo(); // ← CORRECCIÓN
-    // Habilitar/deshabilitar botón de generar
+    updateValidationInfo(); // CRÍTICO: Actualizar siempre
     updateGenerateButton();
 }
-
 // Actualizar textarea con códigos
 function updateCodesTextarea() {
     const textarea = document.getElementById('gen-codigos');
@@ -4488,20 +4488,39 @@ async function pasteCodesFromClipboard() {
         const lines = text.split('\n').filter(line => line.trim().length > 0);
         
         let addedCount = 0;
+        let duplicatesInThisPaste = 0;
+        
         lines.forEach(line => {
-    const code = line.trim();
-    if (code) {
-        const existsBefore = generatedCodes.some(item => item.code === code);
-        if (!existsBefore) {
-            addCodeToList(code);
-            addedCount++;
-        } else {
-            duplicateAttempts++;
-            console.log('Duplicado detectado:', code);
-        }
-    }
-});
-    updateValidationInfo(); // ← AGREGAR ESTA LÍNEA   
+            const code = line.trim();
+            if (code) {
+                const existsBefore = generatedCodes.some(item => item.code === code);
+                if (!existsBefore) {
+                    // Validar formato del código
+                    const isValid = (code.length === 13 || code.length === 17);
+                    const type = code.length === 13 ? 'UPR' : code.length === 17 ? 'LWR' : 'UNKNOWN';
+                    
+                    // Agregar directamente sin llamar addCodeToList para evitar mensajes múltiples
+                    generatedCodes.push({
+                        code: code,
+                        type: type,
+                        valid: isValid,
+                        timestamp: new Date()
+                    });
+                    addedCount++;
+                } else {
+                    duplicatesInThisPaste++;
+                    duplicateAttempts++; // Incrementar contador global
+                    console.log('Duplicado en paste:', code);
+                }
+            }
+        });
+        
+        // Actualizar TODO una sola vez al final
+        updateCodesTextarea();
+        updateCodesValidationList();
+        updateValidationInfo(); // CRÍTICO: Actualizar contadores
+        updateGenerateButton();
+       
 if (addedCount > 0) {
     showTemporaryMessage(`✅ ${addedCount} códigos agregados desde portapapeles`, 'success');
 }
@@ -4580,10 +4599,14 @@ function generatePalletQR() {
 
 // Mostrar resultado del QR generado
 function showQRResult(zona, tipo, codes, qrText) {
+    console.log('showQRResult llamada con:', zona, tipo, codes.length, 'códigos'); // DEBUG
+    
     const resultDiv = document.getElementById('qr-result');
     const infoDiv = document.getElementById('qr-info');
     const displayDiv = document.getElementById('qr-display');
     const textArea = document.getElementById('qr-text');
+    
+    console.log('Elementos encontrados:', { resultDiv, infoDiv, displayDiv, textArea }); // DEBUG
     
     // Información de la tarima
     infoDiv.innerHTML = `
@@ -4607,13 +4630,15 @@ function showQRResult(zona, tipo, codes, qrText) {
     // Texto del QR
     textArea.value = qrText;
     
-// Mostrar resultado
-resultDiv.style.display = 'block';
-
-// Hacer scroll hacia el resultado
-setTimeout(() => {
-    resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}, 100);
+    // MOSTRAR RESULTADO - LÍNEA CRÍTICA
+    resultDiv.style.display = 'block';
+    console.log('QR result div mostrado:', resultDiv.style.display); // DEBUG
+    
+    // Hacer scroll hacia el resultado
+    setTimeout(() => {
+        resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        console.log('Scroll ejecutado'); // DEBUG
+    }, 300);
     
     // Guardar datos para descarga
     window.currentQRData = {
@@ -4820,6 +4845,26 @@ document.addEventListener('DOMContentLoaded', function() {
     // Mostrar modo scanner por defecto
     showScannerMode();
 });
+       // FUNCIÓN TEMPORAL PARA DEBUG - Agregar al final del script
+function debugQRGenerator() {
+    console.log('=== DEBUG QR GENERATOR ===');
+    console.log('generatedCodes:', generatedCodes);
+    console.log('duplicateAttempts:', duplicateAttempts);
+    console.log('QR result div:', document.getElementById('qr-result'));
+    console.log('QR result display:', document.getElementById('qr-result').style.display);
+    
+    // Verificar elementos
+    const elementos = {
+        qrResult: document.getElementById('qr-result'),
+        qrInfo: document.getElementById('qr-info'),
+        qrDisplay: document.getElementById('qr-display'),
+        qrText: document.getElementById('qr-text')
+    };
+    
+    console.log('Elementos HTML:', elementos);
+}
+
+// Ejecutar en consola: debugQRGenerator()
 </script>
 </body>
 </html>
