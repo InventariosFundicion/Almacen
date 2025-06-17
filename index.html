@@ -4784,7 +4784,7 @@ function showTemporaryMessage(message, type = 'info') {
 
 // Event listeners adicionales para el generador
 document.addEventListener('DOMContentLoaded', function() {
-   // Event listener para cambios en el textarea de códigos
+    // Event listener para cambios en el textarea de códigos
     const codigosTextarea = document.getElementById('gen-codigos');
     if (codigosTextarea) {
         codigosTextarea.addEventListener('input', function() {
@@ -4823,27 +4823,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             type: type,
                             valid: isValid,
                             timestamp: new Date()
-                     });
-                        // Event listeners para campos del formulario generador
-    const zonaInput = document.getElementById('gen-zona');
-    const tipoSelect = document.getElementById('gen-tipo');
-    
-    if (zonaInput) {
-        zonaInput.addEventListener('input', function() {
-            console.log('Zona cambió a:', this.value); // DEBUG
-            updateGenerateButton();
-        });
-    }
-    
-    if (tipoSelect) {
-        tipoSelect.addEventListener('change', function() {
-            console.log('Tipo cambió a:', this.value); // DEBUG
-            updateGenerateButton();
-        });
-    }
-    
-    // Mostrar modo scanner por defecto
-    showScannerMode();
                         });
                     }
                 }
@@ -4859,16 +4838,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Event listeners para campos del formulario
+    // Event listeners para campos del formulario generador
     const zonaInput = document.getElementById('gen-zona');
     const tipoSelect = document.getElementById('gen-tipo');
     
     if (zonaInput) {
-        zonaInput.addEventListener('input', updateGenerateButton);
+        zonaInput.addEventListener('input', function() {
+            console.log('Zona cambió a:', this.value); // DEBUG
+            updateGenerateButton();
+        });
     }
     
     if (tipoSelect) {
-        tipoSelect.addEventListener('change', updateGenerateButton);
+        tipoSelect.addEventListener('change', function() {
+            console.log('Tipo cambió a:', this.value); // DEBUG
+            updateGenerateButton();
+        });
     }
     
     // Mostrar modo scanner por defecto
