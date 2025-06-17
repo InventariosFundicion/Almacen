@@ -2598,6 +2598,8 @@ function calculateDiscrepancies(theoretical) {
     updatePalletsTable();
     updateVerificationSummary(); // <- AGREGAR ESTA LÍNEA
     updateProductionSummary(); // ⬅️ AGREGAR ESTA LÍNEA
+           updateValidationInfo();
+
 }
 
         function updateDashboard() {
@@ -4488,18 +4490,30 @@ async function pasteCodesFromClipboard() {
         
         let addedCount = 0;
         lines.forEach(line => {
-            const code = line.trim();
-            if (code && !generatedCodes.some(item => item.code === code)) {
-                addCodeToList(code);
-                addedCount++;
-            }
-        });
-        
-        if (addedCount > 0) {
-            showTemporaryMessage(`✅ ${addedCount} códigos agregados desde portapapeles`, 'success');
+    const code = line.trim();
+    if (code) {
+        const existsBefore = generatedCodes.some(item => item.code === code);
+        if (!existsBefore) {
+            addCodeToList(code);
+            addedCount++;
         } else {
-            showTemporaryMessage('ℹ️ No se encontraron códigos nuevos para agregar', 'info');
+            duplicateAttempts++;
+            console.log('Duplicado detectado:', code);
         }
+    }
+});
+        
+if (addedCount > 0) {
+    showTemporaryMessage(`✅ ${addedCount} códigos agregados desde portapapeles`, 'success');
+}
+
+if (duplicateAttempts > 0) {
+    showTemporaryMessage(`⚠️ Se omitieron ${duplicateAttempts} códigos duplicados`, 'warning');
+}
+
+if (addedCount === 0 && duplicateAttempts === 0) {
+    showTemporaryMessage('ℹ️ No se encontraron códigos válidos para agregar', 'info');
+}
         
     } catch (error) {
         console.error('Error al leer portapapeles:', error);
@@ -4594,9 +4608,8 @@ function showQRResult(zona, tipo, codes, qrText) {
     // Texto del QR
     textArea.value = qrText;
     
-// Mostrar resultado y ocultar generador
+// Mostrar resultado
 resultDiv.style.display = 'block';
-document.getElementById('generator-mode').style.display = 'none';
 
 // Hacer scroll hacia el resultado
 setTimeout(() => {
