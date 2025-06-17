@@ -4433,51 +4433,38 @@ function updateCodesValidationList() {
 
 // Actualizar información de validación
 function updateValidationInfo() {
+    console.log('updateValidationInfo llamada. duplicateAttempts:', duplicateAttempts); // DEBUG
+    
     const infoDiv = document.getElementById('gen-validation-info');
     const countSpan = document.getElementById('codes-count');
     const duplicatesSpan = document.getElementById('duplicates-count');
     const invalidSpan = document.getElementById('invalid-count');
     
+    if (!infoDiv || !countSpan || !duplicatesSpan || !invalidSpan) {
+        console.log('Elementos de validación no encontrados'); // DEBUG
+        return;
+    }
+    
     const totalCodes = generatedCodes.length;
     const invalidCodes = generatedCodes.filter(item => !item.valid).length;
     
-    if (totalCodes > 0) {
+    console.log('Stats:', { totalCodes, duplicateAttempts, invalidCodes }); // DEBUG
+    
+    if (totalCodes > 0 || duplicateAttempts > 0) {
         infoDiv.style.display = 'block';
         countSpan.textContent = totalCodes;
         duplicatesSpan.textContent = duplicateAttempts;
         invalidSpan.textContent = invalidCodes;
+        
+        // Mostrar mensaje si hay duplicados
+        if (duplicateAttempts > 0) {
+            console.log('Mostrando mensaje de duplicados'); // DEBUG
+            showTemporaryMessage(`⚠️ Se encontraron ${duplicateAttempts} códigos duplicados`, 'warning');
+        }
     } else {
         infoDiv.style.display = 'none';
     }
 }
-
-// Actualizar estado del botón generar
-function updateGenerateButton() {
-    const button = document.getElementById('generate-qr-btn');
-    const zona = document.getElementById('gen-zona').value.trim();
-    const tipo = document.getElementById('gen-tipo').value;
-    const validCodes = generatedCodes.filter(item => item.valid).length;
-    
-    if (zona && tipo && validCodes > 0) {
-        button.disabled = false;
-        button.textContent = `🏷️ Generar QR de Tarima (${validCodes} códigos)`;
-    } else {
-        button.disabled = true;
-        button.textContent = '🏷️ Generar Código QR de Tarima';
-    }
-}
-
-// Remover código específico
-function removeCode(index) {
-    if (confirm('¿Eliminar este código de la lista?')) {
-        generatedCodes.splice(index, 1);
-        updateCodesTextarea();
-        updateCodesValidationList();
-        updateValidationInfo();
-        updateGenerateButton();
-    }
-}
-
 // Pegar códigos desde portapapeles
 async function pasteCodesFromClipboard() {
     try {
@@ -4797,33 +4784,54 @@ function showTemporaryMessage(message, type = 'info') {
 
 // Event listeners adicionales para el generador
 document.addEventListener('DOMContentLoaded', function() {
-    // Event listener para cambios en el textarea de códigos
+   // Event listener para cambios en el textarea de códigos
     const codigosTextarea = document.getElementById('gen-codigos');
     if (codigosTextarea) {
         codigosTextarea.addEventListener('input', function() {
-            // Procesar cambios manuales en el textarea
+            console.log('Textarea cambió, procesando códigos...'); // DEBUG
+            
+            // Obtener líneas del textarea
             const lines = this.value.split('\n').filter(line => line.trim().length > 0);
+            console.log('Líneas encontradas:', lines); // DEBUG
             
-            // Sincronizar con la lista generatedCodes
-            const newCodes = lines.filter(line => 
-                !generatedCodes.some(item => item.code === line.trim())
-            );
+            // Resetear arrays y contadores
+            const oldGeneratedCodes = [...generatedCodes]; // Backup
+            generatedCodes = [];
+            duplicateAttempts = 0;
             
-            newCodes.forEach(code => {
-                const cleanCode = code.trim();
-                if (cleanCode) {
-                    const isValid = (cleanCode.length === 13 || cleanCode.length === 17);
-                    const type = cleanCode.length === 13 ? 'UPR' : cleanCode.length === 17 ? 'LWR' : 'UNKNOWN';
+            // Procesar cada línea
+            const seenCodes = new Set();
+            
+            lines.forEach((line, index) => {
+                const code = line.trim();
+                if (code) {
+                    console.log(`Procesando línea ${index + 1}: ${code}`); // DEBUG
                     
-                    generatedCodes.push({
-                        code: cleanCode,
-                        type: type,
-                        valid: isValid,
-                        timestamp: new Date()
-                    });
+                    if (seenCodes.has(code)) {
+                        // Es duplicado dentro del mismo textarea
+                        duplicateAttempts++;
+                        console.log(`Duplicado detectado en textarea: ${code}`); // DEBUG
+                    } else {
+                        // Es único, agregar
+                        seenCodes.add(code);
+                        
+                        const isValid = (code.length === 13 || code.length === 17);
+                        const type = code.length === 13 ? 'UPR' : code.length === 17 ? 'LWR' : 'UNKNOWN';
+                        
+                        generatedCodes.push({
+                            code: code,
+                            type: type,
+                            valid: isValid,
+                            timestamp: new Date()
+                        });
+                    }
                 }
             });
             
+            console.log('Códigos finales:', generatedCodes); // DEBUG
+            console.log('Duplicados detectados:', duplicateAttempts); // DEBUG
+            
+            // Actualizar interfaz
             updateCodesValidationList();
             updateValidationInfo();
             updateGenerateButton();
