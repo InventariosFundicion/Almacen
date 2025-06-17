@@ -732,7 +732,7 @@
     </div>
 
 <!-- Resultado de QR Generado -->
-    <div id="qr-result" class="card" style="display: none !important; position: relative; z-index: 10; background: white; margin: 20px 0; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+    <div id="qr-result" class="card" style="display: none; position: relative; z-index: 1; background: white; margin: 20px 0; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
         <h3>✅ Código QR de Tarima Generado</h3>
         
         <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -4823,6 +4823,26 @@ document.addEventListener('DOMContentLoaded', function() {
                             type: type,
                             valid: isValid,
                             timestamp: new Date()
+                        // Event listeners para campos del formulario generador
+    const zonaInput = document.getElementById('gen-zona');
+    const tipoSelect = document.getElementById('gen-tipo');
+    
+    if (zonaInput) {
+        zonaInput.addEventListener('input', function() {
+            console.log('Zona cambió a:', this.value); // DEBUG
+            updateGenerateButton();
+        });
+    }
+    
+    if (tipoSelect) {
+        tipoSelect.addEventListener('change', function() {
+            console.log('Tipo cambió a:', this.value); // DEBUG
+            updateGenerateButton();
+        });
+    }
+    
+    // Mostrar modo scanner por defecto
+    showScannerMode();
                         });
                     }
                 }
@@ -4884,8 +4904,68 @@ function debugQRGenerator() {
         console.log('Está en viewport:', rect.top >= 0 && rect.left >= 0 && rect.bottom <= window.innerHeight && rect.right <= window.innerWidth);
     }
 }
-
-// Ejecutar en consola: debugQRGenerator()
+       // Actualizar estado del botón generar
+function updateGenerateButton() {
+    const button = document.getElementById('generate-qr-btn');
+    if (!button) {
+        console.log('Botón generate-qr-btn no encontrado'); // DEBUG
+        return;
+    }
+    
+    const zona = document.getElementById('gen-zona').value.trim();
+    const tipo = document.getElementById('gen-tipo').value;
+    const validCodes = generatedCodes.filter(item => item.valid).length;
+    
+    console.log('updateGenerateButton - zona:', zona, 'tipo:', tipo, 'validCodes:', validCodes); // DEBUG
+    
+    if (zona && tipo && validCodes > 0) {
+        button.disabled = false;
+        button.textContent = `🏷️ Generar QR de Tarima (${validCodes} códigos)`;
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
+        console.log('Botón habilitado'); // DEBUG
+    } else {
+        button.disabled = true;
+        button.textContent = '🏷️ Generar Código QR de Tarima';
+        button.style.opacity = '0.6';
+        button.style.cursor = 'not-allowed';
+        console.log('Botón deshabilitado - falta:', !zona ? 'zona' : !tipo ? 'tipo' : 'códigos válidos'); // DEBUG
+    }
+}
+       // Actualizar textarea con códigos
+function updateCodesTextarea() {
+    const textarea = document.getElementById('gen-codigos');
+    if (textarea) {
+        textarea.value = generatedCodes.map(item => item.code).join('\n');
+    }
+}
+       // Actualizar lista visual de validación
+function updateCodesValidationList() {
+    const listDiv = document.getElementById('codes-validation-list');
+    if (!listDiv) return;
+    
+    if (generatedCodes.length === 0) {
+        listDiv.innerHTML = '<p style="color: #6c757d; font-style: italic;">Los códigos aparecerán aquí conforme los agregues...</p>';
+        return;
+    }
+    
+    let html = '<div class="codes-list">';
+    generatedCodes.forEach((item, index) => {
+        const className = item.valid ? 'code-valid' : 'code-invalid';
+        const icon = item.valid ? '✅' : '❌';
+        const typeLabel = item.type !== 'UNKNOWN' ? `[${item.type}]` : '[INVÁLIDO]';
+        
+        html += `
+            <div class="code-item ${className}">
+                <span>${icon} ${typeLabel} ${item.code}</span>
+                <button onclick="removeCode(${index})" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 16px;">🗑️</button>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    listDiv.innerHTML = html;
+}
 </script>
 </body>
 </html>
