@@ -833,7 +833,7 @@
         </div>
     </div>
 
-    <!-- Formulario de Fundición -->
+   <!-- Formulario de Fundición -->
     <div id="fundicion-form" class="card" style="display: none;">
         <h3>🔥 Reporte de Fundición</h3>
         <form id="production-fundicion-form">
@@ -938,21 +938,24 @@
                          <option value="34">Acabado AC-34</option>
                     </select>
                 </div>      
+            </div>
+            
+            <div class="grid" style="grid-template-columns: repeat(2, 1fr);">
                 <div class="form-group">
                     <label>Número de parte:</label>
-                    <select id="acab-modelo" required>
+                    <select id="acab-modelo" onchange="updateMoldeOptions('acab')" required>
                         <option value="">Seleccionar...</option>
-                        <option value="PX13-10-382">PX13-10-382 (LWR)</option>
-                        <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
-                        <option value="P54G-10-382">P54G-10-382 (LWR)</option>
-                        <option value="PX13-10-301">PX13-10-301 (UPR)</option>
-                        <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
-                        <option value="P54G-10-301-A">P54G-10-301-A (UPR)</option>
+                        <option value="PX13-10-382-FUN">PX13-10-382 (LWR)</option>
+                        <option value="PEDD-10-382-A-FUN">PEDD-10-382-A (LWR)</option>
+                        <option value="P54G-10-382-FUN">P54G-10-382 (LWR)</option>
+                        <option value="PX13-10-301-FUN">PX13-10-301 (UPR)</option>
+                        <option value="PEDD-10-301-A-FUN">PEDD-10-301-A (UPR)</option>
+                        <option value="P54G-10-301-A-FUN">P54G-10-301-A (UPR)</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>Molde:</label>
-                    <select id="fund-molde" required>
+                    <select id="acab-molde" required>
                         <option value="">Primero selecciona modelo...</option>
                     </select>
                 </div>
@@ -989,6 +992,97 @@
     </div>
 </div>
 <button type="button" class="btn btn-success" onclick="saveProductionReport('acabado')">✅ Guardar Reporte de Acabado</button>
+        </form>
+    </div>
+
+    <!-- Formulario de Movimientos -->
+    <div id="movimientos-form" class="card" style="display: none;">
+        <h3>📦 Movimientos de Material</h3>
+        <form id="production-movimientos-form">
+            <div class="grid" style="grid-template-columns: repeat(2, 1fr);">
+                <div class="form-group">
+                    <label>Tipo de Movimiento:</label>
+                    <select id="mov-tipo" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="scrap">♻️ Scrap Adicional</option>
+                        <option value="envios">📦 Envíos</option>
+                        <option value="retenciones">⏸️ Retenciones</option>
+                        <option value="pruebas">🧪 Pruebas</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Fecha:</label>
+                    <input type="date" id="mov-fecha" required>
+                </div>
+            </div>
+            
+            <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+                <div class="form-group">
+    <label>Máquina/Área:</label>
+    <select id="mov-maquina" required>
+        <option value="">Seleccionar...</option>
+        <option value="30">Máquina #30 (LWR)</option>
+        <option value="31">Máquina #31 (LWR)</option>
+        <option value="32">Máquina #32 (UPR)</option>
+        <option value="33">Máquina #33 (UPR)</option>
+        <option value="34">Máquina #34 (UPR)</option>
+        <option value="AC-30">Acabado AC-30</option>
+        <option value="AC-31">Acabado AC-31</option>
+        <option value="AC-32">Acabado AC-32</option>
+        <option value="AC-33">Acabado AC-33</option>
+        <option value="AC-34">Acabado AC-34</option>
+        <option value="ALMACEN">Almacén General</option>
+        <option value="ENVIOS">Área de Envíos</option>
+    </select>
+</div>
+<div class="form-group">
+    <label>Modelo/Número de Parte:</label>
+    <select id="mov-modelo" onchange="updateMoldeOptions('mov')" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="PX13-10-382-FUN">PX13-10-382 (LWR)</option>
+                        <option value="PEDD-10-382-A-FUN">PEDD-10-382-A (LWR)</option>
+                        <option value="P54G-10-382-FUN">P54G-10-382 (LWR)</option>
+                        <option value="PX13-10-301-FUN">PX13-10-301 (UPR)</option>
+                        <option value="PEDD-10-301-A-FUN">PEDD-10-301-A (UPR)</option>
+                        <option value="P54G-10-301-A-FUN">P54G-10-301-A (UPR)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Molde:</label>
+                    <select id="mov-molde" required>
+                        <option value="">Primero selecciona modelo...</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="grid" style="grid-template-columns: repeat(2, 1fr);">
+                <div class="form-group">
+                    <label>Cantidad:</label>
+                    <input type="number" id="mov-cantidad" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label>Comentarios/Razón:</label>
+                    <textarea id="mov-comentarios" rows="3" placeholder="Describe la razón del movimiento..."></textarea>
+                </div>
+            </div>
+            
+            <div class="form-group" style="margin-top: 20px;">
+    <label>📄 Evidencia (PDF de la documentación):</label>
+    <div class="file-management-container">
+        <input type="file" id="mov-evidencia" accept=".pdf" onchange="handleFileSelection('mov-evidencia')" style="display: none;">
+        <div class="file-upload-area" onclick="document.getElementById('mov-evidencia').click()">
+            <div id="mov-evidencia-status" class="file-status">
+                <span class="file-placeholder">📎 Haz clic para seleccionar PDF (máx. 5MB)</span>
+            </div>
+        </div>
+        <div id="mov-evidencia-actions" class="file-actions" style="display: none;">
+            <button type="button" class="btn btn-sm btn-warning" onclick="replaceFile('mov-evidencia')">🔄 Reemplazar</button>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeFile('mov-evidencia')">🗑️ Eliminar</button>
+            <button type="button" class="btn btn-sm btn-info" onclick="viewFileHistory('mov-evidencia')">📋 Historial</button>
+        </div>
+    </div>
+</div>
+<button type="button" class="btn btn-success" onclick="saveMovementReport()">📦 Guardar Movimiento</button>
         </form>
     </div>
 
