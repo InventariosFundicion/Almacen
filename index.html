@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner.umd.min.js"></script>
-    <meta charset="UTF-8">
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner.umd.min.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Control de Almacén - Fundición</title>
     <style>
@@ -3851,8 +3850,6 @@ document.addEventListener('DOMContentLoaded', function() {
         tab.addEventListener('click', function() {
             const tabName = this.getAttribute('data-tab');
             showTab(tabName);
-            // Verificar disponibilidad de cámara
-checkCameraAvailability();
         });
     });
     
@@ -3892,6 +3889,8 @@ checkCameraAvailability();
     // Inicializar datos y displays
     loadSampleData();
     updateAllDisplays();
+    // Verificar disponibilidad de cámara  ← AQUÍ
+    checkCameraAvailability();
 });
 // Variables para la cámara
 let qrScanner = null;
@@ -3899,6 +3898,11 @@ let currentCamera = 'environment'; // 'environment' = cámara trasera, 'user' = 
 
 // Inicializar cámara
 async function startCamera() {
+    // Línea temporal para debug
+    if (typeof QrScanner === 'undefined') {
+        alert('❌ La librería QR Scanner no se cargó correctamente');
+        return;
+    }
     try {
         const videoElement = document.getElementById('camera-video');
         const containerElement = document.getElementById('camera-container');
