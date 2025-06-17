@@ -4952,6 +4952,29 @@ function updateCodesValidationList() {
     
     listDiv.innerHTML = html;
 }
+       function showTab(tabName) {
+    console.log('Intentando mostrar pestaña:', tabName); // DEBUG
+    
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+        console.log('Removiendo active de:', tab.id); // DEBUG
+    });
+    
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    const targetTab = document.getElementById(tabName);
+    console.log('Elemento encontrado:', targetTab); // DEBUG
+    
+    if (targetTab) {
+        targetTab.classList.add('active');
+        document.querySelector('[data-tab="' + tabName + '"]').classList.add('active');
+        console.log('Pestaña activada:', tabName); // DEBUG
+    } else {
+        console.error('No se encontró el elemento con ID:', tabName); // DEBUG
+    }
+}
 </script>
 </body>
 </html>
