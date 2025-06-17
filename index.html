@@ -731,11 +731,11 @@
         <button class="btn btn-info" onclick="clearGeneratorForm()">🔄 Limpiar Formulario</button>
     </div>
 
-    <!-- Resultado de QR Generado -->
-    <div id="qr-result" class="card" style="display: none;">
+<!-- Resultado de QR Generado -->
+    <div id="qr-result" class="card" style="display: none !important; position: relative; z-index: 1000; background: white; margin: 20px 0; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
         <h3>✅ Código QR de Tarima Generado</h3>
         
-        <div class="grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
             <div>
                 <h4>📋 Información de la Tarima:</h4>
                 <div id="qr-info"></div>
@@ -756,9 +756,6 @@
             <textarea id="qr-text" rows="3" readonly style="background: #f8f9fa;"></textarea>
         </div>
     </div>
-
-    <div id="process-result"></div>
-</div>
         <!-- Inventory Tab -->
         <div id="inventory" class="tab-content">
             <h2>📋 Inventario Detallado</h2>
@@ -4632,6 +4629,10 @@ function showQRResult(zona, tipo, codes, qrText) {
     
     // MOSTRAR RESULTADO - LÍNEA CRÍTICA
     resultDiv.style.display = 'block';
+    resultDiv.style.visibility = 'visible';
+    resultDiv.style.opacity = '1';
+    resultDiv.style.position = 'relative';
+    resultDiv.style.zIndex = '1000';
     console.log('QR result div mostrado:', resultDiv.style.display); // DEBUG
     
     // Hacer scroll hacia el resultado
@@ -4651,7 +4652,6 @@ function showQRResult(zona, tipo, codes, qrText) {
     
     showTemporaryMessage('✅ Código QR de tarima generado exitosamente', 'success');
 }
-       
 // Descargar imagen QR
 async function downloadQRImage() {
     if (!window.currentQRData) {
