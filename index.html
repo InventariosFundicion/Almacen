@@ -1197,6 +1197,7 @@ function showTab(tabName) {
     
     // Ocultar todas las pestañas
     document.querySelectorAll('.tab-content').forEach(function(tab) {
+        tab.style.display = 'none';
         tab.classList.remove('active');
     });
     
@@ -1208,11 +1209,9 @@ function showTab(tabName) {
     // Mostrar pestaña seleccionada
     const targetTab = document.getElementById(tabName);
     if (targetTab) {
+        targetTab.style.display = 'block';
         targetTab.classList.add('active');
         console.log('Pestaña mostrada:', tabName);
-    } else {
-        console.error('No se encontró elemento con ID:', tabName);
-        return;
     }
     
     // Activar botón de navegación
