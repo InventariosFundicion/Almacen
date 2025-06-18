@@ -1197,7 +1197,8 @@ function showTab(tabName) {
     
     // Ocultar todas las pestañas
     document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.style.display = 'none';
+        // USAR !important para forzar
+        tab.style.setProperty('display', 'none', 'important');
         tab.classList.remove('active');
     });
     
@@ -1209,20 +1210,31 @@ function showTab(tabName) {
     // Mostrar pestaña seleccionada
     const targetTab = document.getElementById(tabName);
     if (targetTab) {
-        // CAMBIO CRÍTICO: Usar 'block' en lugar de dejar vacío
-        targetTab.style.display = 'block';
+        // FORZAR CON !important
+        targetTab.style.setProperty('display', 'block', 'important');
+        targetTab.style.setProperty('visibility', 'visible', 'important');
+        targetTab.style.setProperty('opacity', '1', 'important');
         targetTab.classList.add('active');
-        
-        // FORZAR la visibilidad
-        targetTab.style.visibility = 'visible';
-        targetTab.style.opacity = '1';
         
         console.log('Pestaña mostrada:', tabName);
         console.log('Display después:', targetTab.style.display);
+        
     } else {
         console.error('No se encontró elemento con ID:', tabName);
         return;
     }
+    
+    // Activar botón de navegación
+    const navButton = document.querySelector('[data-tab="' + tabName + '"]');
+    if (navButton) {
+        navButton.classList.add('active');
+    }
+    
+    // Actualizar displays
+    setTimeout(() => {
+        updateAllDisplays();
+    }, 100);
+}
     
     // Activar botón de navegación
     const navButton = document.querySelector('[data-tab="' + tabName + '"]');
