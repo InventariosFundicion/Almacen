@@ -1082,95 +1082,7 @@
 <button type="button" class="btn btn-success" onclick="saveMovementReport()">📦 Guardar Movimiento</button>
         </form>
     </div>
-
-    <!-- Formulario de Movimientos -->
-    <div id="movimientos-form" class="card" style="display: none;">
-        <h3>📦 Movimientos de Material</h3>
-        <form id="production-movimientos-form">
-            <div class="grid" style="grid-template-columns: repeat(2, 1fr);">
-                <div class="form-group">
-                    <label>Tipo de Movimiento:</label>
-                    <select id="mov-tipo" required>
-                        <option value="">Seleccionar...</option>
-                        <option value="scrap">♻️ Scrap Adicional</option>
-                        <option value="envios">📦 Envíos</option>
-                        <option value="retenciones">⏸️ Retenciones</option>
-                        <option value="pruebas">🧪 Pruebas</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Fecha:</label>
-                    <input type="date" id="mov-fecha" required>
-                </div>
-            </div>
-            
-            <div class="grid" style="grid-template-columns: repeat(2, 1fr);">
-                <div class="form-group">
-    <label>Máquina/Área:</label>
-    <select id="mov-maquina" required>
-        <option value="">Seleccionar...</option>
-        <option value="30">Máquina #30 (LWR)</option>
-        <option value="31">Máquina #31 (LWR)</option>
-        <option value="32">Máquina #32 (UPR)</option>
-        <option value="33">Máquina #33 (UPR)</option>
-        <option value="34">Máquina #34 (UPR)</option>
-        <option value="30">Acabado AC-30</option>
-        <option value="31">Acabado AC-31</option>
-        <option value="32">Acabado AC-32</option>
-        <option value="33">Acabado AC-33</option>
-        <option value="34">Acabado AC-34</option>
-        <option value="ALMACEN">Almacén General</option>
-        <option value="ENVIOS">Área de Envíos</option>
-    </select>
-</div>
-<div class="form-group">
-    <label>Modelo/Número de Parte:</label>
-    <select id="mov-modelo" required>
-                        <option value="">Seleccionar...</option>
-                        <option value="PX13-10-382">PX13-10-382 (LWR)</option>
-                        <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
-                        <option value="P54G-10-382">P54G-10-382 (LWR)</option>
-                        <option value="PX13-10-301">PX13-10-301 (UPR)</option>
-                        <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
-                        <option value="P54G-10-301-A">P54G-10-301-A (UPR)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Molde:</label>
-                    <select id="fund-molde" required>
-                        <option value="">Primero selecciona modelo...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Cantidad:</label>
-                    <input type="number" id="mov-cantidad" min="1" required>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label>Comentarios/Razón:</label>
-                <textarea id="mov-comentarios" rows="3" placeholder="Describe la razón del movimiento..."></textarea>
-            </div>
-            <div class="form-group" style="margin-top: 20px;">
-    <label>📄 Evidencia (PDF de la documentación):</label>
-    <div class="file-management-container">
-        <input type="file" id="mov-evidencia" accept=".pdf" onchange="handleFileSelection('mov-evidencia')" style="display: none;">
-        <div class="file-upload-area" onclick="document.getElementById('mov-evidencia').click()">
-            <div id="mov-evidencia-status" class="file-status">
-                <span class="file-placeholder">📎 Haz clic para seleccionar PDF (máx. 5MB)</span>
-            </div>
-        </div>
-        <div id="mov-evidencia-actions" class="file-actions" style="display: none;">
-            <button type="button" class="btn btn-sm btn-warning" onclick="replaceFile('mov-evidencia')">🔄 Reemplazar</button>
-            <button type="button" class="btn btn-sm btn-danger" onclick="removeFile('mov-evidencia')">🗑️ Eliminar</button>
-            <button type="button" class="btn btn-sm btn-info" onclick="viewFileHistory('mov-evidencia')">📋 Historial</button>
-        </div>
-    </div>
-</div>
-<button type="button" class="btn btn-success" onclick="saveMovementReport()">📦 Guardar Movimiento</button>
-        </form>
-    </div>
-
+   
     <!-- Resumen de Reportes -->
     <div class="card">
         <h3>📊 Reportes del Turno Actual</h3>
@@ -1179,6 +1091,56 @@
             <button class="btn btn-primary" onclick="generateTheoreticalBalance()">🧮 Calcular Balance Teórico</button>
             <button class="btn btn-info" onclick="showProductionReport()">📋 Ver Reporte Completo</button>
         </div>
+    </div>
+</div>
+   <!-- Theoretical vs Physical Tab -->
+<div id="theoretical" class="tab-content">
+    <h2>📊 Inventario Teórico vs Físico</h2>
+    
+    <div class="card">
+        <h3>🎯 Verificación Física del Turno</h3>
+        <div id="current-verification">
+            <div class="alert alert-info">
+                💡 <strong>Instrucciones:</strong><br>
+                1. Selecciona "Inventario por Turno" en el escáner<br>
+                2. Escanea las tarimas/piezas físicamente presentes<br>
+                3. Genera el reporte de comparación aquí
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3>📋 Inventario Teórico Calculado</h3>
+        <div id="theoretical-summary">
+            <div class="alert alert-info">
+                Presiona "Generar Reporte" para calcular el inventario teórico basado en los registros del sistema.
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3>🔍 Comparación Detallada</h3>
+        <div id="verification-comparison">
+            <div class="alert alert-info">
+                La comparación aparecerá aquí después de generar el reporte.
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3>⚠️ Diferencias Encontradas</h3>
+        <div id="discrepancies-report">
+            <div class="alert alert-info">
+                Las diferencias críticas aparecerán aquí si las hay.
+            </div>
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px;">
+        <button class="btn btn-primary" onclick="generateTheoreticalReport()">📊 Generar Reporte</button>
+        <button class="btn btn-success" onclick="exportVerificationReport()">📤 Exportar PDF</button>
+        <button class="btn btn-info" onclick="printVerificationSummary()">🖨️ Imprimir Resumen</button>
+        <button class="btn btn-warning" onclick="startNewShiftVerification()">🆕 Nuevo Turno</button>
     </div>
 </div>
     <script>
@@ -1230,8 +1192,8 @@ const MODEL_MOLDS = {
             'CAST': 'fundidos'
         };
         
-        // Función para cambiar pestañas
-        function showTab(tabName) {
+    // Función para cambiar pestañas - VERSIÓN CORREGIDA
+function showTab(tabName) {
     console.log('showTab llamada con:', tabName);
     
     // Ocultar todas las pestañas
@@ -1263,7 +1225,7 @@ const MODEL_MOLDS = {
     }
     
     // Actualizar displays si es necesario
-    if (tabName === 'inventory' || tabName === 'pallets' || tabName === 'dashboard') {
+    if (tabName === 'inventory' || tabName === 'pallets' || tabName === 'dashboard' || tabName === 'theoretical') {
         updateAllDisplays();
     }
 }
@@ -4948,29 +4910,6 @@ function updateCodesValidationList() {
     html += '</div>';
     
     listDiv.innerHTML = html;
-}
-       function showTab(tabName) {
-    console.log('Intentando mostrar pestaña:', tabName); // DEBUG
-    
-    document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.remove('active');
-        console.log('Removiendo active de:', tab.id); // DEBUG
-    });
-    
-    document.querySelectorAll('.nav-tab').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    
-    const targetTab = document.getElementById(tabName);
-    console.log('Elemento encontrado:', targetTab); // DEBUG
-    
-    if (targetTab) {
-        targetTab.classList.add('active');
-        document.querySelector('[data-tab="' + tabName + '"]').classList.add('active');
-        console.log('Pestaña activada:', tabName); // DEBUG
-    } else {
-        console.error('No se encontró el elemento con ID:', tabName); // DEBUG
-    }
 }
 </script>
 </body>
