@@ -1192,7 +1192,6 @@ const MODEL_MOLDS = {
             'CAST': 'fundidos'
         };
         
-    // Función para cambiar pestañas - VERSIÓN CORREGIDA
 function showTab(tabName) {
     console.log('showTab llamada con:', tabName);
     
@@ -1212,7 +1211,9 @@ function showTab(tabName) {
     if (targetTab) {
         targetTab.style.display = 'block';
         targetTab.classList.add('active');
-        console.log('Mostrando pestaña:', tabName);
+        console.log('Pestaña mostrada:', tabName);
+        console.log('Contenido HTML:', targetTab.innerHTML.substring(0, 100) + '...');
+        console.log('Display computado:', window.getComputedStyle(targetTab).display);
     } else {
         console.error('No se encontró elemento con ID:', tabName);
         return;
@@ -1224,9 +1225,11 @@ function showTab(tabName) {
         navButton.classList.add('active');
     }
     
-    // Actualizar displays si es necesario
+    // Actualizar displays y forzar renderizado
     if (tabName === 'inventory' || tabName === 'pallets' || tabName === 'dashboard' || tabName === 'theoretical') {
-        updateAllDisplays();
+        setTimeout(() => {
+            updateAllDisplays();
+        }, 100);
     }
 }
         function generatePalletId() {
