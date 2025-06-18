@@ -1196,29 +1196,25 @@ function showTab(tabName) {
     console.log('showTab llamada con:', tabName);
     
     // Ocultar todas las pestañas
-    document.querySelectorAll('.tab-content').forEach(tab => {
-        // USAR !important para forzar
+    document.querySelectorAll('.tab-content').forEach(function(tab) {
         tab.style.setProperty('display', 'none', 'important');
         tab.classList.remove('active');
     });
     
     // Remover active de botones de navegación
-    document.querySelectorAll('.nav-tab').forEach(tab => {
+    document.querySelectorAll('.nav-tab').forEach(function(tab) {
         tab.classList.remove('active');
     });
     
     // Mostrar pestaña seleccionada
     const targetTab = document.getElementById(tabName);
     if (targetTab) {
-        // FORZAR CON !important
         targetTab.style.setProperty('display', 'block', 'important');
         targetTab.style.setProperty('visibility', 'visible', 'important');
         targetTab.style.setProperty('opacity', '1', 'important');
         targetTab.classList.add('active');
         
         console.log('Pestaña mostrada:', tabName);
-        console.log('Display después:', targetTab.style.display);
-        
     } else {
         console.error('No se encontró elemento con ID:', tabName);
         return;
@@ -1231,7 +1227,7 @@ function showTab(tabName) {
     }
     
     // Actualizar displays
-    setTimeout(() => {
+    setTimeout(function() {
         updateAllDisplays();
     }, 100);
 }
