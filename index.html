@@ -1231,20 +1231,6 @@ function showTab(tabName) {
         updateAllDisplays();
     }, 100);
 }
-    
-    // Activar botón de navegación
-    const navButton = document.querySelector('[data-tab="' + tabName + '"]');
-    if (navButton) {
-        navButton.classList.add('active');
-    }
-    
-    // Actualizar displays después de mostrar la pestaña
-    setTimeout(() => {
-        if (tabName === 'inventory' || tabName === 'pallets' || tabName === 'dashboard' || tabName === 'theoretical') {
-            updateAllDisplays();
-        }
-    }, 100);
-       
         function generatePalletId() {
             return 'PAL-' + String(palletCounter++).padStart(4, '0');
         }
