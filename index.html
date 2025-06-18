@@ -1209,11 +1209,16 @@ function showTab(tabName) {
     // Mostrar pestaña seleccionada
     const targetTab = document.getElementById(tabName);
     if (targetTab) {
+        // CAMBIO CRÍTICO: Usar 'block' en lugar de dejar vacío
         targetTab.style.display = 'block';
         targetTab.classList.add('active');
+        
+        // FORZAR la visibilidad
+        targetTab.style.visibility = 'visible';
+        targetTab.style.opacity = '1';
+        
         console.log('Pestaña mostrada:', tabName);
-        console.log('Contenido HTML:', targetTab.innerHTML.substring(0, 100) + '...');
-        console.log('Display computado:', window.getComputedStyle(targetTab).display);
+        console.log('Display después:', targetTab.style.display);
     } else {
         console.error('No se encontró elemento con ID:', tabName);
         return;
@@ -1225,12 +1230,12 @@ function showTab(tabName) {
         navButton.classList.add('active');
     }
     
-    // Actualizar displays y forzar renderizado
-    if (tabName === 'inventory' || tabName === 'pallets' || tabName === 'dashboard' || tabName === 'theoretical') {
-        setTimeout(() => {
+    // Actualizar displays después de mostrar la pestaña
+    setTimeout(() => {
+        if (tabName === 'inventory' || tabName === 'pallets' || tabName === 'dashboard' || tabName === 'theoretical') {
             updateAllDisplays();
-        }, 100);
-    }
+        }
+    }, 100);
 }
         function generatePalletId() {
             return 'PAL-' + String(palletCounter++).padStart(4, '0');
