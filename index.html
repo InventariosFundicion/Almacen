@@ -672,8 +672,8 @@
         <button class="btn btn-success" onclick="processQRCode()">✅ Procesar Código QR</button>
         <button class="btn btn-info" onclick="clearForm()">🔄 Limpiar</button>
         <button class="btn btn-warning" onclick="startNewShiftVerification()">🆕 Nuevo Turno</button>
+        <div id="process-result" style="margin-top: 20px;"></div>
     </div>
-
     <!-- Modo Generador (Nuevo) -->
     <div id="generator-mode" class="card" style="display: none;">
         <h3>🏷️ Generar Código QR de Tarima</h3>
@@ -4911,6 +4911,102 @@ function updateCodesValidationList() {
     
     listDiv.innerHTML = html;
 }
+       // Función para remover códigos del generador
+function removeCode(index) {
+    if (confirm('¿Eliminar este código de la lista?')) {
+        generatedCodes.splice(index, 1);
+        updateCodesTextarea();
+        updateCodesValidationList();
+        updateValidationInfo();
+        updateGenerateButton();
+        showTemporaryMessage('🗑️ Código eliminado', 'info');
+    }
+}
+
+// Función de debug para verificar pestañas
+function debugTabs() {
+    console.log('=== DEBUG PESTAÑAS ===');
+    
+    // Verificar elementos de navegación
+    const navTabs = document.querySelectorAll('.nav-tab');
+    console.log('Botones de navegación encontrados:', navTabs.length);
+    
+    // Verificar contenido de pestañas
+    const tabContents = document.querySelectorAll('.tab-content');
+    console.log('Contenidos de pestañas encontrados:', tabContents.length);
+    
+    tabContents.forEach((tab, index) => {
+        console.log(`Pestaña ${index}: ID="${tab.id}", display="${tab.style.display}", classes="${tab.className}"`);
+    });
+    
+    // Verificar pestaña activa
+    const activeTab = document.querySelector('.tab-content.active');
+    console.log('Pestaña activa:', activeTab ? activeTab.id : 'NINGUNA');
+}
+
+// Función para forzar mostrar una pestaña específica
+function forceShowTab(tabName) {
+    console.log('🔧 Forzando mostrar pestaña:', tabName);
+    
+    // Ocultar todas
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.style.display = 'none';
+        tab.classList.remove('active');
+    });
+    
+    // Remover active de botones
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Mostrar pestaña específica
+    const targetTab = document.getElementById(tabName);
+    if (targetTab) {
+        targetTab.style.display = 'block';
+        targetTab.classList.add('active');
+        
+        // Activar botón correspondiente
+        const navButton = document.querySelector(`[data-tab="${tabName}"]`);
+        if (navButton) {
+            navButton.classList.add('active');
+        }
+        
+        console.log('✅ Pestaña forzada:', tabName);
+        return true;
+    } else {
+        console.error('❌ No se encontró pestaña:', tabName);
+        return false;
+    }
+}
+       
+</script>
+   <!-- Script temporal de depuración - REMOVER después de arreglar -->
+<script>
+// Ejecutar después de 2 segundos
+setTimeout(() => {
+    console.log('🔍 Iniciando depuración de pestañas...');
+    debugTabs();
+    
+    // Probar forzar cada pestaña
+    const tabs = ['dashboard', 'scanner', 'inventory', 'pallets', 'production', 'theoretical'];
+    
+    tabs.forEach((tabName, index) => {
+        setTimeout(() => {
+            console.log(`🧪 Probando pestaña: ${tabName}`);
+            const success = forceShowTab(tabName);
+            if (!success) {
+                console.error(`❌ Falló al mostrar: ${tabName}`);
+            }
+        }, index * 1000);
+    });
+    
+    // Volver al dashboard después de las pruebas
+    setTimeout(() => {
+        forceShowTab('dashboard');
+        console.log('✅ Depuración completada - volviendo al dashboard');
+    }, tabs.length * 1000 + 1000);
+    
+}, 2000);
 </script>
 </body>
 </html>
