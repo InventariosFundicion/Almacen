@@ -1194,10 +1194,20 @@ const MODEL_MOLDS = {
 function showTab(tabName) {
     console.log('showTab llamada con:', tabName);
     
-    // Ocultar todas las pestañas
+    // PASO 1: Ocultar TODAS las pestañas Y sus contenedores padre
     document.querySelectorAll('.tab-content').forEach(function(tab) {
         tab.style.display = 'none';
         tab.classList.remove('active');
+        
+        // Ocultar también sus contenedores padre
+        let parent = tab.parentElement;
+        while (parent && parent !== document.body) {
+            // Solo ocultar si es un contenedor de pestañas, no el contenedor principal
+            if (parent.classList.contains('tab-container') || parent.style.display === 'block') {
+                parent.style.display = 'none';
+            }
+            parent = parent.parentElement;
+        }
     });
     
     // Remover active de botones de navegación
@@ -1205,10 +1215,10 @@ function showTab(tabName) {
         tab.classList.remove('active');
     });
     
-    // Mostrar pestaña seleccionada Y sus contenedores padre
+    // PASO 2: Mostrar SOLO la pestaña seleccionada Y sus contenedores padre
     const targetTab = document.getElementById(tabName);
     if (targetTab) {
-        // FORZAR que todos los elementos padre sean visibles
+        // Mostrar todos los elementos padre de la pestaña seleccionada
         let parent = targetTab.parentElement;
         while (parent && parent !== document.body) {
             parent.style.display = 'block';
