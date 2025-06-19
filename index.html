@@ -58,15 +58,20 @@
             font-weight: bold;
         }
 
-        .tab-content {
-            display: none;
-            padding: 30px;
-        }
+.tab-content {
+    display: none !important;
+    padding: 30px;
+    visibility: hidden;
+}
 
-        .tab-content.active {
-            display: block;
-        }
-
+.tab-content.active {
+    display: block !important;
+    visibility: visible !important;
+}
+.tab-content.active * {
+    display: initial !important;
+    visibility: visible !important;
+}
         .form-group {
             margin-bottom: 20px;
         }
