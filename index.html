@@ -1194,9 +1194,9 @@ const MODEL_MOLDS = {
 function showTab(tabName) {
     console.log('showTab llamada con:', tabName);
     
-    // Ocultar todas las pestañas Y limpiar estilos inline
+    // Ocultar todas las pestañas
     document.querySelectorAll('.tab-content').forEach(function(tab) {
-        tab.style.cssText = ''; // LIMPIA TODOS LOS ESTILOS INLINE
+        tab.style.display = 'none';
         tab.classList.remove('active');
     });
     
@@ -1205,11 +1205,23 @@ function showTab(tabName) {
         tab.classList.remove('active');
     });
     
-    // Mostrar pestaña seleccionada
+    // Mostrar pestaña seleccionada Y sus contenedores padre
     const targetTab = document.getElementById(tabName);
     if (targetTab) {
-        targetTab.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; padding: 30px;';
+        // FORZAR que todos los elementos padre sean visibles
+        let parent = targetTab.parentElement;
+        while (parent && parent !== document.body) {
+            parent.style.display = 'block';
+            parent.style.visibility = 'visible';
+            parent = parent.parentElement;
+        }
+        
+        // Mostrar la pestaña
+        targetTab.style.display = 'block';
+        targetTab.style.visibility = 'visible';
+        targetTab.style.opacity = '1';
         targetTab.classList.add('active');
+        
         console.log('Pestaña mostrada:', tabName);
     }
     
