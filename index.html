@@ -1194,7 +1194,7 @@ const MODEL_MOLDS = {
 function showTab(tabName) {
     console.log('showTab llamada con:', tabName);
     
-    // PASO 1: Ocultar TODAS las pestañas completamente
+    // Ocultar todas las pestañas
     document.querySelectorAll('.tab-content').forEach(function(tab) {
         tab.style.display = 'none';
         tab.classList.remove('active');
@@ -1205,23 +1205,28 @@ function showTab(tabName) {
         tab.classList.remove('active');
     });
     
-    // PASO 2: Mostrar SOLO la pestaña seleccionada
+    // Mostrar pestaña seleccionada
     const targetTab = document.getElementById(tabName);
     if (targetTab) {
-        // Mostrar la pestaña
         targetTab.style.display = 'block';
         targetTab.style.visibility = 'visible';
         targetTab.style.opacity = '1';
         targetTab.classList.add('active');
         
-        // SOLO mostrar elementos padre específicos SI ESTÁN OCULTOS
+        // CASO ESPECIAL: Si la pestaña está dentro de scanner, ocultar scanner
+        if (targetTab.closest('#scanner') && tabName !== 'scanner') {
+            const scannerTab = document.getElementById('scanner');
+            if (scannerTab) {
+                scannerTab.style.display = 'none';
+                scannerTab.classList.remove('active');
+            }
+        }
+        
+        // Mostrar contenedores padre necesarios
         let parent = targetTab.parentElement;
         while (parent && parent !== document.body) {
-            // Solo mostrar si está oculto Y no contiene otras pestañas
-            const otherTabs = parent.querySelectorAll('.tab-content');
-            if (otherTabs.length <= 1) { // Solo contiene esta pestaña
+            if (parent.style.display === 'none') {
                 parent.style.display = 'block';
-                parent.style.visibility = 'visible';
             }
             parent = parent.parentElement;
         }
