@@ -64,12 +64,15 @@
     visibility: hidden;
 }
 
-.tab-content.active {
+.tab-content.active > * {
     display: block !important;
     visibility: visible !important;
 }
-.tab-content.active * {
-    display: initial !important;
+
+.tab-content.active .card,
+.tab-content.active .dashboard-container,
+.tab-content.active .section {
+    display: block !important;
     visibility: visible !important;
 }
         .form-group {
