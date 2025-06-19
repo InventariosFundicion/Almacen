@@ -57,15 +57,15 @@
             color: #e74c3c;
             font-weight: bold;
         }
+       .tab-content {
+            display: none;
+            padding: 30px;
+        }
 
-.tab-content {
-    display: none;
-    padding: 30px;
-}
-
-.tab-content.active {
-    display: block;
-}
+       .tab-content.active {
+            display: block;
+        }
+       
         .form-group {
             margin-bottom: 20px;
         }
@@ -754,14 +754,14 @@
             <label>📝 Texto del QR (para verificación):</label>
             <textarea id="qr-text" rows="3" readonly style="background: #f8f9fa;"></textarea>
         </div>
-    </div>
+ </div>
         <!-- Inventory Tab -->
-        <div id="inventory" class="tab-content">
+ <div id="inventory" class="tab-content">
             <h2>📋 Inventario Detallado</h2>
             
             <div style="text-align: center; margin-bottom: 20px;">
     <button class="btn btn-danger" onclick="clearAllData()">🗑️ Limpiar Todos los Datos</button>
-</div>
+ </div>
             <div class="card">
                 <h3>📊 Inventario por Modelo y Estado</h3>
                 <div id="detailed-inventory"></div>
@@ -785,10 +785,10 @@
                     <tbody id="grouped-inventory-tbody"></tbody>
                 </table>
             </div>
-        </div>
+</div>
 
         <!-- Pallets Tab -->
-        <div id="pallets" class="tab-content">
+<div id="pallets" class="tab-content">
             <h2>📦 Gestión de Tarimas</h2>
             
             <div class="card">
@@ -809,7 +809,7 @@
                     <tbody id="pallets-tbody"></tbody>
                 </table>
             </div>
-        </div>
+</div>
 
         <!-- Production Tab -->
 <div id="production" class="tab-content">
@@ -1192,15 +1192,13 @@ const MODEL_MOLDS = {
         };
         
 function showTab(tabName) {
-    console.log('showTab llamada con:', tabName);
-    
     // Ocultar todas las pestañas
     document.querySelectorAll('.tab-content').forEach(function(tab) {
         tab.style.display = 'none';
         tab.classList.remove('active');
     });
     
-    // Remover active de botones de navegación
+    // Remover active de botones
     document.querySelectorAll('.nav-tab').forEach(function(tab) {
         tab.classList.remove('active');
     });
@@ -1209,32 +1207,10 @@ function showTab(tabName) {
     const targetTab = document.getElementById(tabName);
     if (targetTab) {
         targetTab.style.display = 'block';
-        targetTab.style.visibility = 'visible';
-        targetTab.style.opacity = '1';
         targetTab.classList.add('active');
-        
-        // CASO ESPECIAL: Si la pestaña está dentro de scanner, ocultar scanner
-        if (targetTab.closest('#scanner') && tabName !== 'scanner') {
-            const scannerTab = document.getElementById('scanner');
-            if (scannerTab) {
-                scannerTab.style.display = 'none';
-                scannerTab.classList.remove('active');
-            }
-        }
-        
-        // Mostrar contenedores padre necesarios
-        let parent = targetTab.parentElement;
-        while (parent && parent !== document.body) {
-            if (parent.style.display === 'none') {
-                parent.style.display = 'block';
-            }
-            parent = parent.parentElement;
-        }
-        
-        console.log('Pestaña mostrada:', tabName);
     }
     
-    // Activar botón de navegación
+    // Activar botón
     const navButton = document.querySelector('[data-tab="' + tabName + '"]');
     if (navButton) {
         navButton.classList.add('active');
