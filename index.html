@@ -547,601 +547,601 @@
             <button class="nav-tab" data-tab="theoretical">📊 Teórico vs Físico</button>
         </div>
 
-        <!-- Dashboard Tab -->
-        <div id="dashboard" class="tab-content active">
-            <h2>📊 Dashboard de Almacén</h2>
-            
-            <div class="grid">
-                <div class="card stats-card">
-                    <div class="stats-number" id="total-fundidos">0</div>
-                    <h3>🔥 FUNDIDOS</h3>
-                </div>
-                <div class="card stats-card">
-                    <div class="stats-number" id="total-acabados">0</div>
-                    <h3>✅ ACABADOS</h3>
-                </div>
-                <div class="card stats-card">
-                    <div class="stats-number" id="total-upr">0</div>
-                    <h3>🔺 UPR</h3>
-                </div>
-                <div class="card stats-card">
-                    <div class="stats-number" id="total-lwr">0</div>
-                    <h3>🔻 LWR</h3>
-                </div>
-                <div class="card stats-card">
-                    <div class="stats-number" id="total-pallets">0</div>
-                    <h3>📦 TARIMAS</h3>
-                </div>
-                <div class="card stats-card">
-                    <div class="stats-number" id="verification-count">0</div>
-                    <h3>🔍 VERIFICADAS</h3>
-                </div>                
-            </div>
+<!-- Dashboard Tab -->
+<div id="dashboard" class="tab-content active">
+	<h2>📊 Dashboard de Almacén</h2>
 
-            <div style="text-align: center; margin-top: 30px;">
-                <button class="btn btn-primary" onclick="exportData()">📊 Exportar Datos</button>
-            </div>
-        </div>
+	<div class="grid">
+		<div class="card stats-card">
+			<div class="stats-number" id="total-fundidos">0</div>
+			<h3>🔥 FUNDIDOS</h3>
+		</div>
+		<div class="card stats-card">
+			<div class="stats-number" id="total-acabados">0</div>
+			<h3>✅ ACABADOS</h3>
+		</div>
+		<div class="card stats-card">
+			<div class="stats-number" id="total-upr">0</div>
+			<h3>🔺 UPR</h3>
+		</div>
+		<div class="card stats-card">
+			<div class="stats-number" id="total-lwr">0</div>
+			<h3>🔻 LWR</h3>
+		</div>
+		<div class="card stats-card">
+			<div class="stats-number" id="total-pallets">0</div>
+			<h3>📦 TARIMAS</h3>
+		</div>
+		<div class="card stats-card">
+			<div class="stats-number" id="verification-count">0</div>
+			<h3>🔍 VERIFICADAS</h3>
+		</div>
+	</div>
+
+	<div style="text-align: center; margin-top: 30px;">
+		<button class="btn btn-primary" onclick="exportData()">📊 Exportar Datos</button>
+	</div>
+</div>
 
 <!-- Scanner Tab -->
 <div id="scanner" class="tab-content">
-    <h2>📱 Procesamiento de Códigos QR</h2>
-    
-    <!-- Selector de Modo -->
-    <div class="card">
-        <h3>Selecciona el Modo de Trabajo</h3>
-        <div class="warehouse-selector">
-            <div class="warehouse-btn" id="mode-scanner" onclick="showScannerMode()">📱 Escanear QR Existente</div>
-            <div class="warehouse-btn" id="mode-generator" onclick="showGeneratorMode()">🏷️ Generar QR de Tarima</div>
-        </div>
-    </div>
+	<h2>📱 Procesamiento de Códigos QR</h2>
 
-    <!-- Modo Scanner (Original) -->
-    <div id="scanner-mode" class="card">
-        <h3>Procesar Código QR</h3>
-        
-        <div class="scanner-hint">
-            💡 <strong>Opciones disponibles:</strong> 
-            📱 Usa la cámara para escanear QR, 🖥️ usa scanner físico, o ✍️ pega el código manualmente.
-        </div>
-        
-        <!-- Controles de cámara -->
-        <div class="camera-controls">
-            <button class="btn btn-success" id="start-camera-btn" onclick="startCamera()">📷 Activar Cámara</button>
-            <button class="btn btn-danger" id="stop-camera-btn" onclick="stopCamera()" style="display: none;">⏹️ Detener Cámara</button>
-            <button class="btn btn-info" id="switch-camera-btn" onclick="switchCamera()" style="display: none;">🔄 Cambiar Cámara</button>
-        </div>
-        
-        <!-- Contenedor de la cámara -->
-        <div id="camera-container" class="camera-container" style="display: none;">
-            <video id="camera-video" class="camera-video" autoplay muted playsinline></video>
-            <div class="camera-overlay"></div>
-            <div id="camera-status" class="camera-status">📷 Posiciona el código QR dentro del recuadro verde</div>
-        </div>
-        
-        <div class="form-group">
-            <label>Código QR (Tarima o Individual):</label>
-            <textarea id="qr-input" rows="4" placeholder="El código aparecerá aquí automáticamente al escanearlo, o puedes pegarlo manualmente..." autofocus></textarea>
-            <div id="qr-analysis"></div>
-        </div>   
-        
-        <div class="form-group">
-            <label>Tipo de Inventario:</label>
-            <select id="inventory-type">
-                <option value="movimiento">📦 Movimiento Normal</option>
-                <option value="inicial">🎯 Inventario Inicial</option>
-                <option value="turno">⏰ Inventario por Turno</option>
-            </select>
-        </div>
-        
-        <div class="form-group">
-            <label>Turno:</label>
-            <select id="shift">
-                <option value="1">Primer Turno (07:00 am - 07:00 pm)</option>
-                <option value="2">Segundo Turno (07:00 pm - 07:00 am)</option>
-            </select>
-        </div>
-        
-        <div class="form-group" id="individual-state-section" style="display: none;">
-            <label>Estado del Material (Pieza Individual):</label>
-            <select id="individual-state">
-                <option value="fundidos">🔥 Fundido</option>
-                <option value="acabados">✅ Acabado</option>
-            </select>
-        </div>
-        
-        <div class="form-group" id="movement-destination-section" style="display: none;">
-            <label>Destino del Movimiento:</label>
-            <div class="warehouse-selector" id="movement-selector">
-                <div class="warehouse-btn" data-movement="envios">📦 ENVÍOS</div>
-                <div class="warehouse-btn" data-movement="retenciones">⏸️ RETENCIONES</div>
-                <div class="warehouse-btn" data-movement="scrap">♻️ SCRAP</div>
-                <div class="warehouse-btn" data-movement="pruebas">🧪 PRUEBAS</div>
-            </div>
-        </div>
-        
-        <div class="form-group" id="warehouse-override-section" style="display: none;">
-            <label>Forzar Almacén (Tarima sin estado detectado):</label>
-            <div class="warehouse-selector" id="warehouse-selector">
-                <div class="warehouse-btn" data-warehouse="fundidos">🔥 FUNDIDOS</div>
-                <div class="warehouse-btn" data-warehouse="acabados">✅ ACABADOS</div>
-            </div>
-        </div>
-        
-        <button class="btn btn-success" onclick="processQRCode()">✅ Procesar Código QR</button>
-        <button class="btn btn-info" onclick="clearForm()">🔄 Limpiar</button>
-        <button class="btn btn-warning" onclick="startNewShiftVerification()">🆕 Nuevo Turno</button>
-        <div id="process-result" style="margin-top: 20px;"></div>
-    </div>
-    <!-- Modo Generador (Nuevo) -->
-    <div id="generator-mode" class="card" style="display: none;">
-        <h3>🏷️ Generar Código QR de Tarima</h3>
-        
-        <div class="grid" style="grid-template-columns: repeat(2, 1fr);">
-            <div class="form-group">
-                <label>🏭 Zona/ID de Tarima:</label>
-                <input type="text" id="gen-zona" placeholder="Ej: A3, B7, TARM001..." required>
-            </div>
-            <div class="form-group">
-                <label>📦 Tipo de Material:</label>
-                <select id="gen-tipo" required>
-                    <option value="">Seleccionar...</option>
-                    <option value="FUNDIDO">🔥 Fundido</option>
-                    <option value="ACABADO">✅ Acabado</option>
-                    <option value="MIXED">🔀 Mixto</option>
-                </select>
-            </div>
-        </div>
+	<!-- Selector de Modo -->
+	<div class="card">
+		<h3>Selecciona el Modo de Trabajo</h3>
+		<div class="warehouse-selector">
+			<div class="warehouse-btn" id="mode-scanner" onclick="showScannerMode()">📱 Escanear QR Existente</div>
+			<div class="warehouse-btn" id="mode-generator" onclick="showGeneratorMode()">🏷️ Generar QR de Tarima</div>
+		</div>
+	</div>
 
-        <!-- Entrada de códigos con cámara -->
-        <div class="form-group">
-            <label>📋 Códigos de Piezas Individuales:</label>
-            <div class="camera-controls">
-                <button class="btn btn-success" id="gen-start-camera-btn" onclick="startGeneratorCamera()">📷 Usar Cámara</button>
-                <button class="btn btn-danger" id="gen-stop-camera-btn" onclick="stopGeneratorCamera()" style="display: none;">⏹️ Detener</button>
-                <button class="btn btn-info" onclick="pasteCodesFromClipboard()">📋 Pegar desde Portapapeles</button>
-                <button class="btn btn-warning" onclick="clearAllCodes()">🗑️ Limpiar Todo</button>
-            </div>
-            
-            <!-- Cámara para códigos individuales -->
-            <div id="gen-camera-container" class="camera-container" style="display: none;">
-                <video id="gen-camera-video" class="camera-video" autoplay muted playsinline></video>
-                <div class="camera-overlay"></div>
-                <div id="gen-camera-status" class="camera-status">📷 Escanea los códigos individuales uno por uno</div>
-            </div>
-            
-            <textarea id="gen-codigos" rows="8" placeholder="Los códigos aparecerán aquí conforme los escanees, o puedes pegarlos manualmente (uno por línea)..."></textarea>
-            <div id="gen-validation-info" class="auto-detect" style="display: none;">
-                <strong>📊 Resumen:</strong> <span id="codes-count">0</span> códigos | 
-                <span id="duplicates-count">0</span> duplicados | 
-                <span id="invalid-count">0</span> inválidos
-            </div>
-        </div>
+	<!-- Modo Scanner (Original) -->
+	<div id="scanner-mode" class="card">
+		<h3>Procesar Código QR</h3>
 
-        <!-- Lista de códigos con validación visual -->
-        <div class="form-group">
-            <label>🔍 Códigos Validados:</label>
-            <div id="codes-validation-list" class="pallet-preview">
-                <p style="color: #6c757d; font-style: italic;">Los códigos aparecerán aquí conforme los agregues...</p>
-            </div>
-        </div>
+		<div class="scanner-hint">
+			💡 <strong>Opciones disponibles:</strong>
+			📱 Usa la cámara para escanear QR, 🖥️ usa scanner físico, o ✍️ pega el código manualmente.
+		</div>
 
-        <button class="btn btn-success" onclick="generatePalletQR()" id="generate-qr-btn" disabled>🏷️ Generar Código QR de Tarima</button>
-        <button class="btn btn-info" onclick="clearGeneratorForm()">🔄 Limpiar Formulario</button>
-    </div>
+		<!-- Controles de cámara -->
+		<div class="camera-controls">
+			<button class="btn btn-success" id="start-camera-btn" onclick="startCamera()">📷 Activar Cámara</button>
+			<button class="btn btn-danger" id="stop-camera-btn" onclick="stopCamera()" style="display: none;">⏹️ Detener Cámara</button>
+			<button class="btn btn-info" id="switch-camera-btn" onclick="switchCamera()" style="display: none;">🔄 Cambiar Cámara</button>
+		</div>
 
-<!-- Resultado de QR Generado -->
-    <div id="qr-result" class="card" style="display: none; position: relative; z-index: 1; background: white; margin: 20px 0; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
-        <h3>✅ Código QR de Tarima Generado</h3>
-        
-        <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
-            <div>
-                <h4>📋 Información de la Tarima:</h4>
-                <div id="qr-info"></div>
-            </div>
-            <div style="text-align: center;">
-                <h4>🏷️ Código QR:</h4>
-                <div id="qr-display"></div>
-                <div style="margin-top: 15px;">
-                    <button class="btn btn-primary" onclick="downloadQRImage()">📥 Descargar Imagen</button>
-                    <button class="btn btn-info" onclick="copyQRText()">📋 Copiar Texto</button>
-                    <button class="btn btn-warning" onclick="printQR()">🖨️ Imprimir</button>
-                </div>
-            </div>
-        </div>
-        
-        <div class="form-group">
-            <label>📝 Texto del QR (para verificación):</label>
-            <textarea id="qr-text" rows="3" readonly style="background: #f8f9fa;"></textarea>
-        </div>
- </div>
-        <!-- Inventory Tab -->
- <div id="inventory" class="tab-content">
-            <h2>📋 Inventario Detallado</h2>
-            
-            <div style="text-align: center; margin-bottom: 20px;">
-    <button class="btn btn-danger" onclick="clearAllData()">🗑️ Limpiar Todos los Datos</button>
- </div>
-            <div class="card">
-                <h3>📊 Inventario por Modelo y Estado</h3>
-                <div id="detailed-inventory"></div>
-            </div>
-            
-            <div class="card">
-                <h3>📊 Resumen por Número de Parte</h3>
-                <table class="inventory-table">
-                    <thead>
-                        <tr>
-                            <th>Número de Parte</th>
-                            <th>Fundidos</th>
-                            <th>Acabados</th>
-                            <th>Envíos</th>
-                            <th>Retenciones</th>
-                            <th>Scrap</th>
-                            <th>Pruebas</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody id="grouped-inventory-tbody"></tbody>
-                </table>
-            </div>
+		<!-- Contenedor de la cámara -->
+		<div id="camera-container" class="camera-container" style="display: none;">
+			<video id="camera-video" class="camera-video" autoplay muted playsinline></video>
+			<div class="camera-overlay"></div>
+			<div id="camera-status" class="camera-status">📷 Posiciona el código QR dentro del recuadro verde</div>
+		</div>
+
+		<div class="form-group">
+			<label>Código QR (Tarima o Individual):</label>
+			<textarea id="qr-input" rows="4" placeholder="El código aparecerá aquí automáticamente al escanearlo, o puedes pegarlo manualmente..." autofocus></textarea>
+			<div id="qr-analysis"></div>
+		</div>
+
+		<div class="form-group">
+			<label>Tipo de Inventario:</label>
+			<select id="inventory-type">
+				<option value="movimiento">📦 Movimiento Normal</option>
+				<option value="inicial">🎯 Inventario Inicial</option>
+				<option value="turno">⏰ Inventario por Turno</option>
+			</select>
+		</div>
+
+		<div class="form-group">
+			<label>Turno:</label>
+			<select id="shift">
+				<option value="1">Primer Turno (07:00 am - 07:00 pm)</option>
+				<option value="2">Segundo Turno (07:00 pm - 07:00 am)</option>
+			</select>
+		</div>
+
+		<div class="form-group" id="individual-state-section" style="display: none;">
+			<label>Estado del Material (Pieza Individual):</label>
+			<select id="individual-state">
+				<option value="fundidos">🔥 Fundido</option>
+				<option value="acabados">✅ Acabado</option>
+			</select>
+		</div>
+
+		<div class="form-group" id="movement-destination-section" style="display: none;">
+			<label>Destino del Movimiento:</label>
+			<div class="warehouse-selector" id="movement-selector">
+				<div class="warehouse-btn" data-movement="envios">📦 ENVÍOS</div>
+				<div class="warehouse-btn" data-movement="retenciones">⏸️ RETENCIONES</div>
+				<div class="warehouse-btn" data-movement="scrap">♻️ SCRAP</div>
+				<div class="warehouse-btn" data-movement="pruebas">🧪 PRUEBAS</div>
+			</div>
+		</div>
+
+		<div class="form-group" id="warehouse-override-section" style="display: none;">
+			<label>Forzar Almacén (Tarima sin estado detectado):</label>
+			<div class="warehouse-selector" id="warehouse-selector">
+				<div class="warehouse-btn" data-warehouse="fundidos">🔥 FUNDIDOS</div>
+				<div class="warehouse-btn" data-warehouse="acabados">✅ ACABADOS</div>
+			</div>
+		</div>
+
+		<button class="btn btn-success" onclick="processQRCode()">✅ Procesar Código QR</button>
+		<button class="btn btn-info" onclick="clearForm()">🔄 Limpiar</button>
+		<button class="btn btn-warning" onclick="startNewShiftVerification()">🆕 Nuevo Turno</button>
+		<div id="process-result" style="margin-top: 20px;"></div>
+	</div>
+	<!-- Modo Generador (Nuevo) -->
+	<div id="generator-mode" class="card" style="display: none;">
+		<h3>🏷️ Generar Código QR de Tarima</h3>
+
+		<div class="grid" style="grid-template-columns: repeat(2, 1fr);">
+			<div class="form-group">
+				<label>🏭 Zona/ID de Tarima:</label>
+				<input type="text" id="gen-zona" placeholder="Ej: A3, B7, TARM001..." required />
+			</div>
+			<div class="form-group">
+				<label>📦 Tipo de Material:</label>
+				<select id="gen-tipo" required>
+					<option value="">Seleccionar...</option>
+					<option value="FUNDIDO">🔥 Fundido</option>
+					<option value="ACABADO">✅ Acabado</option>
+					<option value="MIXED">🔀 Mixto</option>
+				</select>
+			</div>
+		</div>
+
+		<!-- Entrada de códigos con cámara -->
+		<div class="form-group">
+			<label>📋 Códigos de Piezas Individuales:</label>
+			<div class="camera-controls">
+				<button class="btn btn-success" id="gen-start-camera-btn" onclick="startGeneratorCamera()">📷 Usar Cámara</button>
+				<button class="btn btn-danger" id="gen-stop-camera-btn" onclick="stopGeneratorCamera()" style="display: none;">⏹️ Detener</button>
+				<button class="btn btn-info" onclick="pasteCodesFromClipboard()">📋 Pegar desde Portapapeles</button>
+				<button class="btn btn-warning" onclick="clearAllCodes()">🗑️ Limpiar Todo</button>
+			</div>
+
+			<!-- Cámara para códigos individuales -->
+			<div id="gen-camera-container" class="camera-container" style="display: none;">
+				<video id="gen-camera-video" class="camera-video" autoplay muted playsinline></video>
+				<div class="camera-overlay"></div>
+				<div id="gen-camera-status" class="camera-status">📷 Escanea los códigos individuales uno por uno</div>
+			</div>
+
+			<textarea id="gen-codigos" rows="8" placeholder="Los códigos aparecerán aquí conforme los escanees, o puedes pegarlos manualmente (uno por línea)..."></textarea>
+			<div id="gen-validation-info" class="auto-detect" style="display: none;">
+				<strong>📊 Resumen:</strong> <span id="codes-count">0</span> códigos | <span id="duplicates-count">0</span> duplicados | <span id="invalid-count">0</span> inválidos
+			</div>
+		</div>
+
+		<!-- Lista de códigos con validación visual -->
+		<div class="form-group">
+			<label>🔍 Códigos Validados:</label>
+			<div id="codes-validation-list" class="pallet-preview">
+				<p style="color: #6c757d; font-style: italic;">Los códigos aparecerán aquí conforme los agregues...</p>
+			</div>
+		</div>
+
+		<button class="btn btn-success" onclick="generatePalletQR()" id="generate-qr-btn" disabled>🏷️ Generar Código QR de Tarima</button>
+		<button class="btn btn-info" onclick="clearGeneratorForm()">🔄 Limpiar Formulario</button>
+	</div>
+
+	<!-- Resultado de QR Generado -->
+	<div id="qr-result" class="card" style="display: none; position: relative; z-index: 1; background: white; margin: 20px 0; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+		<h3>✅ Código QR de Tarima Generado</h3>
+
+		<div class="grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+			<div>
+				<h4>📋 Información de la Tarima:</h4>
+				<div id="qr-info"></div>
+			</div>
+			<div style="text-align: center;">
+				<h4>🏷️ Código QR:</h4>
+				<div id="qr-display"></div>
+				<div style="margin-top: 15px;">
+					<button class="btn btn-primary" onclick="downloadQRImage()">📥 Descargar Imagen</button>
+					<button class="btn btn-info" onclick="copyQRText()">📋 Copiar Texto</button>
+					<button class="btn btn-warning" onclick="printQR()">🖨️ Imprimir</button>
+				</div>
+			</div>
+		</div>
+
+		<div class="form-group">
+			<label>📝 Texto del QR (para verificación):</label>
+			<textarea id="qr-text" rows="3" readonly style="background: #f8f9fa;"></textarea>
+		</div>
+	</div>
+	<!-- Inventory Tab -->
+	<div id="inventory" class="tab-content">
+		<h2>📋 Inventario Detallado</h2>
+
+		<div style="text-align: center; margin-bottom: 20px;">
+			<button class="btn btn-danger" onclick="clearAllData()">🗑️ Limpiar Todos los Datos</button>
+		</div>
+		<div class="card">
+			<h3>📊 Inventario por Modelo y Estado</h3>
+			<div id="detailed-inventory"></div>
+		</div>
+
+		<div class="card">
+			<h3>📊 Resumen por Número de Parte</h3>
+			<table class="inventory-table">
+				<thead>
+					<tr>
+						<th>Número de Parte</th>
+						<th>Fundidos</th>
+						<th>Acabados</th>
+						<th>Envíos</th>
+						<th>Retenciones</th>
+						<th>Scrap</th>
+						<th>Pruebas</th>
+						<th>Total</th>
+					</tr>
+				</thead>
+				<tbody id="grouped-inventory-tbody"></tbody>
+			</table>
+		</div>
+	</div>
+
+	<!-- Pallets Tab -->
+	<div id="pallets" class="tab-content">
+		<h2>📦 Gestión de Tarimas</h2>
+
+		<div class="card">
+			<h3>📋 Registro de Tarimas</h3>
+			<table class="inventory-table">
+				<thead>
+					<tr>
+						<th>ID Tarima</th>
+						<th>ID Original</th>
+						<th>Estado</th>
+						<th>Tipo</th>
+						<th>Piezas</th>
+						<th>Almacén</th>
+						<th>Fecha</th>
+						<th>Acciones</th>
+					</tr>
+				</thead>
+				<tbody id="pallets-tbody"></tbody>
+			</table>
+		</div>
+	</div>
+
+	<!-- Production Tab -->
+	<div id="production" class="tab-content">
+		<h2>🏭 Control de Producción</h2>
+
+		<!-- Selector de Proceso -->
+		<div class="card">
+			<h3>📋 Seleccionar Proceso</h3>
+			<div class="form-group">
+				<label>Tipo de Reporte:</label>
+				<select id="production-type" onchange="showProductionForm()">
+					<option value="">Selecciona un proceso...</option>
+					<option value="fundicion">🔥 Reporte de Fundición</option>
+					<option value="acabado">✅ Reporte de Acabado</option>
+					<option value="movimientos">📦 Movimientos de Material</option>
+				</select>
+			</div>
+		</div>
+
+		<!-- Formulario de Fundición -->
+		<div id="fundicion-form" class="card" style="display: none;">
+			<h3>🔥 Reporte de Fundición</h3>
+			<form id="production-fundicion-form">
+				<div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+					<div class="form-group">
+						<label>Fecha de Producción:</label>
+						<input type="date" id="fund-fecha" required />
+					</div>
+					<div class="form-group">
+						<label>Turno:</label>
+						<select id="fund-turno" required>
+							<option value="1">Primer Turno (07:00-19:00)</option>
+							<option value="2">Segundo Turno (19:00-07:00)</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<label>Máquina:</label>
+						<select id="fund-maquina" onchange="updateModelOptions('fund')" required>
+							<option value="">Seleccionar...</option>
+							<option value="30">Máquina #30 (LWR)</option>
+							<option value="31">Máquina #31 (LWR)</option>
+							<option value="32">Máquina #32 (UPR)</option>
+							<option value="33">Máquina #33 (UPR)</option>
+							<option value="34">Máquina #34 (UPR)</option>
+						</select>
+					</div>
+				</div>
+
+				<div class="grid" style="grid-template-columns: repeat(2, 1fr);">
+					<div class="form-group">
+						<label>Modelo:</label>
+						<select id="fund-modelo" onchange="updateMoldeOptions('fund')" required>
+							<option value="">Primero selecciona máquina...</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<label>Molde:</label>
+						<select id="fund-molde" required>
+							<option value="">Primero selecciona modelo...</option>
+						</select>
+					</div>
+				</div>
+
+				<div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+					<div class="form-group">
+						<label>Cantidad Total Producida:</label>
+						<input type="number" id="fund-total" min="0" oninput="calculateGoodParts('fund')" required />
+					</div>
+					<div class="form-group">
+						<label>Cantidad NG (No Good):</label>
+						<input type="number" id="fund-ng" min="0" oninput="calculateGoodParts('fund')" required />
+					</div>
+					<div class="form-group">
+						<label>Piezas Buenas (Automático):</label>
+						<input type="number" id="fund-buenas" readonly style="background: #e9ecef;" />
+					</div>
+				</div>
+				<div class="form-group" style="margin-top: 20px;">
+					<label>📄 Evidencia (PDF del reporte escaneado):</label>
+					<div class="file-management-container">
+						<input type="file" id="fund-evidencia" accept=".pdf" onchange="handleFileSelection('fund-evidencia')" style="display: none;" />
+						<div class="file-upload-area" onclick="document.getElementById('fund-evidencia').click()">
+							<div id="fund-evidencia-status" class="file-status">
+								<span class="file-placeholder">📎 Haz clic para seleccionar PDF (máx. 5MB)</span>
+							</div>
+						</div>
+						<div id="fund-evidencia-actions" class="file-actions" style="display: none;">
+							<button type="button" class="btn btn-sm btn-warning" onclick="replaceFile('fund-evidencia')">🔄 Reemplazar</button>
+							<button type="button" class="btn btn-sm btn-danger" onclick="removeFile('fund-evidencia')">🗑️ Eliminar</button>
+							<button type="button" class="btn btn-sm btn-info" onclick="viewFileHistory('fund-evidencia')">📋 Historial</button>
+						</div>
+					</div>
+				</div>
+				<button type="button" class="btn btn-success" onclick="saveProductionReport('fundicion')">🔥 Guardar Reporte de Fundición</button>
+			</form>
+		</div>
+
+		<!-- Formulario de Acabado -->
+		<div id="acabado-form" class="card" style="display: none;">
+			<h3>✅ Reporte de Acabado</h3>
+			<form id="production-acabado-form">
+				<div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+					<div class="form-group">
+						<label>Fecha de Producción:</label>
+						<input type="date" id="acab-fecha" required />
+					</div>
+					<div class="form-group">
+						<label>Turno:</label>
+						<select id="acab-turno" required>
+							<option value="1">Primer Turno (07:00-19:00)</option>
+							<option value="2">Segundo Turno (19:00-07:00)</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<label>Máquina de Acabado:</label>
+						<select id="acab-maquina" required>
+							<option value="">Seleccionar...</option>
+							<option value="30">Acabado AC-30</option>
+							<option value="31">Acabado AC-31</option>
+							<option value="32">Acabado AC-32</option>
+							<option value="33">Acabado AC-33</option>
+							<option value="34">Acabado AC-34</option>
+						</select>
+					</div>
+				</div>
+
+				<div class="grid" style="grid-template-columns: repeat(2, 1fr);">
+					<div class="form-group">
+						<label>Número de parte:</label>
+						<select id="acab-modelo" onchange="updateMoldeOptions('acab')" required>
+							<option value="">Seleccionar...</option>
+							<option value="PX13-10-382-FUN">PX13-10-382 (LWR)</option>
+							<option value="PEDD-10-382-A-FUN">PEDD-10-382-A (LWR)</option>
+							<option value="P54G-10-382-FUN">P54G-10-382 (LWR)</option>
+							<option value="PX13-10-301-FUN">PX13-10-301 (UPR)</option>
+							<option value="PEDD-10-301-A-FUN">PEDD-10-301-A (UPR)</option>
+							<option value="P54G-10-301-A-FUN">P54G-10-301-A (UPR)</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<label>Molde:</label>
+						<select id="acab-molde" required>
+							<option value="">Primero selecciona modelo...</option>
+						</select>
+					</div>
+				</div>
+
+				<div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+					<div class="form-group">
+						<label>Cantidad Total Procesada:</label>
+						<input type="number" id="acab-total" min="0" oninput="calculateGoodParts('acab')" required />
+					</div>
+					<div class="form-group">
+						<label>Cantidad NG (No Good):</label>
+						<input type="number" id="acab-ng" min="0" oninput="calculateGoodParts('acab')" required />
+					</div>
+					<div class="form-group">
+						<label>Piezas Buenas (Automático):</label>
+						<input type="number" id="acab-buenas" readonly style="background: #e9ecef;" />
+					</div>
+				</div>
+				<div class="form-group" style="margin-top: 20px;">
+					<label>📄 Evidencia (PDF del reporte escaneado):</label>
+					<div class="file-management-container">
+						<input type="file" id="acab-evidencia" accept=".pdf" onchange="handleFileSelection('acab-evidencia')" style="display: none;" />
+						<div class="file-upload-area" onclick="document.getElementById('acab-evidencia').click()">
+							<div id="acab-evidencia-status" class="file-status">
+								<span class="file-placeholder">📎 Haz clic para seleccionar PDF (máx. 5MB)</span>
+							</div>
+						</div>
+						<div id="acab-evidencia-actions" class="file-actions" style="display: none;">
+							<button type="button" class="btn btn-sm btn-warning" onclick="replaceFile('acab-evidencia')">🔄 Reemplazar</button>
+							<button type="button" class="btn btn-sm btn-danger" onclick="removeFile('acab-evidencia')">🗑️ Eliminar</button>
+							<button type="button" class="btn btn-sm btn-info" onclick="viewFileHistory('acab-evidencia')">📋 Historial</button>
+						</div>
+					</div>
+				</div>
+				<button type="button" class="btn btn-success" onclick="saveProductionReport('acabado')">✅ Guardar Reporte de Acabado</button>
+			</form>
+		</div>
+
+		<!-- Formulario de Movimientos -->
+		<div id="movimientos-form" class="card" style="display: none;">
+			<h3>📦 Movimientos de Material</h3>
+			<form id="production-movimientos-form">
+				<div class="grid" style="grid-template-columns: repeat(2, 1fr);">
+					<div class="form-group">
+						<label>Tipo de Movimiento:</label>
+						<select id="mov-tipo" required>
+							<option value="">Seleccionar...</option>
+							<option value="scrap">♻️ Scrap Adicional</option>
+							<option value="envios">📦 Envíos</option>
+							<option value="retenciones">⏸️ Retenciones</option>
+							<option value="pruebas">🧪 Pruebas</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<label>Fecha:</label>
+						<input type="date" id="mov-fecha" required />
+					</div>
+				</div>
+
+				<div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+					<div class="form-group">
+						<label>Máquina/Área:</label>
+						<select id="mov-maquina" required>
+							<option value="">Seleccionar...</option>
+							<option value="30">Máquina #30 (LWR)</option>
+							<option value="31">Máquina #31 (LWR)</option>
+							<option value="32">Máquina #32 (UPR)</option>
+							<option value="33">Máquina #33 (UPR)</option>
+							<option value="34">Máquina #34 (UPR)</option>
+							<option value="AC-30">Acabado AC-30</option>
+							<option value="AC-31">Acabado AC-31</option>
+							<option value="AC-32">Acabado AC-32</option>
+							<option value="AC-33">Acabado AC-33</option>
+							<option value="AC-34">Acabado AC-34</option>
+							<option value="ALMACEN">Almacén General</option>
+							<option value="ENVIOS">Área de Envíos</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<label>Modelo/Número de Parte:</label>
+						<select id="mov-modelo" onchange="updateMoldeOptions('mov')" required>
+							<option value="">Seleccionar...</option>
+							<option value="PX13-10-382-FUN">PX13-10-382 (LWR)</option>
+							<option value="PEDD-10-382-A-FUN">PEDD-10-382-A (LWR)</option>
+							<option value="P54G-10-382-FUN">P54G-10-382 (LWR)</option>
+							<option value="PX13-10-301-FUN">PX13-10-301 (UPR)</option>
+							<option value="PEDD-10-301-A-FUN">PEDD-10-301-A (UPR)</option>
+							<option value="P54G-10-301-A-FUN">P54G-10-301-A (UPR)</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<label>Molde:</label>
+						<select id="mov-molde" required>
+							<option value="">Primero selecciona modelo...</option>
+						</select>
+					</div>
+				</div>
+
+				<div class="grid" style="grid-template-columns: repeat(2, 1fr);">
+					<div class="form-group">
+						<label>Cantidad:</label>
+						<input type="number" id="mov-cantidad" min="1" required />
+					</div>
+					<div class="form-group">
+						<label>Comentarios/Razón:</label>
+						<textarea id="mov-comentarios" rows="3" placeholder="Describe la razón del movimiento..."></textarea>
+					</div>
+				</div>
+
+				<div class="form-group" style="margin-top: 20px;">
+					<label>📄 Evidencia (PDF de la documentación):</label>
+					<div class="file-management-container">
+						<input type="file" id="mov-evidencia" accept=".pdf" onchange="handleFileSelection('mov-evidencia')" style="display: none;" />
+						<div class="file-upload-area" onclick="document.getElementById('mov-evidencia').click()">
+							<div id="mov-evidencia-status" class="file-status">
+								<span class="file-placeholder">📎 Haz clic para seleccionar PDF (máx. 5MB)</span>
+							</div>
+						</div>
+						<div id="mov-evidencia-actions" class="file-actions" style="display: none;">
+							<button type="button" class="btn btn-sm btn-warning" onclick="replaceFile('mov-evidencia')">🔄 Reemplazar</button>
+							<button type="button" class="btn btn-sm btn-danger" onclick="removeFile('mov-evidencia')">🗑️ Eliminar</button>
+							<button type="button" class="btn btn-sm btn-info" onclick="viewFileHistory('mov-evidencia')">📋 Historial</button>
+						</div>
+					</div>
+				</div>
+				<button type="button" class="btn btn-success" onclick="saveMovementReport()">📦 Guardar Movimiento</button>
+			</form>
+		</div>
+
+		<!-- Resumen de Reportes -->
+		<div class="card">
+			<h3>📊 Reportes del Turno Actual</h3>
+			<div id="production-summary"></div>
+			<div style="text-align: center; margin-top: 20px;">
+				<button class="btn btn-primary" onclick="generateTheoreticalBalance()">🧮 Calcular Balance Teórico</button>
+				<button class="btn btn-info" onclick="showProductionReport()">📋 Ver Reporte Completo</button>
+			</div>
+		</div>
+	</div>
+	<!-- Theoretical vs Physical Tab -->
+	<div id="theoretical" class="tab-content">
+		<h2>📊 Inventario Teórico vs Físico</h2>
+
+		<div class="card">
+			<h3>🎯 Verificación Física del Turno</h3>
+			<div id="current-verification">
+				<div class="alert alert-info">
+					💡 <strong>Instrucciones:</strong><br />
+					1. Selecciona "Inventario por Turno" en el escáner<br />
+					2. Escanea las tarimas/piezas físicamente presentes<br />
+					3. Genera el reporte de comparación aquí
+				</div>
+			</div>
+		</div>
+
+		<div class="card">
+			<h3>📋 Inventario Teórico Calculado</h3>
+			<div id="theoretical-summary">
+				<div class="alert alert-info">
+					Presiona "Generar Reporte" para calcular el inventario teórico basado en los registros del sistema.
+				</div>
+			</div>
+		</div>
+
+		<div class="card">
+			<h3>🔍 Comparación Detallada</h3>
+			<div id="verification-comparison">
+				<div class="alert alert-info">
+					La comparación aparecerá aquí después de generar el reporte.
+				</div>
+			</div>
+		</div>
+
+		<div class="card">
+			<h3>⚠️ Diferencias Encontradas</h3>
+			<div id="discrepancies-report">
+				<div class="alert alert-info">
+					Las diferencias críticas aparecerán aquí si las hay.
+				</div>
+			</div>
+		</div>
+
+		<div style="text-align: center; margin-top: 30px;">
+			<button class="btn btn-primary" onclick="generateTheoreticalReport()">📊 Generar Reporte</button>
+			<button class="btn btn-success" onclick="exportVerificationReport()">📤 Exportar PDF</button>
+			<button class="btn btn-info" onclick="printVerificationSummary()">🖨️ Imprimir Resumen</button>
+			<button class="btn btn-warning" onclick="startNewShiftVerification()">🆕 Nuevo Turno</button>
+		</div>
+	</div>
 </div>
 
-        <!-- Pallets Tab -->
-<div id="pallets" class="tab-content">
-            <h2>📦 Gestión de Tarimas</h2>
-            
-            <div class="card">
-                <h3>📋 Registro de Tarimas</h3>
-                <table class="inventory-table">
-                    <thead>
-                        <tr>
-                            <th>ID Tarima</th>
-                            <th>ID Original</th>
-                            <th>Estado</th>
-                            <th>Tipo</th>
-                            <th>Piezas</th>
-                            <th>Almacén</th>
-                            <th>Fecha</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pallets-tbody"></tbody>
-                </table>
-            </div>
-</div>
-
-        <!-- Production Tab -->
-<div id="production" class="tab-content">
-    <h2>🏭 Control de Producción</h2>
-    
-    <!-- Selector de Proceso -->
-    <div class="card">
-        <h3>📋 Seleccionar Proceso</h3>
-        <div class="form-group">
-            <label>Tipo de Reporte:</label>
-            <select id="production-type" onchange="showProductionForm()">
-                <option value="">Selecciona un proceso...</option>
-                <option value="fundicion">🔥 Reporte de Fundición</option>
-                <option value="acabado">✅ Reporte de Acabado</option>
-                <option value="movimientos">📦 Movimientos de Material</option>
-            </select>
-        </div>
-    </div>
-
-   <!-- Formulario de Fundición -->
-    <div id="fundicion-form" class="card" style="display: none;">
-        <h3>🔥 Reporte de Fundición</h3>
-        <form id="production-fundicion-form">
-            <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
-                <div class="form-group">
-                    <label>Fecha de Producción:</label>
-                    <input type="date" id="fund-fecha" required>
-                </div>
-                <div class="form-group">
-                    <label>Turno:</label>
-                    <select id="fund-turno" required>
-                        <option value="1">Primer Turno (07:00-19:00)</option>
-                        <option value="2">Segundo Turno (19:00-07:00)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Máquina:</label>
-                    <select id="fund-maquina" onchange="updateModelOptions('fund')" required>
-                        <option value="">Seleccionar...</option>
-                        <option value="30">Máquina #30 (LWR)</option>
-                        <option value="31">Máquina #31 (LWR)</option>
-                        <option value="32">Máquina #32 (UPR)</option>
-                        <option value="33">Máquina #33 (UPR)</option>
-                        <option value="34">Máquina #34 (UPR)</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="grid" style="grid-template-columns: repeat(2, 1fr);">
-                <div class="form-group">
-                    <label>Modelo:</label>
-                    <select id="fund-modelo" onchange="updateMoldeOptions('fund')" required>
-                        <option value="">Primero selecciona máquina...</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Molde:</label>
-                    <select id="fund-molde" required>
-                        <option value="">Primero selecciona modelo...</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
-                <div class="form-group">
-                    <label>Cantidad Total Producida:</label>
-                    <input type="number" id="fund-total" min="0" oninput="calculateGoodParts('fund')" required>
-                </div>
-                <div class="form-group">
-                    <label>Cantidad NG (No Good):</label>
-                    <input type="number" id="fund-ng" min="0" oninput="calculateGoodParts('fund')" required>
-                </div>
-                <div class="form-group">
-                    <label>Piezas Buenas (Automático):</label>
-                    <input type="number" id="fund-buenas" readonly style="background: #e9ecef;">
-                </div>
-            </div>
-            <div class="form-group" style="margin-top: 20px;">
-    <label>📄 Evidencia (PDF del reporte escaneado):</label>
-    <div class="file-management-container">
-        <input type="file" id="fund-evidencia" accept=".pdf" onchange="handleFileSelection('fund-evidencia')" style="display: none;">
-        <div class="file-upload-area" onclick="document.getElementById('fund-evidencia').click()">
-            <div id="fund-evidencia-status" class="file-status">
-                <span class="file-placeholder">📎 Haz clic para seleccionar PDF (máx. 5MB)</span>
-            </div>
-        </div>
-        <div id="fund-evidencia-actions" class="file-actions" style="display: none;">
-            <button type="button" class="btn btn-sm btn-warning" onclick="replaceFile('fund-evidencia')">🔄 Reemplazar</button>
-            <button type="button" class="btn btn-sm btn-danger" onclick="removeFile('fund-evidencia')">🗑️ Eliminar</button>
-            <button type="button" class="btn btn-sm btn-info" onclick="viewFileHistory('fund-evidencia')">📋 Historial</button>
-        </div>
-    </div>
-</div>
-<button type="button" class="btn btn-success" onclick="saveProductionReport('fundicion')">🔥 Guardar Reporte de Fundición</button>
-        </form>
-    </div>
-
-    <!-- Formulario de Acabado -->
-    <div id="acabado-form" class="card" style="display: none;">
-        <h3>✅ Reporte de Acabado</h3>
-        <form id="production-acabado-form">
-            <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
-                <div class="form-group">
-                    <label>Fecha de Producción:</label>
-                    <input type="date" id="acab-fecha" required>
-                </div>
-                <div class="form-group">
-                    <label>Turno:</label>
-                    <select id="acab-turno" required>
-                        <option value="1">Primer Turno (07:00-19:00)</option>
-                        <option value="2">Segundo Turno (19:00-07:00)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Máquina de Acabado:</label>
-                    <select id="acab-maquina" required>
-                         <option value="">Seleccionar...</option>
-                         <option value="30">Acabado AC-30</option>
-                         <option value="31">Acabado AC-31</option>
-                         <option value="32">Acabado AC-32</option>
-                         <option value="33">Acabado AC-33</option>
-                         <option value="34">Acabado AC-34</option>
-                    </select>
-                </div>      
-            </div>
-            
-            <div class="grid" style="grid-template-columns: repeat(2, 1fr);">
-                <div class="form-group">
-                    <label>Número de parte:</label>
-                    <select id="acab-modelo" onchange="updateMoldeOptions('acab')" required>
-                        <option value="">Seleccionar...</option>
-                        <option value="PX13-10-382-FUN">PX13-10-382 (LWR)</option>
-                        <option value="PEDD-10-382-A-FUN">PEDD-10-382-A (LWR)</option>
-                        <option value="P54G-10-382-FUN">P54G-10-382 (LWR)</option>
-                        <option value="PX13-10-301-FUN">PX13-10-301 (UPR)</option>
-                        <option value="PEDD-10-301-A-FUN">PEDD-10-301-A (UPR)</option>
-                        <option value="P54G-10-301-A-FUN">P54G-10-301-A (UPR)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Molde:</label>
-                    <select id="acab-molde" required>
-                        <option value="">Primero selecciona modelo...</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
-                <div class="form-group">
-                    <label>Cantidad Total Procesada:</label>
-                    <input type="number" id="acab-total" min="0" oninput="calculateGoodParts('acab')" required>
-                </div>
-                <div class="form-group">
-                    <label>Cantidad NG (No Good):</label>
-                    <input type="number" id="acab-ng" min="0" oninput="calculateGoodParts('acab')" required>
-                </div>
-                <div class="form-group">
-                    <label>Piezas Buenas (Automático):</label>
-                    <input type="number" id="acab-buenas" readonly style="background: #e9ecef;">
-                </div>
-            </div>
-            <div class="form-group" style="margin-top: 20px;">
-    <label>📄 Evidencia (PDF del reporte escaneado):</label>
-    <div class="file-management-container">
-        <input type="file" id="acab-evidencia" accept=".pdf" onchange="handleFileSelection('acab-evidencia')" style="display: none;">
-        <div class="file-upload-area" onclick="document.getElementById('acab-evidencia').click()">
-            <div id="acab-evidencia-status" class="file-status">
-                <span class="file-placeholder">📎 Haz clic para seleccionar PDF (máx. 5MB)</span>
-            </div>
-        </div>
-        <div id="acab-evidencia-actions" class="file-actions" style="display: none;">
-            <button type="button" class="btn btn-sm btn-warning" onclick="replaceFile('acab-evidencia')">🔄 Reemplazar</button>
-            <button type="button" class="btn btn-sm btn-danger" onclick="removeFile('acab-evidencia')">🗑️ Eliminar</button>
-            <button type="button" class="btn btn-sm btn-info" onclick="viewFileHistory('acab-evidencia')">📋 Historial</button>
-        </div>
-    </div>
-</div>
-<button type="button" class="btn btn-success" onclick="saveProductionReport('acabado')">✅ Guardar Reporte de Acabado</button>
-        </form>
-    </div>
-
-    <!-- Formulario de Movimientos -->
-    <div id="movimientos-form" class="card" style="display: none;">
-        <h3>📦 Movimientos de Material</h3>
-        <form id="production-movimientos-form">
-            <div class="grid" style="grid-template-columns: repeat(2, 1fr);">
-                <div class="form-group">
-                    <label>Tipo de Movimiento:</label>
-                    <select id="mov-tipo" required>
-                        <option value="">Seleccionar...</option>
-                        <option value="scrap">♻️ Scrap Adicional</option>
-                        <option value="envios">📦 Envíos</option>
-                        <option value="retenciones">⏸️ Retenciones</option>
-                        <option value="pruebas">🧪 Pruebas</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Fecha:</label>
-                    <input type="date" id="mov-fecha" required>
-                </div>
-            </div>
-            
-            <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
-                <div class="form-group">
-    <label>Máquina/Área:</label>
-    <select id="mov-maquina" required>
-        <option value="">Seleccionar...</option>
-        <option value="30">Máquina #30 (LWR)</option>
-        <option value="31">Máquina #31 (LWR)</option>
-        <option value="32">Máquina #32 (UPR)</option>
-        <option value="33">Máquina #33 (UPR)</option>
-        <option value="34">Máquina #34 (UPR)</option>
-        <option value="AC-30">Acabado AC-30</option>
-        <option value="AC-31">Acabado AC-31</option>
-        <option value="AC-32">Acabado AC-32</option>
-        <option value="AC-33">Acabado AC-33</option>
-        <option value="AC-34">Acabado AC-34</option>
-        <option value="ALMACEN">Almacén General</option>
-        <option value="ENVIOS">Área de Envíos</option>
-    </select>
-</div>
-<div class="form-group">
-    <label>Modelo/Número de Parte:</label>
-    <select id="mov-modelo" onchange="updateMoldeOptions('mov')" required>
-                        <option value="">Seleccionar...</option>
-                        <option value="PX13-10-382-FUN">PX13-10-382 (LWR)</option>
-                        <option value="PEDD-10-382-A-FUN">PEDD-10-382-A (LWR)</option>
-                        <option value="P54G-10-382-FUN">P54G-10-382 (LWR)</option>
-                        <option value="PX13-10-301-FUN">PX13-10-301 (UPR)</option>
-                        <option value="PEDD-10-301-A-FUN">PEDD-10-301-A (UPR)</option>
-                        <option value="P54G-10-301-A-FUN">P54G-10-301-A (UPR)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Molde:</label>
-                    <select id="mov-molde" required>
-                        <option value="">Primero selecciona modelo...</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="grid" style="grid-template-columns: repeat(2, 1fr);">
-                <div class="form-group">
-                    <label>Cantidad:</label>
-                    <input type="number" id="mov-cantidad" min="1" required>
-                </div>
-                <div class="form-group">
-                    <label>Comentarios/Razón:</label>
-                    <textarea id="mov-comentarios" rows="3" placeholder="Describe la razón del movimiento..."></textarea>
-                </div>
-            </div>
-            
-            <div class="form-group" style="margin-top: 20px;">
-    <label>📄 Evidencia (PDF de la documentación):</label>
-    <div class="file-management-container">
-        <input type="file" id="mov-evidencia" accept=".pdf" onchange="handleFileSelection('mov-evidencia')" style="display: none;">
-        <div class="file-upload-area" onclick="document.getElementById('mov-evidencia').click()">
-            <div id="mov-evidencia-status" class="file-status">
-                <span class="file-placeholder">📎 Haz clic para seleccionar PDF (máx. 5MB)</span>
-            </div>
-        </div>
-        <div id="mov-evidencia-actions" class="file-actions" style="display: none;">
-            <button type="button" class="btn btn-sm btn-warning" onclick="replaceFile('mov-evidencia')">🔄 Reemplazar</button>
-            <button type="button" class="btn btn-sm btn-danger" onclick="removeFile('mov-evidencia')">🗑️ Eliminar</button>
-            <button type="button" class="btn btn-sm btn-info" onclick="viewFileHistory('mov-evidencia')">📋 Historial</button>
-        </div>
-    </div>
-</div>
-<button type="button" class="btn btn-success" onclick="saveMovementReport()">📦 Guardar Movimiento</button>
-        </form>
-    </div>
-   
-    <!-- Resumen de Reportes -->
-    <div class="card">
-        <h3>📊 Reportes del Turno Actual</h3>
-        <div id="production-summary"></div>
-        <div style="text-align: center; margin-top: 20px;">
-            <button class="btn btn-primary" onclick="generateTheoreticalBalance()">🧮 Calcular Balance Teórico</button>
-            <button class="btn btn-info" onclick="showProductionReport()">📋 Ver Reporte Completo</button>
-        </div>
-    </div>
-</div>
-   <!-- Theoretical vs Physical Tab -->
-<div id="theoretical" class="tab-content">
-    <h2>📊 Inventario Teórico vs Físico</h2>
-    
-    <div class="card">
-        <h3>🎯 Verificación Física del Turno</h3>
-        <div id="current-verification">
-            <div class="alert alert-info">
-                💡 <strong>Instrucciones:</strong><br>
-                1. Selecciona "Inventario por Turno" en el escáner<br>
-                2. Escanea las tarimas/piezas físicamente presentes<br>
-                3. Genera el reporte de comparación aquí
-            </div>
-        </div>
-    </div>
-    
-    <div class="card">
-        <h3>📋 Inventario Teórico Calculado</h3>
-        <div id="theoretical-summary">
-            <div class="alert alert-info">
-                Presiona "Generar Reporte" para calcular el inventario teórico basado en los registros del sistema.
-            </div>
-        </div>
-    </div>
-    
-    <div class="card">
-        <h3>🔍 Comparación Detallada</h3>
-        <div id="verification-comparison">
-            <div class="alert alert-info">
-                La comparación aparecerá aquí después de generar el reporte.
-            </div>
-        </div>
-    </div>
-    
-    <div class="card">
-        <h3>⚠️ Diferencias Encontradas</h3>
-        <div id="discrepancies-report">
-            <div class="alert alert-info">
-                Las diferencias críticas aparecerán aquí si las hay.
-            </div>
-        </div>
-    </div>
-    
-    <div style="text-align: center; margin-top: 30px;">
-        <button class="btn btn-primary" onclick="generateTheoreticalReport()">📊 Generar Reporte</button>
-        <button class="btn btn-success" onclick="exportVerificationReport()">📤 Exportar PDF</button>
-        <button class="btn btn-info" onclick="printVerificationSummary()">🖨️ Imprimir Resumen</button>
-        <button class="btn btn-warning" onclick="startNewShiftVerification()">🆕 Nuevo Turno</button>
-    </div>
-</div>
     <script>
         // Variables globales
         let inventory = [];
