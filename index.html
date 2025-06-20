@@ -545,6 +545,9 @@
             <button class="nav-tab" data-tab="pallets">📦 Tarimas</button>
             <button class="nav-tab" data-tab="production">🏭 Producción</button>
             <button class="nav-tab" data-tab="theoretical">📊 Teórico vs Físico</button>
+	   <button class="nav-tab" data-tab="scrap-retention" onclick="showTab('scrap-retention')">
+              ♻️ Retención y Scrap
+</button>
         </div>
 
 <!-- Dashboard Tab -->
@@ -1142,9 +1145,909 @@
 			<button class="btn btn-warning" onclick="startNewShiftVerification()">🆕 Nuevo Turno</button>
 		</div>
 	</div>
+	    
+<!-- Retención y Scrap Tab -->
+<div id="scrap-retention" class="tab-content">
+    <h2>♻️ Retención y Scrap Adicional</h2>
+    
+    <div class="sub-nav-tabs">
+        <button class="sub-nav-tab active" onclick="showSubTab('new-scrap')">📝 Nueva Hoja</button>
+        <button class="sub-nav-tab" onclick="showSubTab('manage-sheets')">📋 Gestionar Hojas</button>
+        <button class="sub-nav-tab" onclick="showSubTab('scanner-shots')">🔍 Escanear Shots</button>
+        <button class="sub-nav-tab" onclick="showSubTab('reports')">📊 Reportes</button>
+    </div>
+    
+    <!-- Aquí iría todo el contenido del artifact que creé -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Retención y Scrap Adicional</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            background: white;
+            border-radius: 10px 10px 0 0;
+            margin-bottom: 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .nav-tab {
+            padding: 15px 25px;
+            background: #e9ecef;
+            border: none;
+            cursor: pointer;
+            border-radius: 10px 10px 0 0;
+            margin-right: 5px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .nav-tab.active {
+            background: #007bff;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            min-height: 600px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #007bff;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-info { background: #17a2b8; color: white; }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .grid {
+            display: grid;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .grid-2 { grid-template-columns: 1fr 1fr; }
+        .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+        
+        .status-badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .status-abierta { background: #d4edda; color: #155724; }
+        .status-proceso { background: #fff3cd; color: #856404; }
+        .status-cerrada { background: #f8d7da; color: #721c24; }
+        
+        .scrap-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .scrap-table th, .scrap-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .scrap-table th {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .scrap-table tr:hover {
+            background: #f5f5f5;
+        }
+        
+        .file-upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-upload-area:hover {
+            border-color: #007bff;
+            background: #f8f9ff;
+        }
+        
+        .scanner-display {
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .shot-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+	.sub-nav-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ddd;
+}
+
+.sub-nav-tab {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+.sub-nav-tab.active {
+    border-bottom-color: #007bff;
+    color: #007bff;
+}
+    </style>
+</head>
+<body>
+    <div class="nav-tabs">
+        <button class="nav-tab active" onclick="showTab('new-scrap')">📝 Nueva Hoja</button>
+        <button class="nav-tab" onclick="showTab('manage-sheets')">📋 Gestionar Hojas</button>
+        <button class="nav-tab" onclick="showTab('scanner-shots')">🔍 Escanear Shots</button>
+        <button class="nav-tab" onclick="showTab('reports')">📊 Reportes</button>
+    </div>
+
+    <!-- Nueva Hoja de Scrap -->
+    <div id="new-scrap" class="tab-content active">
+        <h2>📝 Nueva Hoja de Retención y Scrap Adicional</h2>
+        
+        <div class="card">
+            <h3>📋 Información General</h3>
+            <div class="grid grid-3">
+                <div class="form-group">
+                    <label>📄 Folio:</label>
+                    <input type="text" id="folio" readonly style="background: #e9ecef;">
+                </div>
+                <div class="form-group">
+                    <label>📅 Fecha de Operación:</label>
+                    <input type="date" id="fecha-operacion" required>
+                </div>
+                <div class="form-group">
+                    <label>👤 Sector de Trabajo:</label>
+                    <select id="sector-trabajo">
+                        <option value="">Seleccionar...</option>
+                        <option value="FUNDICION">🔥 Fundición</option>
+                        <option value="ACABADO">✅ Acabado</option>
+                        <option value="ALMACEN">📦 Almacén</option>
+                        <option value="CALIDAD">🔍 Calidad</option>
+                        <option value="MANTENIMIENTO">🔧 Mantenimiento</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>🏭 Número de Producto:</label>
+                    <select id="numero-producto" onchange="updateProductInfo()">
+                        <option value="">Seleccionar...</option>
+                        <option value="PX13-10-382">PX13-10-382 (LWR)</option>
+                        <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
+                        <option value="P54G-10-382">P54G-10-382 (LWR)</option>
+                        <option value="PX13-10-301">PX13-10-301 (UPR)</option>
+                        <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
+                        <option value="P54G-10-301-A">P54G-10-301-A (UPR)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>📝 Nombre del Producto:</label>
+                    <input type="text" id="nombre-producto" value="CYLINDER BLOCK" readonly style="background: #e9ecef;">
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🔍 Shots Escaneados</h3>
+            <div class="scanner-display">
+                <p>📱 <strong>Total de shots:</strong> <span id="total-shots">0</span></p>
+                <button class="btn btn-primary" onclick="showTab('scanner-shots')">🔍 Ir a Escáner</button>
+            </div>
+            <div id="shots-list"></div>
+        </div>
+
+        <div class="card">
+            <h3>📄 Evidencia y Firmas</h3>
+            <div class="form-group">
+                <label>📎 Subir Hoja Firmada (PDF):</label>
+                <div class="file-upload-area" onclick="document.getElementById('evidencia-file').click()">
+                    <input type="file" id="evidencia-file" accept=".pdf" style="display: none;" onchange="handleEvidenceUpload()">
+                    <div id="file-status">
+                        <span>📎 Haz clic para seleccionar archivo PDF</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>✍️ Firma Captura de Sector:</label>
+                    <input type="text" id="firma-captura" placeholder="Nombre de quien captura">
+                </div>
+                <div class="form-group">
+                    <label>✍️ Firma Director/Gerente:</label>
+                    <input type="text" id="firma-director" placeholder="Nombre del director/gerente">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>📝 Observaciones:</label>
+                <textarea id="observaciones" rows="3" placeholder="Observaciones adicionales..."></textarea>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="btn btn-success" onclick="saveScrapSheet()">💾 Guardar Hoja</button>
+            <button class="btn btn-info" onclick="generatePDF()">📄 Generar PDF</button>
+            <button class="btn btn-warning" onclick="clearForm()">🔄 Limpiar</button>
+        </div>
+    </div>
+
+    <!-- Gestionar Hojas -->
+    <div id="manage-sheets" class="tab-content">
+        <h2>📋 Gestionar Hojas de Scrap</h2>
+        
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>📊 Hojas Registradas</h3>
+                <button class="btn btn-primary" onclick="refreshSheetsList()">🔄 Actualizar</button>
+            </div>
+            
+            <table class="scrap-table">
+                <thead>
+                    <tr>
+                        <th>Folio</th>
+                        <th>Fecha</th>
+                        <th>Producto</th>
+                        <th>Sector</th>
+                        <th>Shots</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="sheets-table-body">
+                    <!-- Se llenará dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Escáner de Shots -->
+    <div id="scanner-shots" class="tab-content">
+        <h2>🔍 Escáner de Shots</h2>
+        
+        <div class="card">
+            <h3>📱 Escáner Manual</h3>
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>🔢 Número de Shot:</label>
+                    <input type="number" id="shot-number" placeholder="Ej: 123456" min="1">
+                </div>
+                <div class="form-group">
+                    <label>🔧 Número de Molde:</label>
+                    <input type="text" id="molde-number" placeholder="Ej: A1, B2, etc.">
+                </div>
+            </div>
+            
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>📝 Motivo del Scrap:</label>
+                    <select id="scrap-reason">
+                        <option value="">Seleccionar...</option>
+                        <option value="DEFECTO_VISUAL">👁️ Defecto Visual</option>
+                        <option value="DIMENSION_FUERA">📏 Dimensión Fuera de Especificación</option>
+                        <option value="POROSIDAD">🕳️ Porosidad</option>
+                        <option value="REBABA">✂️ Rebaba Excesiva</option>
+                        <option value="FALTA_MATERIAL">❌ Falta de Material</option>
+                        <option value="OTRO">📝 Otro (especificar)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>📝 Especificar (si es "Otro"):</label>
+                    <input type="text" id="other-reason" placeholder="Describe el motivo...">
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin: 20px 0;">
+                <button class="btn btn-success" onclick="addShot()">➕ Agregar Shot</button>
+                <button class="btn btn-info" onclick="scanQRCode()">📱 Escanear QR</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📋 Shots Registrados en Sesión Actual</h3>
+            <div id="current-shots-display">
+                <div class="alert alert-info">
+                    🔍 Los shots escaneados aparecerán aquí
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-warning" onclick="clearCurrentShots()">🗑️ Limpiar Lista</button>
+                <button class="btn btn-primary" onclick="showTab('new-scrap')">📝 Ir a Nueva Hoja</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reportes -->
+    <div id="reports" class="tab-content">
+        <h2>📊 Reportes de Scrap Adicional</h2>
+        
+        <div class="card">
+            <h3>📈 Filtros de Reporte</h3>
+            <div class="grid grid-3">
+                <div class="form-group">
+                    <label>📅 Fecha Desde:</label>
+                    <input type="date" id="report-date-from">
+                </div>
+                <div class="form-group">
+                    <label>📅 Fecha Hasta:</label>
+                    <input type="date" id="report-date-to">
+                </div>
+                <div class="form-group">
+                    <label>🏭 Producto:</label>
+                    <select id="report-product">
+                        <option value="">Todos los productos...</option>
+                        <option value="PX13-10-382">PX13-10-382 (LWR)</option>
+                        <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
+                        <option value="P54G-10-382">P54G-10-382 (LWR)</option>
+                        <option value="PX13-10-301">PX13-10-301 (UPR)</option>
+                        <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
+                        <option value="P54G-10-301-A">P54G-10-301-A (UPR)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin: 20px 0;">
+                <button class="btn btn-primary" onclick="generateReport()">📊 Generar Reporte</button>
+                <button class="btn btn-success" onclick="exportToExcel()">📗 Exportar Excel</button>
+                <button class="btn btn-info" onclick="exportToPDF()">📄 Exportar PDF</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📈 Resumen de Scrap</h3>
+            <div id="scrap-summary">
+                <div class="alert alert-info">
+                    📊 El resumen aparecerá después de generar el reporte
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let currentShots = [];
+        let scrapSheets = JSON.parse(localStorage.getItem('scrapSheets') || '[]');
+        let folioCounter = parseInt(localStorage.getItem('folioCounter') || '1');
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            generateNewFolio();
+            setTodayDate();
+            refreshSheetsList();
+        });
+
+        // Navegación entre pestañas
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Generar nuevo folio
+        function generateNewFolio() {
+            const today = new Date();
+            const year = today.getFullYear().toString().slice(-2);
+            const month = (today.getMonth() + 1).toString().padStart(2, '0');
+            const folio = `SA-${year}${month}-${folioCounter.toString().padStart(4, '0')}`;
+            document.getElementById('folio').value = folio;
+        }
+
+        // Establecer fecha de hoy
+        function setTodayDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('fecha-operacion').value = today;
+        }
+
+        // Actualizar información del producto
+        function updateProductInfo() {
+            const producto = document.getElementById('numero-producto').value;
+            document.getElementById('nombre-producto').value = producto ? 'CYLINDER BLOCK' : '';
+        }
+
+        // Agregar shot manualmente
+        function addShot() {
+            const shotNumber = document.getElementById('shot-number').value;
+            const moldeNumber = document.getElementById('molde-number').value;
+            const scrapReason = document.getElementById('scrap-reason').value;
+            const otherReason = document.getElementById('other-reason').value;
+
+            if (!shotNumber || !moldeNumber || !scrapReason) {
+                alert('⚠️ Por favor completa todos los campos obligatorios');
+                return;
+            }
+
+            const shot = {
+                id: Date.now(),
+                number: shotNumber,
+                molde: moldeNumber,
+                reason: scrapReason,
+                otherReason: scrapReason === 'OTRO' ? otherReason : '',
+                timestamp: new Date().toLocaleString()
+            };
+
+            currentShots.push(shot);
+            updateShotsDisplay();
+            clearShotForm();
+            
+            alert('✅ Shot agregado correctamente');
+        }
+
+        // Limpiar formulario de shot
+        function clearShotForm() {
+            document.getElementById('shot-number').value = '';
+            document.getElementById('molde-number').value = '';
+            document.getElementById('scrap-reason').value = '';
+            document.getElementById('other-reason').value = '';
+        }
+
+        // Actualizar visualización de shots
+        function updateShotsDisplay() {
+            const totalShots = document.getElementById('total-shots');
+            const shotsList = document.getElementById('shots-list');
+            const currentShotsDisplay = document.getElementById('current-shots-display');
+
+            totalShots.textContent = currentShots.length;
+
+            if (currentShots.length === 0) {
+                shotsList.innerHTML = '<div class="alert alert-info">🔍 No hay shots registrados</div>';
+                currentShotsDisplay.innerHTML = '<div class="alert alert-info">🔍 Los shots escaneados aparecerán aquí</div>';
+                return;
+            }
+
+            const shotsHTML = currentShots.map(shot => `
+                <div class="shot-item">
+                    <div>
+                        <strong>Shot #${shot.number}</strong> - Molde: ${shot.molde}
+                        <br><small>Motivo: ${shot.reason === 'OTRO' ? shot.otherReason : shot.reason}</small>
+                    </div>
+                    <button class="btn btn-danger btn-sm" onclick="removeShot(${shot.id})">🗑️</button>
+                </div>
+            `).join('');
+
+            shotsList.innerHTML = shotsHTML;
+            currentShotsDisplay.innerHTML = shotsHTML;
+        }
+
+        // Remover shot
+        function removeShot(shotId) {
+            currentShots = currentShots.filter(shot => shot.id !== shotId);
+            updateShotsDisplay();
+        }
+
+        // Limpiar shots actuales
+        function clearCurrentShots() {
+            if (confirm('¿Estás seguro de limpiar todos los shots registrados?')) {
+                currentShots = [];
+                updateShotsDisplay();
+            }
+        }
+
+        // Manejar subida de evidencia
+        function handleEvidenceUpload() {
+            const file = document.getElementById('evidencia-file').files[0];
+            const fileStatus = document.getElementById('file-status');
+            
+            if (file) {
+                if (file.type !== 'application/pdf') {
+                    alert('⚠️ Solo se permiten archivos PDF');
+                    return;
+                }
+                
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('⚠️ El archivo no puede ser mayor a 5MB');
+                    return;
+                }
+                
+                fileStatus.innerHTML = `
+                    <span style="color: green;">✅ ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)</span>
+                `;
+            }
+        }
+
+        // Guardar hoja de scrap
+        function saveScrapSheet() {
+            const folio = document.getElementById('folio').value;
+            const fechaOperacion = document.getElementById('fecha-operacion').value;
+            const sectorTrabajo = document.getElementById('sector-trabajo').value;
+            const numeroProducto = document.getElementById('numero-producto').value;
+            const firmaCaptura = document.getElementById('firma-captura').value;
+            const firmaDirector = document.getElementById('firma-director').value;
+            const observaciones = document.getElementById('observaciones').value;
+
+            if (!fechaOperacion || !sectorTrabajo || !numeroProducto || currentShots.length === 0) {
+                alert('⚠️ Por favor completa todos los campos obligatorios y agrega al menos un shot');
+                return;
+            }
+
+            const scrapSheet = {
+                folio: folio,
+                fechaOperacion: fechaOperacion,
+                fechaCreacion: new Date().toLocaleString(),
+                sectorTrabajo: sectorTrabajo,
+                numeroProducto: numeroProducto,
+                nombreProducto: 'CYLINDER BLOCK',
+                shots: [...currentShots],
+                firmaCaptura: firmaCaptura,
+                firmaDirector: firmaDirector,
+                observaciones: observaciones,
+                estado: 'Abierta',
+                evidencia: document.getElementById('evidencia-file').files[0]?.name || null
+            };
+
+            scrapSheets.push(scrapSheet);
+            localStorage.setItem('scrapSheets', JSON.stringify(scrapSheets));
+            
+            folioCounter++;
+            localStorage.setItem('folioCounter', folioCounter.toString());
+
+            alert('✅ Hoja de scrap guardada correctamente');
+            
+            // Limpiar formulario
+            clearForm();
+            generateNewFolio();
+            refreshSheetsList();
+        }
+
+        // Limpiar formulario
+        function clearForm() {
+            document.getElementById('fecha-operacion').value = '';
+            document.getElementById('sector-trabajo').value = '';
+            document.getElementById('numero-producto').value = '';
+            document.getElementById('nombre-producto').value = '';
+            document.getElementById('firma-captura').value = '';
+            document.getElementById('firma-director').value = '';
+            document.getElementById('observaciones').value = '';
+            document.getElementById('evidencia-file').value = '';
+            document.getElementById('file-status').innerHTML = '<span>📎 Haz clic para seleccionar archivo PDF</span>';
+            
+            currentShots = [];
+            updateShotsDisplay();
+            setTodayDate();
+        }
+
+        // Refrescar lista de hojas
+        function refreshSheetsList() {
+            const tbody = document.getElementById('sheets-table-body');
+            
+            if (scrapSheets.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">📝 No hay hojas registradas</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = scrapSheets.map(sheet => `
+                <tr>
+                    <td><strong>${sheet.folio}</strong></td>
+                    <td>${sheet.fechaOperacion}</td>
+                    <td>${sheet.numeroProducto}</td>
+                    <td>${sheet.sectorTrabajo}</td>
+                    <td>${sheet.shots.length}</td>
+                    <td><span class="status-badge status-${sheet.estado.toLowerCase()}">${sheet.estado}</span></td>
+                    <td>
+                        <button class="btn btn-info btn-sm" onclick="viewSheet('${sheet.folio}')">👁️</button>
+                        <button class="btn btn-warning btn-sm" onclick="editSheet('${sheet.folio}')">✏️</button>
+                        <button class="btn btn-success btn-sm" onclick="generateSheetPDF('${sheet.folio}')">📄</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Generar PDF
+        function generatePDF() {
+            alert('📄 Funcionalidad de PDF en desarrollo. Por ahora puedes usar "Guardar Hoja" y luego "Generar PDF" desde la lista.');
+        }
+
+        // Generar PDF de hoja específica
+        function generateSheetPDF(folio) {
+            const sheet = scrapSheets.find(s => s.folio === folio);
+            if (!sheet) return;
+
+            // Crear contenido del PDF
+            const pdfContent = `
+                REPORTE DIARIO DE SCRAP ADICIONAL
+                
+                Folio: ${sheet.folio}
+                Fecha de Operación: ${sheet.fechaOperacion}
+                Sector de Trabajo: ${sheet.sectorTrabajo}
+                
+                Número de Producto: ${sheet.numeroProducto}
+                Nombre: ${sheet.nombreProducto}
+                
+                SHOTS REGISTRADOS:
+                ${sheet.shots.map((shot, index) => 
+                    `${index + 1}. Shot #${shot.number} - Molde: ${shot.molde} - Motivo: ${shot.reason}`
+                ).join('\n')}
+                
+                Firma Captura: ${sheet.firmaCaptura}
+                Firma Director: ${sheet.firmaDirector}
+                Observaciones: ${sheet.observaciones}
+                
+                Estado: ${sheet.estado}
+                Fecha de Creación: ${sheet.fechaCreacion}
+            `;
+
+            // Crear blob y descargar
+            const blob = new Blob([pdfContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Scrap_${sheet.folio}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Ver detalles de hoja
+        function viewSheet(folio) {
+            const sheet = scrapSheets.find(s => s.folio === folio);
+            if (!sheet) return;
+
+            alert(`📋 DETALLES DE LA HOJA ${folio}\n\n` +
+                  `Fecha: ${sheet.fechaOperacion}\n` +
+                  `Sector: ${sheet.sectorTrabajo}\n` +
+                  `Producto: ${sheet.numeroProducto}\n` +
+                  `Shots: ${sheet.shots.length}\n` +
+                  `Estado: ${sheet.estado}\n` +
+                  `Creada: ${sheet.fechaCreacion}`);
+        }
+
+        // Editar hoja
+        function editSheet(folio) {
+            const sheet = scrapSheets.find(s => s.folio === folio);
+            if (!sheet) return;
+
+            const newStatus = prompt(`Cambiar estado de ${folio}:\n\n1. Abierta\n2. En Proceso\n3. Cerrada\n\nEscribe el nuevo estado:`, sheet.estado);
+            
+            if (newStatus && ['Abierta', 'En Proceso', 'Cerrada'].includes(newStatus)) {
+                sheet.estado = newStatus;
+                if (newStatus === 'Cerrada') {
+                    sheet.fechaCierre = new Date().toLocaleString();
+                }
+                localStorage.setItem('scrapSheets', JSON.stringify(scrapSheets));
+                refreshSheetsList();
+                alert(`✅ Estado actualizado a: ${newStatus}`);
+            }
+        }
+
+        // Escanear código QR
+        function scanQRCode() {
+            // Simulación de escáner QR
+            const qrData = prompt('📱 Simulación de QR Scanner\n\nIngresa los datos del QR (formato: SHOT123456-MOLDEA1):');
+            
+            if (qrData) {
+                const parts = qrData.split('-');
+                if (parts.length === 2 && parts[0].startsWith('SHOT')) {
+                    const shotNumber = parts[0].replace('SHOT', '');
+                    const moldeNumber = parts[1].replace('MOLDE', '');
+                    
+                    document.getElementById('shot-number').value = shotNumber;
+                    document.getElementById('molde-number').value = moldeNumber;
+                    
+                    alert('✅ Datos del QR cargados correctamente');
+                } else {
+                    alert('⚠️ Formato de QR no válido');
+                }
+            }
+        }
+
+        // Generar reporte
+        function generateReport() {
+            const dateFrom = document.getElementById('report-date-from').value;
+            const dateTo = document.getElementById('report-date-to').value;
+            const product = document.getElementById('report-product').value;
+
+            let filteredSheets = scrapSheets;
+
+            if (dateFrom) {
+                filteredSheets = filteredSheets.filter(sheet => sheet.fechaOperacion >= dateFrom);
+            }
+            if (dateTo) {
+                filteredSheets = filteredSheets.filter(sheet => sheet.fechaOperacion <= dateTo);
+            }
+            if (product) {
+                filteredSheets = filteredSheets.filter(sheet => sheet.numeroProducto === product);
+            }
+
+            const totalShots = filteredSheets.reduce((sum, sheet) => sum + sheet.shots.length, 0);
+            const totalSheets = filteredSheets.length;
+
+            const summaryHTML = `
+                <div class="grid grid-3">
+                    <div class="card">
+                        <h4>📊 Total de Hojas</h4>
+                        <h2 style="color: #007bff;">${totalSheets}</h2>
+                    </div>
+                    <div class="card">
+                        <h4>🔢 Total de Shots</h4>
+                        <h2 style="color: #28a745;">${totalShots}</h2>
+                    </div>
+                    <div class="card">
+                        <h4>📈 Promedio por Hoja</h4>
+                        <h2 style="color: #ffc107;">${totalSheets > 0 ? (totalShots / totalSheets).toFixed(1) : 0}</h2>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h4>📋 Resumen por Estado</h4>
+                    <table class="scrap-table">
+                        <thead>
+                            <tr><th>Estado</th><th>Cantidad</th><th>Shots</th></tr>
+                        </thead>
+                        <tbody>
+                            ${['Abierta', 'En Proceso', 'Cerrada'].map(estado => {
+                                const sheets = filteredSheets.filter(s => s.estado === estado);
+                                const shots = sheets.reduce((sum, s) => sum + s.shots.length, 0);
+                                return `<tr>
+                                    <td><span class="status-badge status-${estado.toLowerCase()}">${estado}</span></td>
+                                    <td>${sheets.length}</td>
+                                    <td>${shots}</td>
+                                </tr>`;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById('scrap-summary').innerHTML = summaryHTML;
+        }
+
+        // Exportar a Excel
+        function exportToExcel() {
+            if (scrapSheets.length === 0) {
+                alert('⚠️ No hay datos para exportar');
+                return;
+            }
+
+            let csvContent = "Folio,Fecha Operación,Sector,Producto,Total Shots,Estado,Fecha Creación,Observaciones\n";
+            
+            scrapSheets.forEach(sheet => {
+                csvContent += `${sheet.folio},${sheet.fechaOperacion},${sheet.sectorTrabajo},${sheet.numeroProducto},${sheet.shots.length},${sheet.estado},${sheet.fechaCreacion},"${sheet.observaciones}"\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Reporte_Scrap_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('✅ Archivo CSV exportado correctamente');
+        }
+
+        // Exportar reportes a PDF
+        function exportToPDF() {
+            alert('📄 Función de exportar PDF en desarrollo. Usa la exportación CSV por ahora.');
+        }
+    </script>
+</body>
+</html>
 </div>
-
-
+	    
     <script>
         // Variables globales
         let inventory = [];
@@ -4894,6 +5797,27 @@ function removeCode(index) {
         updateGenerateButton();
         showTemporaryMessage('🗑️ Código eliminado', 'info');
     }
+}
+// Integración con inventario existente
+function updateInventoryFromScrap(scrapData) {
+    // Actualizar el inventario cuando se registre scrap adicional
+    const existingInventory = JSON.parse(localStorage.getItem('scannedData') || '[]');
+    
+    scrapData.shots.forEach(shot => {
+        const scrapEntry = {
+            id: `SCRAP-${shot.number}`,
+            modelo: scrapData.numeroProducto,
+            estado: 'scrap',
+            tipo: 'SCRAP_ADICIONAL',
+            folio: scrapData.folio,
+            fecha: scrapData.fechaOperacion,
+            motivo: shot.reason
+        };
+        existingInventory.push(scrapEntry);
+    });
+    
+    localStorage.setItem('scannedData', JSON.stringify(existingInventory));
+    updateInventoryDisplay();
 }
    
 </script>
