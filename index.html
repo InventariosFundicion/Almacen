@@ -621,6 +621,13 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 15px;
 }
+.sub-tab-content {
+    display: none;
+}
+
+.sub-tab-content.active {
+    display: block;
+}
     </style>
 </head>
 <body>
@@ -1259,7 +1266,7 @@
 </head>
 <body>
     <!-- Nueva Hoja de Scrap -->
-<div id="new-scrap" class="tab-content active">
+<div id="new-scrap" class="sub-tab-content active">
         <h2>📝 Nueva Hoja de Retención y Scrap Adicional</h2>
         
         <div class="card">
@@ -1313,7 +1320,7 @@
         <!-- Espacio reservado para mantener la alineación del grid -->
     </div>
 </div>
-
+</div>
         <div class="card">
             <h3>🔍 Shots Escaneados</h3>
             <div class="scanner-display">
@@ -1360,7 +1367,7 @@
 </div>
 
     <!-- Gestionar Hojas -->
-<div id="manage-sheets" class="tab-content">
+<div id="manage-sheets" class="sub-tab-content">
         <h2>📋 Gestionar Hojas de Scrap</h2>
         
         <div class="card">
@@ -1389,7 +1396,7 @@
 </div>
 
     <!-- Escáner de Shots -->
-<div id="scanner-shots" class="tab-content">
+<div id="scanner-shots" class="sub-tab-content">
         <h2>🔍 Escáner de Shots</h2>
         
         <div class="card">
@@ -1446,7 +1453,7 @@
 </div>
 
     <!-- Reportes -->
-<div id="reports" class="tab-content">
+<div id="reports" class="sub-tab-content">
         <h2>📊 Reportes de Scrap Adicional</h2>
         
         <div class="card">
@@ -5720,16 +5727,16 @@ function updateInventoryFromScrap(scrapData) {
     localStorage.setItem('scannedData', JSON.stringify(existingInventory));
     updateInventoryDisplay();
 }
-// Función para sub-pestañas de Retención y Scrap
 function showSubTab(subTabName) {
     // Solo afectar elementos dentro de scrap-retention
     const container = document.getElementById('scrap-retention');
     if (!container) return;
     
     // Ocultar todas las sub-pestañas
-    const subTabs = container.querySelectorAll('.sub-tab-content');
+    const subTabs = container.querySelectorAll('.sub-tab-content'); // ⬅️ CAMBIO AQUÍ
     subTabs.forEach(tab => {
         tab.style.display = 'none';
+        tab.classList.remove('active'); // Remover clase active
     });
     
     // Remover active de todos los botones
@@ -5742,6 +5749,7 @@ function showSubTab(subTabName) {
     const targetTab = document.getElementById(subTabName);
     if (targetTab) {
         targetTab.style.display = 'block';
+        targetTab.classList.add('active'); // Agregar clase active
     }
     
     // Activar el botón correspondiente
