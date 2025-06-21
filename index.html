@@ -38,25 +38,38 @@
             overflow-x: auto;
         }
 
-        .nav-tab {
-            flex: 1;
-            min-width: 140px;
-            padding: 18px 15px;
-            text-align: center;
-            cursor: pointer;
-            border: none;
-            background: transparent;
-            font-size: 16px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
+      .nav-tab {
+    background: #f8f9fa;
+    border: none;
+    padding: 10px 20px;
+    margin: 0 5px;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
 
-        .nav-tab.active {
-            background: white;
-            border-bottom: 4px solid #e74c3c;
-            color: #e74c3c;
-            font-weight: bold;
-        }
+.nav-tab:hover {
+    background: #e9ecef;
+    transform: translateY(-2px);
+}
+
+.nav-tab.active {
+    background: #007bff;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0,123,255,0.3);
+}
+
+.nav-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #007bff;
+}
        .tab-content {
             display: none;
             padding: 30px;
@@ -669,6 +682,28 @@
 
 #scrap-reason:has(option[value="OTRO"]:checked) ~ #other-reason-container {
     display: block;
+}
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
 }
     </style>
 </head>
@@ -1350,7 +1385,7 @@
             </div>
         </div>
 
-        <div class="grid grid-2">
+        <div class="grid grid-3">
             <div class="form-group">
                 <label>🔧 Número de Molde:</label>
                 <select id="molde-producto">
@@ -1358,11 +1393,21 @@
                 </select>
             </div>
             <div class="form-group">
-                <!-- Espacio reservado para mantener la alineación del grid -->
+                <label>👷 Creado por:</label>
+                <input type="text" id="creado-por" placeholder="Nombre del operador" required>
+            </div>
+            <div class="form-group">
+                <label>🏢 Almacén Origen:</label>
+                <select id="almacen-origen" required>
+                    <option value="">Seleccionar...</option>
+                    <option value="ALMACEN_FUNDICION">🔥 Almacén Fundición</option>
+                    <option value="ALMACEN_ACABADO">✅ Almacén Acabado</option>
+                    <option value="ALMACEN_SCRAP">♻️ Almacén Scrap</option>
+                    <option value="ALMACEN_RETENCION">⚠️ Almacén Retención</option>
+                </select>
             </div>
         </div>
     </div>
-
 <!-- SECCIÓN DE ESCÁNER DE SHOTS INTEGRADA -->
 <div class="card">
     <h3>🔍 Escáner de Shots</h3>
@@ -1460,45 +1505,90 @@
             </div>
         </div>
         
+        <div class="card">
+        <h3>📝 Observaciones</h3>
         <div class="form-group">
-            <label>📝 Observaciones:</label>
             <textarea id="observaciones" rows="3" placeholder="Observaciones adicionales..."></textarea>
         </div>
     </div>
 
     <div style="text-align: center; margin-top: 30px;">
         <button class="btn btn-success" onclick="saveScrapSheet()">💾 Guardar Hoja</button>
-        <button class="btn btn-info" onclick="generatePDF()">📄 Generar PDF</button>
+        <button class="btn btn-info" onclick="printScrapSheet()">🖨️ Imprimir Hoja</button>
         <button class="btn btn-warning" onclick="clearForm()">🔄 Limpiar</button>
     </div>
 </div>
     <!-- Gestionar Hojas -->
 <div id="manage-sheets" class="sub-tab-content">
-        <h2>📋 Gestionar Hojas de Scrap</h2>
+    <h2>📋 Gestionar Hojas de Scrap</h2>
+    
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3>📊 Hojas Registradas</h3>
+            <button class="btn btn-primary" onclick="refreshSheetsList()">🔄 Actualizar</button>
+        </div>
         
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h3>📊 Hojas Registradas</h3>
-                <button class="btn btn-primary" onclick="refreshSheetsList()">🔄 Actualizar</button>
+        <table class="scrap-table">
+            <thead>
+                <tr>
+                    <th>Folio</th>
+                    <th>Fecha</th>
+                    <th>Producto</th>
+                    <th>Sector</th>
+                    <th>Almacén</th>
+                    <th>Shots</th>
+                    <th>Creado por</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="sheets-table-body">
+                <!-- Se llenará dinámicamente -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal para cerrar hoja -->
+    <div id="close-sheet-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h3>🔒 Cerrar Hoja de Scrap</h3>
+            <div class="form-group">
+                <label>📄 Folio:</label>
+                <input type="text" id="modal-folio" readonly style="background: #e9ecef;">
             </div>
             
-            <table class="scrap-table">
-                <thead>
-                    <tr>
-                        <th>Folio</th>
-                        <th>Fecha</th>
-                        <th>Producto</th>
-                        <th>Sector</th>
-                        <th>Shots</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="sheets-table-body">
-                    <!-- Se llenará dinámicamente -->
-                </tbody>
-            </table>
+            <div class="form-group">
+                <label>📎 Subir Hoja Firmada (PDF):</label>
+                <div class="file-upload-area" onclick="document.getElementById('evidencia-file').click()">
+                    <input type="file" id="evidencia-file" accept=".pdf" style="display: none;" onchange="handleEvidenceUpload()">
+                    <div id="file-status">
+                        <span>📎 Haz clic para seleccionar archivo PDF</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>✍️ Firma Supervisor/Jefe:</label>
+                    <input type="text" id="firma-supervisor" placeholder="Nombre del supervisor">
+                </div>
+                <div class="form-group">
+                    <label>✍️ Firma Gerente:</label>
+                    <input type="text" id="firma-gerente" placeholder="Nombre del gerente">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>📝 Comentarios de Cierre:</label>
+                <textarea id="comentarios-cierre" rows="3" placeholder="Comentarios del cierre..."></textarea>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-success" onclick="confirmCloseSheet()">✅ Cerrar Hoja</button>
+                <button class="btn btn-secondary" onclick="closeModal()">❌ Cancelar</button>
+            </div>
         </div>
+    </div>
 </div>
     <!-- Reportes -->
 <div id="reports" class="sub-tab-content">
@@ -1974,36 +2064,42 @@ function scanQRCode() {
             document.getElementById('scrap-summary').innerHTML = summaryHTML;
         }
 
-        // Exportar a Excel
-        function exportToExcel() {
-            if (scrapSheets.length === 0) {
-                alert('⚠️ No hay datos para exportar');
-                return;
-            }
-
-            let csvContent = "Folio,Fecha Operación,Sector,Producto,Total Shots,Estado,Fecha Creación,Observaciones\n";
-            
-            scrapSheets.forEach(sheet => {
-                csvContent += `${sheet.folio},${sheet.fechaOperacion},${sheet.sectorTrabajo},${sheet.numeroProducto},${sheet.shots.length},${sheet.estado},${sheet.fechaCreacion},"${sheet.observaciones}"\n`;
+// Actualizar la función exportToExcel
+function exportToExcel() {
+    const sheets = getFromLocalStorage('scrapSheets') || [];
+    
+    // Preparar datos para Excel
+    const excelData = [];
+    
+    sheets.forEach(sheet => {
+        sheet.shots.forEach(shot => {
+            excelData.push({
+                'Folio': sheet.folio,
+                'Fecha': sheet.fechaOperacion,
+                'Producto': sheet.numeroProducto,
+                'Nombre Producto': sheet.nombreProducto,
+                'Molde': sheet.moldeProducto,
+                'Sector': sheet.sectorTrabajo,
+                'Shot': shot.shotNumber,
+                'Molde Shot': shot.moldeNumber,
+                'Motivo Scrap': shot.scrapReason,
+                'Almacén Origen': sheet.almacenOrigen,
+                'Almacén Proveniente': shot.almacenProveniente || sheet.almacenOrigen,
+                'Creado Por': sheet.creadoPor,
+                'Estado': sheet.estado,
+                'Observaciones': sheet.observaciones
             });
-
-            const blob = new Blob([csvContent], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Reporte_Scrap_${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            alert('✅ Archivo CSV exportado correctamente');
-        }
-
-        // Exportar reportes a PDF
-        function exportToPDF() {
-            alert('📄 Función de exportar PDF en desarrollo. Usa la exportación CSV por ahora.');
-        }
+        });
+    });
+    
+    // Crear libro de Excel
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Reporte Scrap");
+    
+    // Descargar archivo
+    XLSX.writeFile(wb, `Reporte_Scrap_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
     </script>
 </body>
 </html>
@@ -6035,7 +6131,173 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-});  
+});
+// Función para verificar shots en inventario
+async function checkInventoryShots(shotsList) {
+    const inventoryShots = [];
+    const notInInventory = [];
+    
+    // Obtener el inventario actual
+    const inventory = getFromLocalStorage('inventory') || [];
+    
+    shotsList.forEach(shot => {
+        const inventoryItem = inventory.find(item => 
+            item.shotNumber === shot.shotNumber && 
+            item.location !== 'DESCONTADO'
+        );
+        
+        if (inventoryItem) {
+            inventoryShots.push({
+                ...shot,
+                almacenActual: inventoryItem.location,
+                inventoryId: inventoryItem.id
+            });
+        } else {
+            notInInventory.push(shot);
+        }
+    });
+    
+    return { inventoryShots, notInInventory };
+}
+
+// Actualizar la función saveScrapSheet
+function saveScrapSheet() {
+    const folio = document.getElementById('folio').value;
+    const fechaOperacion = document.getElementById('fecha-operacion').value;
+    const sectorTrabajo = document.getElementById('sector-trabajo').value;
+    const numeroProducto = document.getElementById('numero-producto').value;
+    const nombreProducto = document.getElementById('nombre-producto').value;
+    const moldeProducto = document.getElementById('molde-producto').value;
+    const creadoPor = document.getElementById('creado-por').value;
+    const almacenOrigen = document.getElementById('almacen-origen').value;
+    const observaciones = document.getElementById('observaciones').value;
+    
+    // Validaciones
+    if (!fechaOperacion || !sectorTrabajo || !numeroProducto || !moldeProducto || !creadoPor || !almacenOrigen) {
+        alert('⚠️ Por favor completa todos los campos requeridos');
+        return;
+    }
+    
+    if (!scannedShots || scannedShots.length === 0) {
+        alert('⚠️ Debe escanear al menos un shot');
+        return;
+    }
+    
+    // Verificar shots en inventario
+    const { inventoryShots, notInInventory } = checkInventoryShots(scannedShots);
+    
+    // Preparar datos de la hoja
+    const sheetData = {
+        folio: folio,
+        fechaOperacion: fechaOperacion,
+        sectorTrabajo: sectorTrabajo,
+        numeroProducto: numeroProducto,
+        nombreProducto: nombreProducto,
+        moldeProducto: moldeProducto,
+        creadoPor: creadoPor,
+        almacenOrigen: almacenOrigen,
+        observaciones: observaciones,
+        shots: scannedShots.map(shot => ({
+            ...shot,
+            almacenProveniente: inventoryShots.find(is => is.shotNumber === shot.shotNumber)?.almacenActual || almacenOrigen
+        })),
+        inventoryShots: inventoryShots.length,
+        newShots: notInInventory.length,
+        estado: 'ABIERTA',
+        fechaCreacion: new Date().toISOString(),
+        id: Date.now()
+    };
+    
+    // Descontar del inventario
+    if (inventoryShots.length > 0) {
+        updateInventoryForScrap(inventoryShots);
+    }
+    
+    // Guardar en localStorage
+    const sheets = getFromLocalStorage('scrapSheets') || [];
+    sheets.push(sheetData);
+    saveToLocalStorage('scrapSheets', sheets);
+    
+    // Mostrar resumen
+    alert(`✅ Hoja guardada correctamente\n\n` +
+          `📋 Folio: ${folio}\n` +
+          `📦 Shots del inventario: ${inventoryShots.length}\n` +
+          `🆕 Shots nuevos: ${notInInventory.length}\n` +
+          `📊 Total shots: ${scannedShots.length}`);
+    
+    // Limpiar formulario
+    clearForm();
+}
+
+// Función para descontar del inventario
+function updateInventoryForScrap(inventoryShots) {
+    let inventory = getFromLocalStorage('inventory') || [];
+    
+    inventoryShots.forEach(shot => {
+        const index = inventory.findIndex(item => item.id === shot.inventoryId);
+        if (index !== -1) {
+            inventory[index].location = 'SCRAP_ADICIONAL';
+            inventory[index].lastUpdate = new Date().toISOString();
+            inventory[index].scrapReason = shot.scrapReason;
+        }
+    });
+    
+    saveToLocalStorage('inventory', inventory);
+}
+
+// Función para imprimir hoja
+function printScrapSheet() {
+    // Generar contenido para imprimir
+    const printContent = generatePrintContent();
+    
+    // Crear ventana de impresión
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// Función para cerrar hoja (modal)
+function openCloseSheetModal(sheetId) {
+    const sheets = getFromLocalStorage('scrapSheets') || [];
+    const sheet = sheets.find(s => s.id === sheetId);
+    
+    if (!sheet) return;
+    
+    document.getElementById('modal-folio').value = sheet.folio;
+    document.getElementById('close-sheet-modal').style.display = 'flex';
+}
+
+// Función para confirmar cierre
+function confirmCloseSheet() {
+    const folio = document.getElementById('modal-folio').value;
+    const firmaSupervisor = document.getElementById('firma-supervisor').value;
+    const firmaGerente = document.getElementById('firma-gerente').value;
+    const comentarios = document.getElementById('comentarios-cierre').value;
+    
+    if (!firmaSupervisor || !firmaGerente) {
+        alert('⚠️ Se requieren ambas firmas para cerrar la hoja');
+        return;
+    }
+    
+    // Actualizar estado de la hoja
+    let sheets = getFromLocalStorage('scrapSheets') || [];
+    const sheetIndex = sheets.findIndex(s => s.folio === folio);
+    
+    if (sheetIndex !== -1) {
+        sheets[sheetIndex].estado = 'CERRADA';
+        sheets[sheetIndex].fechaCierre = new Date().toISOString();
+        sheets[sheetIndex].firmaSupervisor = firmaSupervisor;
+        sheets[sheetIndex].firmaGerente = firmaGerente;
+        sheets[sheetIndex].comentariosCierre = comentarios;
+        
+        saveToLocalStorage('scrapSheets', sheets);
+        
+        alert('✅ Hoja cerrada correctamente');
+        closeModal();
+        refreshSheetsList();
+    }
+}
 </script>
 </body>
 </html>
