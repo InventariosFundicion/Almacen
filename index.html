@@ -616,6 +616,11 @@
         transform: translateY(0);
     }
 }
+.grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
     </style>
 </head>
 <body>
@@ -1239,8 +1244,8 @@
     
     <div class="sub-nav-tabs">
         <button class="sub-nav-tab active" onclick="showSubTab('new-scrap')">📝 Nueva Hoja</button>
+	<button class="sub-nav-tab" onclick="showSubTab('scanner-shots')">🔍 Escanear Shots</button>
         <button class="sub-nav-tab" onclick="showSubTab('manage-sheets')">📋 Gestionar Hojas</button>
-        <button class="sub-nav-tab" onclick="showSubTab('scanner-shots')">🔍 Escanear Shots</button>
         <button class="sub-nav-tab" onclick="showSubTab('reports')">📊 Reportes</button>
     </div>
     
@@ -1274,32 +1279,40 @@
                         <option value="">Seleccionar...</option>
                         <option value="FUNDICION">🔥 Fundición</option>
                         <option value="ACABADO">✅ Acabado</option>
-                        <option value="ALMACEN">📦 Almacén</option>
-                        <option value="CALIDAD">🔍 Calidad</option>
-                        <option value="MANTENIMIENTO">🔧 Mantenimiento</option>
                     </select>
                 </div>
             </div>
             
-            <div class="grid grid-2">
-                <div class="form-group">
-                    <label>🏭 Número de Producto:</label>
-                    <select id="numero-producto" onchange="updateProductInfo()">
-                        <option value="">Seleccionar...</option>
-                        <option value="PX13-10-382">PX13-10-382 (LWR)</option>
-                        <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
-                        <option value="P54G-10-382">P54G-10-382 (LWR)</option>
-                        <option value="PX13-10-301">PX13-10-301 (UPR)</option>
-                        <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
-                        <option value="P54G-10-301-A">P54G-10-301-A (UPR)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>📝 Nombre del Producto:</label>
-                    <input type="text" id="nombre-producto" value="CYLINDER BLOCK" readonly style="background: #e9ecef;">
-                </div>
-            </div>
-        </div>
+<div class="grid grid-2">
+    <div class="form-group">
+        <label>🏭 Número de Producto:</label>
+        <select id="numero-producto" onchange="updateProductInfo()">
+            <option value="">Seleccionar...</option>
+            <option value="PX13-10-382">PX13-10-382 (LWR)</option>
+            <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
+            <option value="P54G-10-382">P54G-10-382 (LWR)</option>
+            <option value="PX13-10-301">PX13-10-301 (UPR)</option>
+            <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
+            <option value="P54G-10-301-A">P54G-10-301-A (UPR)</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label>📝 Nombre del Producto:</label>
+        <input type="text" id="nombre-producto" value="" readonly style="background: #e9ecef;">
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <div class="form-group">
+        <label>🔧 Número de Molde:</label>
+        <select id="molde-producto">
+            <option value="">Primero selecciona un producto...</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <!-- Espacio reservado para mantener la alineación del grid -->
+    </div>
+</div>
 
         <div class="card">
             <h3>🔍 Shots Escaneados</h3>
@@ -1519,11 +1532,40 @@
             document.getElementById('fecha-operacion').value = today;
         }
 
-        // Actualizar información del producto
-        function updateProductInfo() {
-            const producto = document.getElementById('numero-producto').value;
-            document.getElementById('nombre-producto').value = producto ? 'CYLINDER BLOCK' : '';
+// Actualizar información del producto
+function updateProductInfo() {
+    const producto = document.getElementById('numero-producto').value;
+    const nombreInput = document.getElementById('nombre-producto');
+    const moldeSelect = document.getElementById('molde-producto');
+    
+    if (producto) {
+        // Determinar si es LWR o UPR basándose en el texto de la opción seleccionada
+        const selectElement = document.getElementById('numero-producto');
+        const selectedOption = selectElement.options[selectElement.selectedIndex].text;
+        const tipo = selectedOption.includes('LWR') ? 'LWR' : 'UPR';
+        
+        // Actualizar nombre del producto
+        nombreInput.value = `CYLINDER BLOCK - ${tipo}`;
+        
+        // Limpiar y actualizar opciones de molde
+        moldeSelect.innerHTML = '<option value="">Seleccionar molde...</option>';
+        
+        // Buscar el modelo en MODEL_MOLDS usando el formato con -FUN
+        const modeloConFUN = producto + '-FUN';
+        if (MODEL_MOLDS[modeloConFUN]) {
+            MODEL_MOLDS[modeloConFUN].forEach(molde => {
+                const option = document.createElement('option');
+                option.value = molde;
+                option.textContent = 'Molde ' + molde;
+                moldeSelect.appendChild(option);
+            });
         }
+    } else {
+        // Limpiar campos si no hay producto seleccionado
+        nombreInput.value = '';
+        moldeSelect.innerHTML = '<option value="">Primero selecciona un producto...</option>';
+    }
+}
 
         // Agregar shot manualmente
         function addShot() {
