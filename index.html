@@ -1638,6 +1638,8 @@
         let currentShots = [];
         let scrapSheets = JSON.parse(localStorage.getItem('scrapSheets') || '[]');
         let folioCounter = parseInt(localStorage.getItem('folioCounter') || '1');
+	// Variables para scrap - unificar nombres
+        let scannedShots = []; // Usar esta variable consistentemente
 
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
@@ -1649,15 +1651,13 @@
         // Navegación entre pestañas
 function showTab(tabName) {
     // Ocultar todas las pestañas
-    const tabs = document.querySelectorAll('.tab-content');
-    tabs.forEach(tab => {
+    document.querySelectorAll('.tab-content').forEach(tab => {
         tab.style.display = 'none';
         tab.classList.remove('active');
     });
     
     // Quitar active de todos los botones de navegación
-    const navButtons = document.querySelectorAll('.nav-tab');
-    navButtons.forEach(btn => {
+    document.querySelectorAll('.nav-tab').forEach(btn => {
         btn.classList.remove('active');
     });
     
@@ -1669,7 +1669,7 @@ function showTab(tabName) {
     }
     
     // Activar el botón correspondiente
-    const activeButton = document.querySelector(`.nav-tab[onclick*="${tabName}"]`);
+    const activeButton = document.querySelector(`.nav-tab[data-tab="${tabName}"]`);
     if (activeButton) {
         activeButton.classList.add('active');
     }
@@ -1731,41 +1731,46 @@ function updateProductInfo() {
 }
 
         // Agregar shot manualmente
-        function addShot() {
-            const shotNumber = document.getElementById('shot-number').value;
-            const moldeNumber = document.getElementById('molde-number').value;
-            const scrapReason = document.getElementById('scrap-reason').value;
-            const otherReason = document.getElementById('other-reason').value;
+function addShot() {
+    const shotNumber = document.getElementById('shot-number').value;
+    const moldeNumber = document.getElementById('molde-number').value;
+    const scrapReason = document.getElementById('scrap-reason').value;
+    const otherReason = document.getElementById('other-reason').value;
 
-            if (!shotNumber || !moldeNumber || !scrapReason) {
-                alert('⚠️ Por favor completa todos los campos obligatorios');
-                return;
-            }
+    if (!shotNumber || !moldeNumber || !scrapReason) {
+        alert('⚠️ Por favor completa todos los campos obligatorios');
+        return;
+    }
 
-            const shot = {
-                id: Date.now(),
-                number: shotNumber,
-                molde: moldeNumber,
-                reason: scrapReason,
-                otherReason: scrapReason === 'OTRO' ? otherReason : '',
-                timestamp: new Date().toLocaleString()
-            };
+    if (scrapReason === 'OTRO' && !otherReason) {
+        alert('⚠️ Por favor especifica el motivo cuando selecciones "Otro"');
+        return;
+    }
 
-            currentShots.push(shot);
-            updateShotsDisplay();
-            clearShotForm();
-            
-            alert('✅ Shot agregado correctamente');
-        }
+    const shot = {
+        id: Date.now(),
+        shotNumber: shotNumber,
+        moldeNumber: moldeNumber,
+        scrapReason: scrapReason === 'OTRO' ? otherReason : scrapReason,
+        timestamp: new Date().toLocaleString()
+    };
 
-        // Limpiar formulario de shot
-        function clearShotForm() {
-            document.getElementById('shot-number').value = '';
-            document.getElementById('molde-number').value = '';
-            document.getElementById('scrap-reason').value = '';
-            document.getElementById('other-reason').value = '';
-        }
+    // Inicializar array si no existe
+    if (!scannedShots) scannedShots = [];
+    
+    scannedShots.push(shot);
+    updateShotsDisplay();
+    clearShotForm();
+    
+    alert('✅ Shot agregado correctamente');
+}
 
+function clearShotForm() {
+    document.getElementById('shot-number').value = '';
+    document.getElementById('molde-number').value = '';
+    document.getElementById('scrap-reason').value = '';
+    document.getElementById('other-reason').value = '';
+}
         // Actualizar visualización de shots
         function updateShotsDisplay() {
             const totalShots = document.getElementById('total-shots');
