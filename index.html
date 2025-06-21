@@ -529,28 +529,6 @@
     background: white;
     display: inline-block;
 }
-#scrap-retention .sub-nav-tabs {
-    display: flex;
-    margin-bottom: 20px;
-    border-bottom: 2px solid #ddd;
-}
-
-#scrap-retention .sub-nav-tab {
-    padding: 10px 20px;
-    background: #f8f9fa;
-    border: 2px solid #ddd;
-    cursor: pointer;
-    border-radius: 5px 5px 0 0;
-    font-weight: bold;
-    transition: all 0.3s;
-    margin-right: 5px;
-}
-
-#scrap-retention .sub-nav-tab.active {
-    background: #007bff;
-    color: white;
-    border-color: #007bff;
-}
     </style>
 </head>
 <body>
@@ -1386,16 +1364,43 @@
             color: #856404;
             border: 1px solid #ffeaa7;
         }
+	    /* CSS ESPECÍFICO SOLO PARA RETENCIÓN Y SCRAP */
+#scrap-retention .sub-nav-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ddd;
+    background: none;
+}
+
+#scrap-retention .sub-nav-tab {
+    padding: 8px 16px;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    cursor: pointer;
+    border-radius: 4px 4px 0 0;
+    font-weight: normal;
+    transition: all 0.3s;
+    margin-right: 2px;
+    color: #495057;
+    font-size: 14px;
+}
+
+#scrap-retention .sub-nav-tab.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+#scrap-retention .sub-nav-tab:hover {
+    background: #e9ecef;
+}
+
+#scrap-retention .sub-nav-tab.active:hover {
+    background: #0056b3;
+}
     </style>
 </head>
 <body>
-    <div class="nav-tabs">
-        <button class="nav-tab active" onclick="showTab('new-scrap')">📝 Nueva Hoja</button>
-        <button class="nav-tab" onclick="showTab('manage-sheets')">📋 Gestionar Hojas</button>
-        <button class="nav-tab" onclick="showTab('scanner-shots')">🔍 Escanear Shots</button>
-        <button class="nav-tab" onclick="showTab('reports')">📊 Reportes</button>
-    </div>
-
     <!-- Nueva Hoja de Scrap -->
 <div id="new-scrap" class="tab-content active">
         <h2>📝 Nueva Hoja de Retención y Scrap Adicional</h2>
@@ -5823,14 +5828,18 @@ function updateInventoryFromScrap(scrapData) {
 }
 // Función para sub-pestañas de Retención y Scrap
 function showSubTab(subTabName) {
+    // Solo afectar elementos dentro de scrap-retention
+    const container = document.getElementById('scrap-retention');
+    if (!container) return;
+    
     // Ocultar todas las sub-pestañas
-    const subTabs = document.querySelectorAll('#scrap-retention .sub-tab-content');
+    const subTabs = container.querySelectorAll('.sub-tab-content');
     subTabs.forEach(tab => {
         tab.style.display = 'none';
     });
     
     // Remover active de todos los botones
-    const subButtons = document.querySelectorAll('#scrap-retention .sub-nav-tab');
+    const subButtons = container.querySelectorAll('.sub-nav-tab');
     subButtons.forEach(btn => {
         btn.classList.remove('active');
     });
@@ -5842,7 +5851,9 @@ function showSubTab(subTabName) {
     }
     
     // Activar el botón correspondiente
-    event.target.classList.add('active');
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
 }
    
 </script>
