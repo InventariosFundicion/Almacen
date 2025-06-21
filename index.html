@@ -529,6 +529,28 @@
     background: white;
     display: inline-block;
 }
+#scrap-retention .sub-nav-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ddd;
+}
+
+#scrap-retention .sub-nav-tab {
+    padding: 10px 20px;
+    background: #f8f9fa;
+    border: 2px solid #ddd;
+    cursor: pointer;
+    border-radius: 5px 5px 0 0;
+    font-weight: bold;
+    transition: all 0.3s;
+    margin-right: 5px;
+}
+
+#scrap-retention .sub-nav-tab.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
     </style>
 </head>
 <body>
@@ -1364,26 +1386,6 @@
             color: #856404;
             border: 1px solid #ffeaa7;
         }
-	.sub-nav-tabs {
-    display: flex;
-    margin-bottom: 20px;
-    border-bottom: 2px solid #ddd;
-}
-
-.sub-nav-tab {
-    padding: 10px 20px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    border-bottom: 3px solid transparent;
-    font-weight: bold;
-    transition: all 0.3s;
-}
-
-.sub-nav-tab.active {
-    border-bottom-color: #007bff;
-    color: #007bff;
-}
     </style>
 </head>
 <body>
@@ -1395,7 +1397,7 @@
     </div>
 
     <!-- Nueva Hoja de Scrap -->
-    <div id="new-scrap" class="tab-content active">
+<div id="new-scrap" class="tab-content active">
         <h2>📝 Nueva Hoja de Retención y Scrap Adicional</h2>
         
         <div class="card">
@@ -1485,10 +1487,10 @@
             <button class="btn btn-info" onclick="generatePDF()">📄 Generar PDF</button>
             <button class="btn btn-warning" onclick="clearForm()">🔄 Limpiar</button>
         </div>
-    </div>
+</div>
 
     <!-- Gestionar Hojas -->
-    <div id="manage-sheets" class="tab-content">
+<div id="manage-sheets" class="tab-content">
         <h2>📋 Gestionar Hojas de Scrap</h2>
         
         <div class="card">
@@ -1514,10 +1516,10 @@
                 </tbody>
             </table>
         </div>
-    </div>
+</div>
 
     <!-- Escáner de Shots -->
-    <div id="scanner-shots" class="tab-content">
+<div id="scanner-shots" class="tab-content">
         <h2>🔍 Escáner de Shots</h2>
         
         <div class="card">
@@ -1571,10 +1573,10 @@
                 <button class="btn btn-primary" onclick="showTab('new-scrap')">📝 Ir a Nueva Hoja</button>
             </div>
         </div>
-    </div>
+</div>
 
     <!-- Reportes -->
-    <div id="reports" class="tab-content">
+<div id="reports" class="tab-content">
         <h2>📊 Reportes de Scrap Adicional</h2>
         
         <div class="card">
@@ -1607,9 +1609,9 @@
                 <button class="btn btn-success" onclick="exportToExcel()">📗 Exportar Excel</button>
                 <button class="btn btn-info" onclick="exportToPDF()">📄 Exportar PDF</button>
             </div>
-        </div>
+</div>
 
-        <div class="card">
+<div class="card">
             <h3>📈 Resumen de Scrap</h3>
             <div id="scrap-summary">
                 <div class="alert alert-info">
@@ -1617,7 +1619,7 @@
                 </div>
             </div>
         </div>
-    </div>
+</div>
 
     <script>
         // Variables globales
@@ -5818,6 +5820,29 @@ function updateInventoryFromScrap(scrapData) {
     
     localStorage.setItem('scannedData', JSON.stringify(existingInventory));
     updateInventoryDisplay();
+}
+// Función para sub-pestañas de Retención y Scrap
+function showSubTab(subTabName) {
+    // Ocultar todas las sub-pestañas
+    const subTabs = document.querySelectorAll('#scrap-retention .sub-tab-content');
+    subTabs.forEach(tab => {
+        tab.style.display = 'none';
+    });
+    
+    // Remover active de todos los botones
+    const subButtons = document.querySelectorAll('#scrap-retention .sub-nav-tab');
+    subButtons.forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Mostrar la sub-pestaña seleccionada
+    const targetTab = document.getElementById(subTabName);
+    if (targetTab) {
+        targetTab.style.display = 'block';
+    }
+    
+    // Activar el botón correspondiente
+    event.target.classList.add('active');
 }
    
 </script>
