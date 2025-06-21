@@ -628,6 +628,48 @@
 .sub-tab-content.active {
     display: block;
 }
+/* Estilos para la visualización de shots */
+.shots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.shot-item {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    transition: all 0.3s ease;
+}
+
+.shot-item:hover {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.shot-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.shot-details p {
+    margin: 5px 0;
+    font-size: 0.9em;
+}
+
+/* Ocultar el campo "otro" por defecto */
+#other-reason-container {
+    display: none;
+}
+
+#scrap-reason:has(option[value="OTRO"]:checked) ~ #other-reason-container {
+    display: block;
+}
     </style>
 </head>
 <body>
@@ -1321,69 +1363,80 @@
         </div>
     </div>
 
-    <!-- SECCIÓN DE ESCÁNER DE SHOTS INTEGRADA -->
-    <div class="card">
-        <h3>🔍 Escáner de Shots</h3>
-        
-        <!-- Controles de cámara -->
-        <div class="camera-controls" style="text-align: center; margin-bottom: 15px;">
-            <button class="btn btn-success" id="scrap-start-camera-btn" onclick="startScrapCamera()">📷 Activar Cámara</button>
-            <button class="btn btn-danger" id="scrap-stop-camera-btn" onclick="stopScrapCamera()" style="display: none;">⏹️ Detener Cámara</button>
-        </div>
+<!-- SECCIÓN DE ESCÁNER DE SHOTS INTEGRADA -->
+<div class="card">
+    <h3>🔍 Escáner de Shots</h3>
+    
+    <!-- Opción de entrada manual o cámara -->
+    <div style="text-align: center; margin-bottom: 20px;">
+        <button class="btn btn-info" onclick="toggleScrapCameraMode()">
+            <span id="camera-mode-text">📷 Activar Cámara</span>
+        </button>
+    </div>
 
-        <!-- Contenedor de la cámara -->
-        <div id="scrap-camera-container" class="camera-container" style="display: none;">
+    <!-- Contenedor de la cámara (oculto por defecto) -->
+    <div id="scrap-camera-section" style="display: none;">
+        <div class="camera-controls" style="text-align: center; margin-bottom: 15px;">
+            <button class="btn btn-danger" onclick="stopScrapCamera()">⏹️ Detener Cámara</button>
+        </div>
+        <div id="scrap-camera-container" class="camera-container">
             <video id="scrap-camera-video" class="camera-video" autoplay muted playsinline></video>
             <div class="camera-overlay"></div>
             <div id="scrap-camera-status" class="camera-status">📷 Posiciona el código QR del shot</div>
         </div>
-        
+    </div>
+    
+    <!-- Entrada manual -->
+    <div id="manual-entry-section">
         <div class="grid grid-2">
             <div class="form-group">
                 <label>🔢 Número de Shot:</label>
-                <input type="number" id="shot-number" placeholder="Se llenará automáticamente" min="1">
+                <input type="number" id="shot-number" placeholder="Ej: 123456" min="1">
             </div>
             <div class="form-group">
                 <label>🔧 Número de Molde:</label>
-                <input type="text" id="molde-number" placeholder="Se llenará automáticamente">
+                <input type="text" id="molde-number" placeholder="Ej: A1, B2, etc.">
             </div>
-        </div>
-        
-        <div class="grid grid-2">
-            <div class="form-group">
-                <label>📝 Motivo del Scrap:</label>
-                <select id="scrap-reason">
-                    <option value="">Seleccionar...</option>
-                    <option value="DEFECTO_VISUAL">👁️ Defecto Visual</option>
-                    <option value="DIMENSION_FUERA">📏 Dimensión Fuera de Especificación</option>
-                    <option value="POROSIDAD">🕳️ Porosidad</option>
-                    <option value="REBABA">✂️ Rebaba Excesiva</option>
-                    <option value="FALTA_MATERIAL">❌ Falta de Material</option>
-                    <option value="OTRO">📝 Otro (especificar)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>📝 Especificar (si es "Otro"):</label>
-                <input type="text" id="other-reason" placeholder="Describe el motivo...">
-            </div>
-        </div>
-        
-        <div style="text-align: center; margin: 20px 0;">
-            <button class="btn btn-success" onclick="addShot()">➕ Agregar Shot</button>
-        </div>
-
-        <!-- Lista de shots registrados -->
-        <div style="margin-top: 20px;">
-            <h4>📋 Shots Registrados (<span id="total-shots">0</span>)</h4>
-            <div id="current-shots-display">
-                <div class="alert alert-info">
-                    🔍 Los shots escaneados aparecerán aquí
-                </div>
-            </div>
-            <div id="shots-list"></div>
         </div>
     </div>
+    
+    <div class="grid grid-2">
+        <div class="form-group">
+            <label>📝 Motivo del Scrap:</label>
+            <select id="scrap-reason">
+                <option value="">Seleccionar...</option>
+                <option value="DEFECTO_VISUAL">👁️ Defecto Visual</option>
+                <option value="DIMENSION_FUERA">📏 Dimensión Fuera de Especificación</option>
+                <option value="POROSIDAD">🕳️ Porosidad</option>
+                <option value="REBABA">✂️ Rebaba Excesiva</option>
+                <option value="FALTA_MATERIAL">❌ Falta de Material</option>
+                <option value="OTRO">📝 Otro (especificar)</option>
+            </select>
+        </div>
+        <div class="form-group" id="other-reason-container">
+            <label>📝 Especificar (si es "Otro"):</label>
+            <input type="text" id="other-reason" placeholder="Describe el motivo...">
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin: 20px 0;">
+        <button class="btn btn-success" onclick="addShot()">➕ Agregar Shot</button>
+    </div>
 
+    <!-- Lista de shots registrados -->
+    <div style="margin-top: 20px;">
+        <h4>📋 Shots Registrados (<span id="total-shots">0</span>)</h4>
+        <div id="current-shots-display">
+            <div class="alert alert-info">
+                🔍 Los shots escaneados aparecerán aquí
+            </div>
+        </div>
+        <div id="shots-list"></div>
+        <div style="text-align: center; margin-top: 15px;">
+            <button class="btn btn-warning" onclick="clearCurrentShots()">🗑️ Limpiar Lista</button>
+        </div>
+    </div>
+</div>
     <div class="card">
         <h3>📄 Evidencia y Firmas</h3>
         <div class="form-group">
@@ -1507,17 +1560,38 @@
         });
 
         // Navegación entre pestañas
-        function showTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.nav-tab').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
-        }
+function showTab(tabName) {
+    // Ocultar todas las pestañas
+    const tabs = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => {
+        tab.style.display = 'none';
+        tab.classList.remove('active');
+    });
+    
+    // Quitar active de todos los botones de navegación
+    const navButtons = document.querySelectorAll('.nav-tab');
+    navButtons.forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Mostrar la pestaña seleccionada
+    const targetTab = document.getElementById(tabName);
+    if (targetTab) {
+        targetTab.style.display = 'block';
+        targetTab.classList.add('active');
+    }
+    
+    // Activar el botón correspondiente
+    const activeButton = document.querySelector(`.nav-tab[onclick*="${tabName}"]`);
+    if (activeButton) {
+        activeButton.classList.add('active');
+    }
+    
+    // Si es la pestaña de scrap-retention, mostrar la primera sub-pestaña
+    if (tabName === 'scrap-retention') {
+        showSubTab('new-scrap');
+    }
+}
 
         // Generar nuevo folio
         function generateNewFolio() {
@@ -1955,6 +2029,9 @@ function scanQRCode() {
         let palletHistory = [];
         let duplicateAttempts = 0;
 	let scrapScanner = null;
+	// Variable para el modo de cámara
+        let cameraMode = false;
+	
 
 
 // Configuración de modelos por máquina
@@ -5822,7 +5899,143 @@ function handleScrapQRScan(qrData) {
         }
     }
 }
-   
+// Toggle entre entrada manual y cámara
+function toggleScrapCameraMode() {
+    cameraMode = !cameraMode;
+    
+    if (cameraMode) {
+        document.getElementById('camera-mode-text').textContent = '✏️ Entrada Manual';
+        document.getElementById('scrap-camera-section').style.display = 'block';
+        document.getElementById('manual-entry-section').style.display = 'none';
+        startScrapCamera();
+    } else {
+        document.getElementById('camera-mode-text').textContent = '📷 Activar Cámara';
+        document.getElementById('scrap-camera-section').style.display = 'none';
+        document.getElementById('manual-entry-section').style.display = 'block';
+        stopScrapCamera();
+    }
+}
+
+// Actualizar la función addShot() para incluir verificación de duplicados
+function addShot() {
+    const shotNumber = document.getElementById('shot-number').value;
+    const moldeNumber = document.getElementById('molde-number').value;
+    const scrapReason = document.getElementById('scrap-reason').value;
+    const otherReason = document.getElementById('other-reason').value;
+    
+    // Validaciones
+    if (!shotNumber || !moldeNumber || !scrapReason) {
+        alert('⚠️ Por favor completa todos los campos requeridos');
+        return;
+    }
+    
+    if (scrapReason === 'OTRO' && !otherReason) {
+        alert('⚠️ Por favor especifica el motivo del scrap');
+        return;
+    }
+    
+    // Verificar duplicados
+    if (!scannedShots) scannedShots = [];
+    
+    const isDuplicate = scannedShots.some(shot => 
+        shot.shotNumber === shotNumber && shot.moldeNumber === moldeNumber
+    );
+    
+    if (isDuplicate) {
+        alert('⚠️ Este shot ya fue registrado anteriormente');
+        return;
+    }
+    
+    // Agregar shot
+    const newShot = {
+        shotNumber: shotNumber,
+        moldeNumber: moldeNumber,
+        scrapReason: scrapReason === 'OTRO' ? otherReason : scrapReason,
+        timestamp: new Date().toLocaleString('es-MX'),
+        id: Date.now()
+    };
+    
+    scannedShots.push(newShot);
+    
+    // Actualizar la visualización
+    updateShotsDisplay();
+    
+    // Limpiar campos
+    document.getElementById('shot-number').value = '';
+    document.getElementById('molde-number').value = '';
+    document.getElementById('scrap-reason').value = '';
+    document.getElementById('other-reason').value = '';
+    
+    // Mostrar mensaje de éxito
+    const display = document.getElementById('current-shots-display');
+    const successMsg = document.createElement('div');
+    successMsg.className = 'alert alert-success';
+    successMsg.textContent = '✅ Shot agregado correctamente';
+    display.insertBefore(successMsg, display.firstChild);
+    
+    setTimeout(() => {
+        successMsg.remove();
+    }, 3000);
+}
+
+// Función para actualizar la visualización de shots
+function updateShotsDisplay() {
+    const display = document.getElementById('current-shots-display');
+    const totalElement = document.getElementById('total-shots');
+    
+    if (scannedShots.length === 0) {
+        display.innerHTML = '<div class="alert alert-info">🔍 Los shots escaneados aparecerán aquí</div>';
+        totalElement.textContent = '0';
+        return;
+    }
+    
+    totalElement.textContent = scannedShots.length;
+    
+    let html = '<div class="shots-grid">';
+    scannedShots.forEach(shot => {
+        html += `
+            <div class="shot-item">
+                <div class="shot-header">
+                    <strong>Shot #${shot.shotNumber}</strong>
+                    <button class="btn btn-sm btn-danger" onclick="removeShot(${shot.id})">❌</button>
+                </div>
+                <div class="shot-details">
+                    <p>🔧 Molde: ${shot.moldeNumber}</p>
+                    <p>📝 Motivo: ${shot.scrapReason}</p>
+                    <p>🕒 ${shot.timestamp}</p>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    display.innerHTML = html;
+}
+
+// Función para remover un shot
+function removeShot(shotId) {
+    if (confirm('¿Estás seguro de eliminar este shot?')) {
+        scannedShots = scannedShots.filter(shot => shot.id !== shotId);
+        updateShotsDisplay();
+    }
+}
+// Manejar la visibilidad del campo "Otro"
+document.addEventListener('DOMContentLoaded', function() {
+    const scrapReasonSelect = document.getElementById('scrap-reason');
+    if (scrapReasonSelect) {
+        scrapReasonSelect.addEventListener('change', function() {
+            const otherContainer = document.getElementById('other-reason-container');
+            if (otherContainer) {
+                if (this.value === 'OTRO') {
+                    otherContainer.style.display = 'block';
+                } else {
+                    otherContainer.style.display = 'none';
+                    document.getElementById('other-reason').value = '';
+                }
+            }
+        });
+    }
+});  
 </script>
 </body>
 </html>
