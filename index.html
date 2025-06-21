@@ -1251,7 +1251,6 @@
     
     <div class="sub-nav-tabs">
         <button class="sub-nav-tab active" onclick="showSubTab('new-scrap')">📝 Nueva Hoja</button>
-	<button class="sub-nav-tab" onclick="showSubTab('scanner-shots')">🔍 Escanear Shots</button>
         <button class="sub-nav-tab" onclick="showSubTab('manage-sheets')">📋 Gestionar Hojas</button>
         <button class="sub-nav-tab" onclick="showSubTab('reports')">📊 Reportes</button>
     </div>
@@ -1267,105 +1266,159 @@
 <body>
     <!-- Nueva Hoja de Scrap -->
 <div id="new-scrap" class="sub-tab-content active">
-        <h2>📝 Nueva Hoja de Retención y Scrap Adicional</h2>
-        
-        <div class="card">
-            <h3>📋 Información General</h3>
-            <div class="grid grid-3">
-                <div class="form-group">
-                    <label>📄 Folio:</label>
-                    <input type="text" id="folio" readonly style="background: #e9ecef;">
-                </div>
-                <div class="form-group">
-                    <label>📅 Fecha de Operación:</label>
-                    <input type="date" id="fecha-operacion" required>
-                </div>
-                <div class="form-group">
-                    <label>👤 Sector de Trabajo:</label>
-                    <select id="sector-trabajo">
-                        <option value="">Seleccionar...</option>
-                        <option value="FUNDICION">🔥 Fundición</option>
-                        <option value="ACABADO">✅ Acabado</option>
-                    </select>
-                </div>
+    <h2>📝 Nueva Hoja de Retención y Scrap Adicional</h2>
+    
+    <div class="card">
+        <h3>📋 Información General</h3>
+        <div class="grid grid-3">
+            <div class="form-group">
+                <label>📄 Folio:</label>
+                <input type="text" id="folio" readonly style="background: #e9ecef;">
             </div>
-            
-<div class="grid grid-2">
-    <div class="form-group">
-        <label>🏭 Número de Producto:</label>
-        <select id="numero-producto" onchange="updateProductInfo()">
-            <option value="">Seleccionar...</option>
-            <option value="PX13-10-382">PX13-10-382 (LWR)</option>
-            <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
-            <option value="P54G-10-382">P54G-10-382 (LWR)</option>
-            <option value="PX13-10-301">PX13-10-301 (UPR)</option>
-            <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
-            <option value="P54G-10-301-A">P54G-10-301-A (UPR)</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <label>📝 Nombre del Producto:</label>
-        <input type="text" id="nombre-producto" value="" readonly style="background: #e9ecef;">
-    </div>
-</div>
+            <div class="form-group">
+                <label>📅 Fecha de Operación:</label>
+                <input type="date" id="fecha-operacion" required>
+            </div>
+            <div class="form-group">
+                <label>👤 Sector de Trabajo:</label>
+                <select id="sector-trabajo">
+                    <option value="">Seleccionar...</option>
+                    <option value="FUNDICION">🔥 Fundición</option>
+                    <option value="ACABADO">✅ Acabado</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="grid grid-2">
+            <div class="form-group">
+                <label>🏭 Número de Producto:</label>
+                <select id="numero-producto" onchange="updateProductInfo()">
+                    <option value="">Seleccionar...</option>
+                    <option value="PX13-10-382">PX13-10-382 (LWR)</option>
+                    <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
+                    <option value="P54G-10-382">P54G-10-382 (LWR)</option>
+                    <option value="PX13-10-301">PX13-10-301 (UPR)</option>
+                    <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
+                    <option value="P54G-10-301-A">P54G-10-301-A (UPR)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>📝 Nombre del Producto:</label>
+                <input type="text" id="nombre-producto" value="" readonly style="background: #e9ecef;">
+            </div>
+        </div>
 
-<div class="grid grid-2">
-    <div class="form-group">
-        <label>🔧 Número de Molde:</label>
-        <select id="molde-producto">
-            <option value="">Primero selecciona un producto...</option>
-        </select>
+        <div class="grid grid-2">
+            <div class="form-group">
+                <label>🔧 Número de Molde:</label>
+                <select id="molde-producto">
+                    <option value="">Primero selecciona un producto...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <!-- Espacio reservado para mantener la alineación del grid -->
+            </div>
+        </div>
     </div>
-    <div class="form-group">
-        <!-- Espacio reservado para mantener la alineación del grid -->
-    </div>
-</div>
-</div>
-        <div class="card">
-            <h3>🔍 Shots Escaneados</h3>
-            <div class="scanner-display">
-                <p>📱 <strong>Total de shots:</strong> <span id="total-shots">0</span></p>
-                <button class="btn btn-primary" onclick="showTab('scanner-shots')">🔍 Ir a Escáner</button>
+
+    <!-- SECCIÓN DE ESCÁNER DE SHOTS INTEGRADA -->
+    <div class="card">
+        <h3>🔍 Escáner de Shots</h3>
+        
+        <!-- Controles de cámara -->
+        <div class="camera-controls" style="text-align: center; margin-bottom: 15px;">
+            <button class="btn btn-success" id="scrap-start-camera-btn" onclick="startScrapCamera()">📷 Activar Cámara</button>
+            <button class="btn btn-danger" id="scrap-stop-camera-btn" onclick="stopScrapCamera()" style="display: none;">⏹️ Detener Cámara</button>
+        </div>
+
+        <!-- Contenedor de la cámara -->
+        <div id="scrap-camera-container" class="camera-container" style="display: none;">
+            <video id="scrap-camera-video" class="camera-video" autoplay muted playsinline></video>
+            <div class="camera-overlay"></div>
+            <div id="scrap-camera-status" class="camera-status">📷 Posiciona el código QR del shot</div>
+        </div>
+        
+        <div class="grid grid-2">
+            <div class="form-group">
+                <label>🔢 Número de Shot:</label>
+                <input type="number" id="shot-number" placeholder="Se llenará automáticamente" min="1">
+            </div>
+            <div class="form-group">
+                <label>🔧 Número de Molde:</label>
+                <input type="text" id="molde-number" placeholder="Se llenará automáticamente">
+            </div>
+        </div>
+        
+        <div class="grid grid-2">
+            <div class="form-group">
+                <label>📝 Motivo del Scrap:</label>
+                <select id="scrap-reason">
+                    <option value="">Seleccionar...</option>
+                    <option value="DEFECTO_VISUAL">👁️ Defecto Visual</option>
+                    <option value="DIMENSION_FUERA">📏 Dimensión Fuera de Especificación</option>
+                    <option value="POROSIDAD">🕳️ Porosidad</option>
+                    <option value="REBABA">✂️ Rebaba Excesiva</option>
+                    <option value="FALTA_MATERIAL">❌ Falta de Material</option>
+                    <option value="OTRO">📝 Otro (especificar)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>📝 Especificar (si es "Otro"):</label>
+                <input type="text" id="other-reason" placeholder="Describe el motivo...">
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <button class="btn btn-success" onclick="addShot()">➕ Agregar Shot</button>
+        </div>
+
+        <!-- Lista de shots registrados -->
+        <div style="margin-top: 20px;">
+            <h4>📋 Shots Registrados (<span id="total-shots">0</span>)</h4>
+            <div id="current-shots-display">
+                <div class="alert alert-info">
+                    🔍 Los shots escaneados aparecerán aquí
+                </div>
             </div>
             <div id="shots-list"></div>
         </div>
+    </div>
 
-        <div class="card">
-            <h3>📄 Evidencia y Firmas</h3>
-            <div class="form-group">
-                <label>📎 Subir Hoja Firmada (PDF):</label>
-                <div class="file-upload-area" onclick="document.getElementById('evidencia-file').click()">
-                    <input type="file" id="evidencia-file" accept=".pdf" style="display: none;" onchange="handleEvidenceUpload()">
-                    <div id="file-status">
-                        <span>📎 Haz clic para seleccionar archivo PDF</span>
-                    </div>
+    <div class="card">
+        <h3>📄 Evidencia y Firmas</h3>
+        <div class="form-group">
+            <label>📎 Subir Hoja Firmada (PDF):</label>
+            <div class="file-upload-area" onclick="document.getElementById('evidencia-file').click()">
+                <input type="file" id="evidencia-file" accept=".pdf" style="display: none;" onchange="handleEvidenceUpload()">
+                <div id="file-status">
+                    <span>📎 Haz clic para seleccionar archivo PDF</span>
                 </div>
-            </div>
-            
-            <div class="grid grid-2">
-                <div class="form-group">
-                    <label>✍️ Firma Captura de Sector:</label>
-                    <input type="text" id="firma-captura" placeholder="Nombre de quien captura">
-                </div>
-                <div class="form-group">
-                    <label>✍️ Firma Director/Gerente:</label>
-                    <input type="text" id="firma-director" placeholder="Nombre del director/gerente">
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label>📝 Observaciones:</label>
-                <textarea id="observaciones" rows="3" placeholder="Observaciones adicionales..."></textarea>
             </div>
         </div>
-
-        <div style="text-align: center; margin-top: 30px;">
-            <button class="btn btn-success" onclick="saveScrapSheet()">💾 Guardar Hoja</button>
-            <button class="btn btn-info" onclick="generatePDF()">📄 Generar PDF</button>
-            <button class="btn btn-warning" onclick="clearForm()">🔄 Limpiar</button>
+        
+        <div class="grid grid-2">
+            <div class="form-group">
+                <label>✍️ Firma Captura de Sector:</label>
+                <input type="text" id="firma-captura" placeholder="Nombre de quien captura">
+            </div>
+            <div class="form-group">
+                <label>✍️ Firma Director/Gerente:</label>
+                <input type="text" id="firma-director" placeholder="Nombre del director/gerente">
+            </div>
         </div>
+        
+        <div class="form-group">
+            <label>📝 Observaciones:</label>
+            <textarea id="observaciones" rows="3" placeholder="Observaciones adicionales..."></textarea>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px;">
+        <button class="btn btn-success" onclick="saveScrapSheet()">💾 Guardar Hoja</button>
+        <button class="btn btn-info" onclick="generatePDF()">📄 Generar PDF</button>
+        <button class="btn btn-warning" onclick="clearForm()">🔄 Limpiar</button>
+    </div>
 </div>
-
     <!-- Gestionar Hojas -->
 <div id="manage-sheets" class="sub-tab-content">
         <h2>📋 Gestionar Hojas de Scrap</h2>
@@ -1394,64 +1447,6 @@
             </table>
         </div>
 </div>
-
-    <!-- Escáner de Shots -->
-<div id="scanner-shots" class="sub-tab-content">
-        <h2>🔍 Escáner de Shots</h2>
-        
-        <div class="card">
-            <h3>📱 Escáner Manual</h3>
-            <div class="grid grid-2">
-                <div class="form-group">
-                    <label>🔢 Número de Shot:</label>
-                    <input type="number" id="shot-number" placeholder="Ej: 123456" min="1">
-                </div>
-                <div class="form-group">
-                    <label>🔧 Número de Molde:</label>
-                    <input type="text" id="molde-number" placeholder="Ej: A1, B2, etc.">
-                </div>
-            </div>
-            
-            <div class="grid grid-2">
-                <div class="form-group">
-                    <label>📝 Motivo del Scrap:</label>
-                    <select id="scrap-reason">
-                        <option value="">Seleccionar...</option>
-                        <option value="DEFECTO_VISUAL">👁️ Defecto Visual</option>
-                        <option value="DIMENSION_FUERA">📏 Dimensión Fuera de Especificación</option>
-                        <option value="POROSIDAD">🕳️ Porosidad</option>
-                        <option value="REBABA">✂️ Rebaba Excesiva</option>
-                        <option value="FALTA_MATERIAL">❌ Falta de Material</option>
-                        <option value="OTRO">📝 Otro (especificar)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>📝 Especificar (si es "Otro"):</label>
-                    <input type="text" id="other-reason" placeholder="Describe el motivo...">
-                </div>
-            </div>
-            
-            <div style="text-align: center; margin: 20px 0;">
-                <button class="btn btn-success" onclick="addShot()">➕ Agregar Shot</button>
-                <button class="btn btn-info" onclick="scanQRCode()">📱 Escanear QR</button>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>📋 Shots Registrados en Sesión Actual</h3>
-            <div id="current-shots-display">
-                <div class="alert alert-info">
-                    🔍 Los shots escaneados aparecerán aquí
-                </div>
-            </div>
-            
-            <div style="text-align: center; margin-top: 20px;">
-                <button class="btn btn-warning" onclick="clearCurrentShots()">🗑️ Limpiar Lista</button>
-                <button class="btn btn-primary" onclick="showTab('new-scrap')">📝 Ir a Nueva Hoja</button>
-            </div>
-        </div>
-</div>
-
     <!-- Reportes -->
 <div id="reports" class="sub-tab-content">
         <h2>📊 Reportes de Scrap Adicional</h2>
@@ -1840,26 +1835,10 @@ function updateProductInfo() {
         }
 
         // Escanear código QR
-        function scanQRCode() {
-            // Simulación de escáner QR
-            const qrData = prompt('📱 Simulación de QR Scanner\n\nIngresa los datos del QR (formato: SHOT123456-MOLDEA1):');
-            
-            if (qrData) {
-                const parts = qrData.split('-');
-                if (parts.length === 2 && parts[0].startsWith('SHOT')) {
-                    const shotNumber = parts[0].replace('SHOT', '');
-                    const moldeNumber = parts[1].replace('MOLDE', '');
-                    
-                    document.getElementById('shot-number').value = shotNumber;
-                    document.getElementById('molde-number').value = moldeNumber;
-                    
-                    alert('✅ Datos del QR cargados correctamente');
-                } else {
-                    alert('⚠️ Formato de QR no válido');
-                }
-            }
-        }
-
+function scanQRCode() {
+    // Simplemente activar la cámara
+    startScrapCamera();
+}
         // Generar reporte
         function generateReport() {
             const dateFrom = document.getElementById('report-date-from').value;
@@ -1975,6 +1954,7 @@ function updateProductInfo() {
         let generatedCodes = [];
         let palletHistory = [];
         let duplicateAttempts = 0;
+	let scrapScanner = null;
 
 
 // Configuración de modelos por máquina
@@ -5755,6 +5735,91 @@ function showSubTab(subTabName) {
     // Activar el botón correspondiente
     if (event && event.target) {
         event.target.classList.add('active');
+    }
+}
+// Inicializar cámara para escanear shots
+async function startScrapCamera() {
+    if (typeof QrScanner === 'undefined') {
+        alert('❌ La librería QR Scanner no se cargó correctamente');
+        return;
+    }
+    
+    try {
+        const videoElement = document.getElementById('scrap-camera-video');
+        const containerElement = document.getElementById('scrap-camera-container');
+        const statusElement = document.getElementById('scrap-camera-status');
+        
+        containerElement.style.display = 'block';
+        statusElement.textContent = '📷 Iniciando cámara...';
+        
+        scrapScanner = new QrScanner(
+            videoElement,
+            result => handleScrapQRScan(result.data),
+            {
+                returnDetailedScanResult: true,
+                highlightScanRegion: true,
+                highlightCodeOutline: true,
+                preferredCamera: 'environment'
+            }
+        );
+        
+        await scrapScanner.start();
+        
+        document.getElementById('scrap-start-camera-btn').style.display = 'none';
+        document.getElementById('scrap-stop-camera-btn').style.display = 'inline-block';
+        statusElement.textContent = '📷 Cámara activa - Escanea el código del shot';
+        
+    } catch (error) {
+        console.error('Error al iniciar cámara:', error);
+        alert('❌ Error al acceder a la cámara');
+        document.getElementById('scrap-camera-container').style.display = 'none';
+    }
+}
+
+// Detener cámara de scrap
+function stopScrapCamera() {
+    if (scrapScanner) {
+        scrapScanner.stop();
+        scrapScanner.destroy();
+        scrapScanner = null;
+    }
+    
+    document.getElementById('scrap-camera-container').style.display = 'none';
+    document.getElementById('scrap-start-camera-btn').style.display = 'inline-block';
+    document.getElementById('scrap-stop-camera-btn').style.display = 'none';
+}
+
+// Manejar código QR escaneado para scrap
+function handleScrapQRScan(qrData) {
+    if (qrData && qrData.trim().length > 0) {
+        const code = qrData.trim();
+        
+        // Extraer datos del código usando la función existente
+        const codeData = extractCodeData(code);
+        
+        if (codeData) {
+            // Llenar automáticamente los campos
+            document.getElementById('shot-number').value = codeData.disparo;
+            document.getElementById('molde-number').value = codeData.molde;
+            
+            // Mostrar feedback visual
+            const statusElement = document.getElementById('scrap-camera-status');
+            statusElement.style.background = '#d4edda';
+            statusElement.style.color = '#155724';
+            statusElement.textContent = '✅ Shot detectado: ' + codeData.disparo + ' - Molde: ' + codeData.molde;
+            
+            // Detener cámara después de 2 segundos
+            setTimeout(() => {
+                stopScrapCamera();
+            }, 2000);
+            
+            // Enfocar en el selector de motivo
+            setTimeout(() => {
+                document.getElementById('scrap-reason').focus();
+            }, 2100);
+        } else {
+            alert('❌ Código QR no válido para shot');
+        }
     }
 }
    
