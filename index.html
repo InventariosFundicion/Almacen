@@ -529,6 +529,93 @@
     background: white;
     display: inline-block;
 }
+/* CSS ESPECÍFICO SOLO PARA RETENCIÓN Y SCRAP */
+#scrap-retention .sub-nav-tabs {
+    display: flex;
+    margin-bottom: 25px;
+    gap: 12px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border: none;
+}
+
+#scrap-retention .sub-nav-tab {
+    padding: 14px 28px;
+    background: white;
+    border: 2px solid #e9ecef;
+    cursor: pointer;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: #495057;
+    font-size: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    position: relative;
+    overflow: hidden;
+    flex: 1;
+    text-align: center;
+}
+
+#scrap-retention .sub-nav-tab:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0,123,255,0.1), transparent);
+    transition: left 0.6s;
+}
+
+#scrap-retention .sub-nav-tab:hover:before {
+    left: 100%;
+}
+
+#scrap-retention .sub-nav-tab.active {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border-color: #007bff;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,123,255,0.25);
+    font-weight: bold;
+}
+
+#scrap-retention .sub-nav-tab:hover:not(.active) {
+    background: linear-gradient(135deg, #ffffff, #f0f8ff);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+    border-color: #007bff;
+    color: #007bff;
+}
+
+#scrap-retention .sub-nav-tab:active {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* Mejorar la legibilidad de los emojis */
+#scrap-retention .sub-nav-tab {
+    font-size: 16px;
+    line-height: 1.4;
+}
+
+/* Animación suave al cambiar de pestaña */
+#scrap-retention .sub-nav-tab {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0.8;
+        transform: translateY(5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
     </style>
 </head>
 <body>
