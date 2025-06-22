@@ -721,9 +721,8 @@
             <button class="nav-tab" data-tab="pallets">📦 Tarimas</button>
             <button class="nav-tab" data-tab="production">🏭 Producción</button>
             <button class="nav-tab" data-tab="theoretical">📊 Teórico vs Físico</button>
-	   <button class="nav-tab" data-tab="scrap-retention" onclick="showTab('scrap-retention')">
-              ♻️ Retención y Scrap
-</button>
+	    <button class="nav-tab" data-tab="scrap-retention"> ♻️ Retención y Scrap</button>
+             
         </div>
 
 <!-- Dashboard Tab -->
@@ -1438,10 +1437,6 @@
                 <label>🔢 Número de Shot:</label>
                 <input type="number" id="shot-number" placeholder="Ej: 123456" min="1">
             </div>
-            <div class="form-group">
-                <label>🔧 Número de Molde:</label>
-                <input type="text" id="molde-number" placeholder="Ej: A1, B2, etc.">
-            </div>
         </div>
     </div>
     
@@ -1730,15 +1725,17 @@ function updateProductInfo() {
     }
 }
 
-        // Agregar shot manualmente
 function addShot() {
     const shotNumber = document.getElementById('shot-number').value;
-    const moldeNumber = document.getElementById('molde-number').value;
     const scrapReason = document.getElementById('scrap-reason').value;
     const otherReason = document.getElementById('other-reason').value;
+    
+    // Obtener el molde del encabezado
+    const moldeSelect = document.getElementById('molde-producto');
+    const moldeNumber = moldeSelect.value;
 
     if (!shotNumber || !moldeNumber || !scrapReason) {
-        alert('⚠️ Por favor completa todos los campos obligatorios');
+        alert('⚠️ Por favor completa todos los campos obligatorios\n\nAsegúrate de:\n• Llenar el número de shot\n• Seleccionar el molde en la información general\n• Seleccionar el motivo del scrap');
         return;
     }
 
@@ -1755,7 +1752,6 @@ function addShot() {
         timestamp: new Date().toLocaleString()
     };
 
-    // Inicializar array si no existe
     if (!scannedShots) scannedShots = [];
     
     scannedShots.push(shot);
@@ -1767,7 +1763,7 @@ function addShot() {
 
 function clearShotForm() {
     document.getElementById('shot-number').value = '';
-    document.getElementById('molde-number').value = '';
+    // Ya no limpiar molde-number porque ya no existe
     document.getElementById('scrap-reason').value = '';
     document.getElementById('other-reason').value = '';
 }
@@ -5964,31 +5960,26 @@ function stopScrapCamera() {
     document.getElementById('scrap-stop-camera-btn').style.display = 'none';
 }
 
-// Manejar código QR escaneado para scrap
 function handleScrapQRScan(qrData) {
     if (qrData && qrData.trim().length > 0) {
         const code = qrData.trim();
         
-        // Extraer datos del código usando la función existente
         const codeData = extractCodeData(code);
         
         if (codeData) {
-            // Llenar automáticamente los campos
+            // Solo llenar el número de shot
             document.getElementById('shot-number').value = codeData.disparo;
-            document.getElementById('molde-number').value = codeData.molde;
             
             // Mostrar feedback visual
             const statusElement = document.getElementById('scrap-camera-status');
             statusElement.style.background = '#d4edda';
             statusElement.style.color = '#155724';
-            statusElement.textContent = '✅ Shot detectado: ' + codeData.disparo + ' - Molde: ' + codeData.molde;
+            statusElement.textContent = '✅ Shot detectado: ' + codeData.disparo;
             
-            // Detener cámara después de 2 segundos
             setTimeout(() => {
                 stopScrapCamera();
             }, 2000);
             
-            // Enfocar en el selector de motivo
             setTimeout(() => {
                 document.getElementById('scrap-reason').focus();
             }, 2100);
