@@ -2155,16 +2155,7 @@ const MODEL_MOLDS = {
             'FINISHED': 'acabados',
             'CAST': 'fundidos'
         };
-        
-function showTab(tabName) {
-    // Ocultar todas
-    document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.style.display = 'none';
-    });
-    
-    // Mostrar seleccionada
-    document.getElementById(tabName).style.display = 'block';
-}
+
         function generatePalletId() {
             return 'PAL-' + String(palletCounter++).padStart(4, '0');
         }
