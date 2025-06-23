@@ -1748,13 +1748,13 @@
     <script>
         // Variables globales
         let currentShots = [];
-        let scrapSheets = JSON.parse(await loadFromFirebase('scrapSheets') || '[]');
-        let folioCounter = parseInt(await loadFromFirebase('folioCounter') || '1');
+        let scrapSheets = [];
+        let folioCounter = 1;
 	// Variables para scrap - unificar nombres
         let scannedShots = []; // Usar esta variable consistentemente
 	// Variables para sistema de retenciones
-        let retenciones = JSON.parse(await loadFromFirebase('retenciones') || '[]');
-        let retencionCounter = parseInt(await loadFromFirebase('retencionCounter') || '1');
+        let retenciones = [];
+        let retencionCounter = 1;
         let validatedShots = []; // Para almacenar shots validados
 	// Variables globales para el sistema de usuarios
         let usuarios = [];
@@ -2035,57 +2035,6 @@ function clearShotForm() {
                 `;
             }
         }
-
-        // Guardar hoja de scrap
-function saveScrapSheet() {
-    const folio = document.getElementById('folio').value;
-    const fechaOperacion = document.getElementById('fecha-operacion').value;
-    const sectorTrabajo = document.getElementById('sector-trabajo').value;
-    const numeroProducto = document.getElementById('numero-producto').value;
-    const nombreProducto = document.getElementById('nombre-producto').value;
-    const moldeProducto = document.getElementById('molde-producto').value;
-    const creadoPor = document.getElementById('creado-por').value;
-    const almacenOrigen = document.getElementById('almacen-origen').value;
-    const observaciones = document.getElementById('observaciones').value;
-
-    if (!fechaOperacion || !sectorTrabajo || !numeroProducto || !moldeProducto || !creadoPor || !almacenOrigen) {
-        alert('⚠️ Por favor completa todos los campos obligatorios');
-        return;
-    }
-
-    if (!scannedShots || scannedShots.length === 0) {
-        alert('⚠️ Debe agregar al menos un shot');
-        return;
-    }
-
-    const scrapSheet = {
-        folio: folio,
-        fechaOperacion: fechaOperacion,
-        fechaCreacion: new Date().toLocaleString(),
-        sectorTrabajo: sectorTrabajo,
-        numeroProducto: numeroProducto,
-        nombreProducto: nombreProducto,
-        moldeProducto: moldeProducto,
-        creadoPor: creadoPor,
-        almacenOrigen: almacenOrigen,
-        shots: [...scannedShots],
-        observaciones: observaciones,
-        estado: 'ABIERTA',
-        evidencia: null
-    };
-
-    scrapSheets.push(scrapSheet);
-    await saveToFirebase('scrapSheets', JSON.stringify(scrapSheets));
-    
-    folioCounter++;
-    await saveToFirebase('folioCounter', folioCounter.toString());
-
-    alert('✅ Hoja de scrap guardada correctamente\n\nPuedes gestionarla desde la pestaña "Gestionar Hojas"');
-    
-    clearForm();
-    generateNewFolio();
-    refreshSheetsList();
-}
         // Limpiar formulario
         function clearForm() {
             document.getElementById('fecha-operacion').value = '';
@@ -4040,15 +3989,20 @@ function toggleModelSection(sectionId) {
             });
         }
 
-        // Configurar event listeners cuando el DOM esté listo
-        document.addEventListener('DOMContentLoaded', function() {
-            // Event listeners para pestañas
-            document.querySelectorAll('.nav-tab').forEach(function(tab) {
-                tab.addEventListener('click', function() {
-                    const tabName = this.getAttribute('data-tab');
-                    showTab(tabName);
-                });
-            });
+        document.addEventListener('DOMContentLoaded', async function() {
+    // Inicializar datos de Firebase primero
+    await initializeAppData(); // ← NUEVA función
+    
+    // Luego inicializar sistema de usuarios
+    await initUserSystem(); // ← Agregar await
+    
+    // Event listeners para pestañas
+    document.querySelectorAll('.nav-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            const tabName = this.getAttribute('data-tab');
+            showTab(tabName);
+        });
+    });
             
             // Event listeners
             document.getElementById('qr-input').addEventListener('input', analyzeQRCode);
@@ -6385,8 +6339,7 @@ async function checkInventoryShots(shotsList) {
     return { inventoryShots, notInInventory };
 }
 
-// Actualizar la función saveScrapSheet
-function saveScrapSheet() {
+async function saveScrapSheet() {
     const folio = document.getElementById('folio').value;
     const fechaOperacion = document.getElementById('fecha-operacion').value;
     const sectorTrabajo = document.getElementById('sector-trabajo').value;
@@ -6396,62 +6349,70 @@ function saveScrapSheet() {
     const creadoPor = document.getElementById('creado-por').value;
     const almacenOrigen = document.getElementById('almacen-origen').value;
     const observaciones = document.getElementById('observaciones').value;
-    
+
     // Validaciones
     if (!fechaOperacion || !sectorTrabajo || !numeroProducto || !moldeProducto || !creadoPor || !almacenOrigen) {
-        alert('⚠️ Por favor completa todos los campos requeridos');
+        alert('⚠️ Por favor completa todos los campos obligatorios');
         return;
     }
-    
+
     if (!scannedShots || scannedShots.length === 0) {
-        alert('⚠️ Debe escanear al menos un shot');
+        alert('⚠️ Debe agregar al menos un shot');
         return;
     }
-    
-    // Verificar shots en inventario
+
+    // Verificar shots en inventario (de la segunda versión)
     const { inventoryShots, notInInventory } = checkInventoryShots(scannedShots);
-    
-    // Preparar datos de la hoja
-    const sheetData = {
+
+    // Preparar datos de la hoja (combinando ambas versiones)
+    const scrapSheet = {
         folio: folio,
         fechaOperacion: fechaOperacion,
+        fechaCreacion: new Date().toISOString(), // Cambiar a ISO para consistencia
         sectorTrabajo: sectorTrabajo,
         numeroProducto: numeroProducto,
         nombreProducto: nombreProducto,
         moldeProducto: moldeProducto,
         creadoPor: creadoPor,
         almacenOrigen: almacenOrigen,
-        observaciones: observaciones,
         shots: scannedShots.map(shot => ({
             ...shot,
             almacenProveniente: inventoryShots.find(is => is.shotNumber === shot.shotNumber)?.almacenActual || almacenOrigen
         })),
+        observaciones: observaciones,
+        estado: 'ABIERTA',
+        evidencia: null,
+        // Campos adicionales de la segunda versión
         inventoryShots: inventoryShots.length,
         newShots: notInInventory.length,
-        estado: 'ABIERTA',
-        fechaCreacion: new Date().toISOString(),
         id: Date.now()
     };
-    
-    // Descontar del inventario
+
+    // Descontar del inventario si hay shots existentes
     if (inventoryShots.length > 0) {
         updateInventoryForScrap(inventoryShots);
     }
+
+    // Guardar en Firebase (de la primera versión)
+    scrapSheets.push(scrapSheet);
+    await saveToFirebase('scrapSheets', JSON.stringify(scrapSheets));
     
-    // Guardar en localStorage
-    const sheets = getFromLocalStorage('scrapSheets') || [];
-    sheets.push(sheetData);
-    saveToLocalStorage('scrapSheets', sheets);
-    
-    // Mostrar resumen
-    alert(`✅ Hoja guardada correctamente\n\n` +
+    // Incrementar contador y guardar
+    folioCounter++;
+    await saveToFirebase('folioCounter', folioCounter.toString());
+
+    // Mostrar resumen mejorado (combinando ambas versiones)
+    alert(`✅ Hoja de scrap guardada correctamente\n\n` +
           `📋 Folio: ${folio}\n` +
           `📦 Shots del inventario: ${inventoryShots.length}\n` +
           `🆕 Shots nuevos: ${notInInventory.length}\n` +
-          `📊 Total shots: ${scannedShots.length}`);
-    
-    // Limpiar formulario
+          `📊 Total shots: ${scannedShots.length}\n\n` +
+          `Puedes gestionarla desde la pestaña "Gestionar Hojas"`);
+
+    // Limpiar formulario y actualizar displays (de la primera versión)
     clearForm();
+    generateNewFolio();
+    refreshSheetsList();
 }
 
 // Función para descontar del inventario
@@ -6875,7 +6836,7 @@ function getRandomAlmacen() {
     const almacenes = ['Almacén Fundición', 'Almacén Producto Terminado', 'Almacén Cuarentena'];
     return almacenes[Math.floor(Math.random() * almacenes.length)];
 }
-function createRetencion() {
+async function createRetencion() {
     const folio = document.getElementById('retencion-folio').value;
     const fechaProduccion = document.getElementById('retencion-fecha-produccion').value;
     const producto = document.getElementById('retencion-producto').value;
@@ -7208,7 +7169,7 @@ function handleResolveActionChange() {
             break;
     }
 }
-function confirmResolveRetencion(folio) {
+async function confirmResolveRetencion(folio) {
     const action = document.getElementById('resolve-action').value;
     const responsable = document.getElementById('resolve-responsable').value;
     const comentarios = document.getElementById('resolve-comentarios').value;
@@ -7296,7 +7257,7 @@ function confirmResolveRetencion(folio) {
     
     // Crear hoja de scrap automáticamente si corresponde
     if (action === 'SCRAP') {
-        createScrapFromRetencion(retencion, responsable);
+        await createScrapFromRetencion(retencion, responsable);
     }
     
     alert(`✅ Retención ${folio} resuelta exitosamente\n\nAcción: ${getActionText(action)}\nPiezas procesadas: ${retencion.totalShots}`);
@@ -7322,7 +7283,7 @@ function closeResolveModal() {
         modal.remove();
     }
 }
-function createScrapFromRetencion(retencion, responsable) {
+async function createScrapFromRetencion(retencion, responsable) {
     const currentDate = new Date();
     const folio = `SCR-${currentDate.getFullYear().toString().slice(-2)}${String(currentDate.getMonth() + 1).padStart(2, '0')}${String(currentDate.getDate()).padStart(2, '0')}-${String(folioCounter).padStart(4, '0')}`;
     
@@ -7366,15 +7327,15 @@ async function loadUsers() {
 
 // Inicializar con datos de Firebase
 async function initUserSystem() {
-    await loadUsers();
+    await loadUsers(); // ← Agregar await
     
     // Crear usuario admin por defecto si no existe
     if (usuarios.length === 0) {
-        createDefaultAdmin();
+        await createDefaultAdmin(); // ← Agregar await si createDefaultAdmin usa saveUsers
     }
     
     // Verificar si hay sesión activa
-    checkActiveSession();
+    await checkActiveSession(); // ← Agregar await
     
     // Escuchar cambios en tiempo real
     listenToFirebaseChanges('usuarios', (newUsers) => {
@@ -7382,26 +7343,17 @@ async function initUserSystem() {
         // Actualizar UI si es necesario
     });
 }
-
-// Cargar usuarios desde localStorage
-function loadUsers() {
-    const savedUsers = await loadFromFirebase('usuarios');
-    if (savedUsers) {
-        usuarios = JSON.parse(savedUsers);
-    }
-}
-
 // Guardar usuarios en localStorage
-function saveUsers() {
+async function saveUsers() {
     await saveToFirebase('usuarios', JSON.stringify(usuarios));
 }
 
 // Crear admin por defecto
-function createDefaultAdmin() {
+async function createDefaultAdmin() {
     const defaultAdmin = {
         id: 'admin-001',
         username: 'Edgar.Mejia',
-        password: 'Admin2025!', // Contraseña más segura
+        password: 'Admin2025!',
         nombre: 'Edgar Isaías',
         apellido: 'Sánchez Mejía',
         email: 'sanchezei@halmex.com.mx',
@@ -7412,13 +7364,13 @@ function createDefaultAdmin() {
     };
     
     usuarios.push(defaultAdmin);
-    saveUsers();
+    await saveUsers(); // ← Agregar await
     
-    console.log('Usuario admin creado - Usuario: Edgar.Mejia, Contraseña: Admin2025!');
+    console.log('Usuario admin creado');
 }
 
 // Verificar sesión activa
-function checkActiveSession() {
+async function checkActiveSession() {
     const savedSession = await loadFromFirebase('currentSession');
     if (savedSession) {
         const session = JSON.parse(savedSession);
@@ -7486,7 +7438,7 @@ function showLoginScreen() {
     `);
 }
 // Manejar login
-function handleLogin(event) {
+async function handleLogin(event) {
     event.preventDefault();
     
     const username = document.getElementById('login-username').value;
@@ -7513,7 +7465,7 @@ function handleLogin(event) {
     
     // Actualizar último acceso
     user.ultimoAcceso = new Date().toISOString();
-    saveUsers();
+    await saveUsers();
     
     // Guardar sesión
     const session = {
@@ -7782,7 +7734,7 @@ function cancelUserForm() {
     document.getElementById('user-form-container').style.display = 'none';
 }
 
-function handleUserSubmit(event) {
+async function handleUserSubmit(event) {
     event.preventDefault();
     
     const userId = document.getElementById('user-id').value;
@@ -7819,7 +7771,7 @@ function handleUserSubmit(event) {
         sendWelcomeEmail(userData);
     }
     
-    saveUsers();
+    await saveUsers();
     cancelUserForm();
     
     // Actualizar la tabla
@@ -7845,17 +7797,17 @@ function editUser(userId) {
     document.getElementById('user-activo').checked = user.activo;
 }
 
-function toggleUserStatus(userId) {
+async function toggleUserStatus(userId) {
     const user = usuarios.find(u => u.id === userId);
     if (!user) return;
     
     const action = user.activo ? 'desactivar' : 'activar';
     if (confirm(`¿Estás seguro de que quieres ${action} al usuario ${user.nombre} ${user.apellido}?`)) {
         user.activo = !user.activo;
-        saveUsers();
+        await saveUsers(); // ← Agregar await
         
         // Actualizar la tabla
-        document.getElementById('users-table').innerHTML = generateUsersTable();
+       document.getElementById('users-table').innerHTML = generateUsersTable();
         
         alert(`✅ Usuario ${user.activo ? 'activado' : 'desactivado'} correctamente`);
     }
@@ -7950,7 +7902,7 @@ function showEmailNotification(email) {
 }
 // Inicializar sistema al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
-    initUserSystem();
+    await initUserSystem();
 });
 // Función para limpiar datos corruptos (ejecutar una vez si hay problemas)
 function resetUserSystem() {
@@ -7972,6 +7924,24 @@ function logout() {
         }
         
         showLoginScreen();
+    }
+}
+// Agregar nueva función async para cargar datos iniciales:
+async function initializeAppData() {
+    try {
+        scrapSheets = await loadFromFirebase('scrapSheets') || [];
+        folioCounter = parseInt(await loadFromFirebase('folioCounter')) || 1;
+        retenciones = await loadFromFirebase('retenciones') || [];
+        retencionCounter = parseInt(await loadFromFirebase('retencionCounter')) || 1;
+        
+        console.log('✅ Datos iniciales cargados desde Firebase');
+    } catch (error) {
+        console.error('❌ Error cargando datos iniciales:', error);
+        // Usar valores por defecto
+        scrapSheets = [];
+        folioCounter = 1;
+        retenciones = [];
+        retencionCounter = 1;
     }
 }
 </script>
