@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 <head>
    <script src="https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner.umd.min.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1745,18 +1748,73 @@
     <script>
         // Variables globales
         let currentShots = [];
-        let scrapSheets = JSON.parse(localStorage.getItem('scrapSheets') || '[]');
-        let folioCounter = parseInt(localStorage.getItem('folioCounter') || '1');
+        let scrapSheets = JSON.parse(await loadFromFirebase('scrapSheets') || '[]');
+        let folioCounter = parseInt(await loadFromFirebase('folioCounter') || '1');
 	// Variables para scrap - unificar nombres
         let scannedShots = []; // Usar esta variable consistentemente
 	// Variables para sistema de retenciones
-        let retenciones = JSON.parse(localStorage.getItem('retenciones') || '[]');
-        let retencionCounter = parseInt(localStorage.getItem('retencionCounter') || '1');
+        let retenciones = JSON.parse(await loadFromFirebase('retenciones') || '[]');
+        let retencionCounter = parseInt(await loadFromFirebase('retencionCounter') || '1');
         let validatedShots = []; // Para almacenar shots validados
 	// Variables globales para el sistema de usuarios
         let usuarios = [];
         let currentUser = null;
         let isLoggedIn = false;
+// Configuración de Firebase (REEMPLAZA con la tuya)
+const firebaseConfig = {
+  // AQUÍ PEGAS TU CONFIGURACIÓN QUE COPIASTE
+};
+
+// Inicializar Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Funciones para guardar y cargar datos
+async function saveToFirebase(collection, data, docId = null) {
+    try {
+        if (docId) {
+            await db.collection(collection).doc(docId).set(data);
+        } else {
+            await db.collection(collection).add(data);
+        }
+        console.log('✅ Datos guardados en Firebase');
+    } catch (error) {
+        console.error('❌ Error guardando en Firebase:', error);
+        // Fallback a localStorage
+        await saveToFirebase(collection, JSON.stringify(data));
+    }
+}
+
+async function loadFromFirebase(collection) {
+    try {
+        const snapshot = await db.collection(collection).get();
+        const data = [];
+        snapshot.forEach(doc => {
+            data.push({ id: doc.id, ...doc.data() });
+        });
+        console.log('✅ Datos cargados desde Firebase');
+        return data;
+    } catch (error) {
+        console.error('❌ Error cargando desde Firebase:', error);
+        // Fallback a localStorage
+        return JSON.parse(await loadFromFirebase(collection) || '[]');
+    }
+}
+
+// Escuchar cambios en tiempo real
+function listenToFirebaseChanges(collection, callback) {
+    try {
+        db.collection(collection).onSnapshot((snapshot) => {
+            const data = [];
+            snapshot.forEach(doc => {
+                data.push({ id: doc.id, ...doc.data() });
+            });
+            callback(data);
+        });
+    } catch (error) {
+        console.error('❌ Error en listener:', error);
+    }
+}
 
 // Roles y permisos
 const ROLES = {
@@ -2017,10 +2075,10 @@ function saveScrapSheet() {
     };
 
     scrapSheets.push(scrapSheet);
-    localStorage.setItem('scrapSheets', JSON.stringify(scrapSheets));
+    await saveToFirebase('scrapSheets', JSON.stringify(scrapSheets));
     
     folioCounter++;
-    localStorage.setItem('folioCounter', folioCounter.toString());
+    await saveToFirebase('folioCounter', folioCounter.toString());
 
     alert('✅ Hoja de scrap guardada correctamente\n\nPuedes gestionarla desde la pestaña "Gestionar Hojas"');
     
@@ -2173,7 +2231,7 @@ function getAccionesButtons(sheet) {
                 if (newStatus === 'Cerrada') {
                     sheet.fechaCierre = new Date().toLocaleString();
                 }
-                localStorage.setItem('scrapSheets', JSON.stringify(scrapSheets));
+                await saveToFirebase('scrapSheets', JSON.stringify(scrapSheets));
                 refreshSheetsList();
                 alert(`✅ Estado actualizado a: ${newStatus}`);
             }
@@ -6034,7 +6092,7 @@ function removeCode(index) {
 // Integración con inventario existente
 function updateInventoryFromScrap(scrapData) {
     // Actualizar el inventario cuando se registre scrap adicional
-    const existingInventory = JSON.parse(localStorage.getItem('scannedData') || '[]');
+    const existingInventory = JSON.parse(await loadFromFirebase('scannedData') || '[]');
     
     scrapData.shots.forEach(shot => {
         const scrapEntry = {
@@ -6049,7 +6107,7 @@ function updateInventoryFromScrap(scrapData) {
         existingInventory.push(scrapEntry);
     });
     
-    localStorage.setItem('scannedData', JSON.stringify(existingInventory));
+    await saveToFirebase('scannedData', JSON.stringify(existingInventory));
     updateInventoryDisplay();
 }
 function showSubTab(subTabName) {
@@ -6607,7 +6665,7 @@ async function confirmStateChange() {
     }
     
     // Guardar en localStorage
-    localStorage.setItem('scrapSheets', JSON.stringify(scrapSheets));
+    await saveToFirebase('scrapSheets', JSON.stringify(scrapSheets));
     
     alert(`✅ Estado actualizado a: ${getEstadoText(newState)}`);
     
@@ -6875,11 +6933,11 @@ function createRetencion() {
     
     // Guardar retención
     retenciones.push(retencion);
-    localStorage.setItem('retenciones', JSON.stringify(retenciones));
+    await saveToFirebase('retenciones', JSON.stringify(retenciones));
     
     // Incrementar contador
     retencionCounter++;
-    localStorage.setItem('retencionCounter', retencionCounter.toString());
+    await saveToFirebase('retencionCounter', retencionCounter.toString());
     
     alert(`✅ Retención ${folio} creada exitosamente\n\n• ${validatedShots.length} piezas retenidas\n• Estado: Activa\n\nLas piezas han sido marcadas como "En Retención" temporalmente.`);
     
@@ -7234,7 +7292,7 @@ function confirmResolveRetencion(folio) {
     });
     
     // Guardar en localStorage
-    localStorage.setItem('retenciones', JSON.stringify(retenciones));
+    await saveToFirebase('retenciones', JSON.stringify(retenciones));
     
     // Crear hoja de scrap automáticamente si corresponde
     if (action === 'SCRAP') {
@@ -7294,16 +7352,21 @@ function createScrapFromRetencion(retencion, responsable) {
     };
     
     scrapSheets.push(scrapSheet);
-    localStorage.setItem('scrapSheets', JSON.stringify(scrapSheets));
+    await saveToFirebase('scrapSheets', JSON.stringify(scrapSheets));
     
     folioCounter++;
-    localStorage.setItem('folioCounter', folioCounter.toString());
+    await saveToFirebase('folioCounter', folioCounter.toString());
     
     alert(`📋 Hoja de scrap ${folio} creada automáticamente\n\nPuedes gestionarla desde la pestaña "Gestionar Hojas"`);
 }
-// Inicializar sistema de usuarios
-function initUserSystem() {
-    loadUsers();
+// Cargar usuarios desde Firebase
+async function loadUsers() {
+    usuarios = await loadFromFirebase('usuarios');
+}
+
+// Inicializar con datos de Firebase
+async function initUserSystem() {
+    await loadUsers();
     
     // Crear usuario admin por defecto si no existe
     if (usuarios.length === 0) {
@@ -7312,11 +7375,17 @@ function initUserSystem() {
     
     // Verificar si hay sesión activa
     checkActiveSession();
+    
+    // Escuchar cambios en tiempo real
+    listenToFirebaseChanges('usuarios', (newUsers) => {
+        usuarios = newUsers;
+        // Actualizar UI si es necesario
+    });
 }
 
 // Cargar usuarios desde localStorage
 function loadUsers() {
-    const savedUsers = localStorage.getItem('usuarios');
+    const savedUsers = await loadFromFirebase('usuarios');
     if (savedUsers) {
         usuarios = JSON.parse(savedUsers);
     }
@@ -7324,7 +7393,7 @@ function loadUsers() {
 
 // Guardar usuarios en localStorage
 function saveUsers() {
-    localStorage.setItem('usuarios', JSON.stringify(usuarios));
+    await saveToFirebase('usuarios', JSON.stringify(usuarios));
 }
 
 // Crear admin por defecto
@@ -7350,7 +7419,7 @@ function createDefaultAdmin() {
 
 // Verificar sesión activa
 function checkActiveSession() {
-    const savedSession = localStorage.getItem('currentSession');
+    const savedSession = await loadFromFirebase('currentSession');
     if (savedSession) {
         const session = JSON.parse(savedSession);
         const user = usuarios.find(u => u.id === session.userId);
@@ -7451,7 +7520,7 @@ function handleLogin(event) {
         userId: user.id,
         loginTime: new Date().toISOString()
     };
-    localStorage.setItem('currentSession', JSON.stringify(session));
+    await saveToFirebase('currentSession', JSON.stringify(session));
     
     // Mostrar aplicación principal
     showMainApp();
@@ -7793,7 +7862,7 @@ function toggleUserStatus(userId) {
 }
 // Verificar sesión activa
 function checkActiveSession() {
-    const savedSession = localStorage.getItem('currentSession');
+    const savedSession = await loadFromFirebase('currentSession');
     if (savedSession) {
         const session = JSON.parse(savedSession);
         const user = usuarios.find(u => u.id === session.userId);
