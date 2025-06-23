@@ -7853,6 +7853,15 @@ function showEmailNotification(email) {
 document.addEventListener('DOMContentLoaded', function() {
     initUserSystem();
 });
+// Función para limpiar datos corruptos (ejecutar una vez si hay problemas)
+function resetUserSystem() {
+    localStorage.removeItem('usuarios');
+    localStorage.removeItem('currentSession');
+    location.reload();
+}
+
+// Descomenta la siguiente línea y recarga la página UNA VEZ para limpiar:
+resetUserSystem();
 </script>
 </body>
 </html>
