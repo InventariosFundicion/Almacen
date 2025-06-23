@@ -6648,13 +6648,36 @@ function updateRetencionProductInfo() {
     const producto = document.getElementById('retencion-producto').value;
     const moldeSelect = document.getElementById('retencion-molde');
     
+    // Limpiar opciones existentes
     moldeSelect.innerHTML = '<option value="">Seleccionar molde...</option>';
     
+    console.log('Producto seleccionado:', producto); // Para debug
+    
     if (producto) {
-        const moldes = getAvailableMoldes(producto);
+        // Agregar el sufijo -FUN al producto para buscar en MODEL_MOLDS
+        const productoKey = producto + '-FUN';
+        
+        console.log('Buscando en MODEL_MOLDS con clave:', productoKey); // Para debug
+        
+        // Obtener moldes de la constante MODEL_MOLDS
+        const moldes = MODEL_MOLDS[productoKey] || [];
+        
+        console.log('Moldes encontrados:', moldes); // Para debug
+        
+        // Agregar opciones de moldes
         moldes.forEach(molde => {
-            moldeSelect.innerHTML += `<option value="${molde}">${molde}</option>`;
+            const option = document.createElement('option');
+            option.value = molde;
+            option.textContent = molde;
+            moldeSelect.appendChild(option);
         });
+        
+        // Si no hay moldes disponibles
+        if (moldes.length === 0) {
+            moldeSelect.innerHTML += '<option value="">No hay moldes disponibles para este producto</option>';
+        }
+    } else {
+        moldeSelect.innerHTML = '<option value="">Primero selecciona un producto...</option>';
     }
 }
 async function validateRetencion() {
