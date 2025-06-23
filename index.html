@@ -1327,382 +1327,376 @@
     
     <div class="sub-nav-tabs">
         <button class="sub-nav-tab active" onclick="showSubTab('new-scrap')">📝 Nueva Hoja</button>
-	<button class="sub-nav-tab" onclick="showSubTab('retenciones')">⏸️ Retenciones</button>
+        <button class="sub-nav-tab" onclick="showSubTab('retenciones')">⏸️ Retenciones</button>
         <button class="sub-nav-tab" onclick="showSubTab('manage-sheets')">📋 Gestionar Hojas</button>
         <button class="sub-nav-tab" onclick="showSubTab('reports')">📊 Reportes</button>
     </div>
     
     <!-- Aquí iría todo el contenido del artifact que creé -->
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Retención y Scrap Adicional</title>
-</head>
-<body>
     <!-- Nueva Hoja de Scrap -->
-<div id="new-scrap" class="sub-tab-content active">
-    <h2>📝 Nueva Hoja de Retención y Scrap Adicional</h2>
-    
-    <div class="card">
-        <h3>📋 Información General</h3>
-        <div class="grid grid-3">
-            <div class="form-group">
-                <label>📄 Folio:</label>
-                <input type="text" id="folio" readonly style="background: #e9ecef;">
-            </div>
-            <div class="form-group">
-                <label>📅 Fecha de Operación:</label>
-                <input type="date" id="fecha-operacion" required>
-            </div>
-            <div class="form-group">
-                <label>👤 Sector de Trabajo:</label>
-                <select id="sector-trabajo">
-                    <option value="">Seleccionar...</option>
-                    <option value="FUNDICION">🔥 Fundición</option>
-                    <option value="ACABADO">✅ Acabado</option>
-                </select>
-            </div>
-        </div>
-        
-        <div class="grid grid-2">
-            <div class="form-group">
-                <label>🏭 Número de Producto:</label>
-                <select id="numero-producto" onchange="updateProductInfo()">
-                    <option value="">Seleccionar...</option>
-                    <option value="PX13-10-382">PX13-10-382 (LWR)</option>
-                    <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
-                    <option value="P54G-10-382">P54G-10-382 (LWR)</option>
-                    <option value="PX13-10-301">PX13-10-301 (UPR)</option>
-                    <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
-                    <option value="P54G-10-301-A">P54G-10-301-A (UPR)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>📝 Nombre del Producto:</label>
-                <input type="text" id="nombre-producto" value="" readonly style="background: #e9ecef;">
-            </div>
-        </div>
-
-        <div class="grid grid-3">
-            <div class="form-group">
-                <label>🔧 Número de Molde:</label>
-                <select id="molde-producto">
-                    <option value="">Primero selecciona un producto...</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>👷 Creado por:</label>
-                <input type="text" id="creado-por" placeholder="Nombre del operador" required>
-            </div>
-            <div class="form-group">
-                <label>🏢 Almacén Origen:</label>
-                <select id="almacen-origen" required>
-                    <option value="">Seleccionar...</option>
-                    <option value="ALMACEN_FUNDICION">🔥 Almacén Fundición</option>
-                    <option value="ALMACEN_ACABADO">✅ Almacén Acabado</option>
-                    <option value="ALMACEN_SCRAP">♻️ Almacén Scrap</option>
-                    <option value="ALMACEN_RETENCION">⚠️ Almacén Retención</option>
-                </select>
-            </div>
-        </div>
-    </div>
-<!-- SECCIÓN DE ESCÁNER DE SHOTS INTEGRADA -->
-<div class="card">
-    <h3>🔍 Escáner de Shots</h3>
-    
-    <!-- Opción de entrada manual o cámara -->
-    <div style="text-align: center; margin-bottom: 20px;">
-        <button class="btn btn-info" onclick="toggleScrapCameraMode()">
-            <span id="camera-mode-text">📷 Activar Cámara</span>
-        </button>
-    </div>
-
-    <!-- Contenedor de la cámara (oculto por defecto) -->
-    <div id="scrap-camera-section" style="display: none;">
-        <div class="camera-controls" style="text-align: center; margin-bottom: 15px;">
-            <button class="btn btn-danger" onclick="stopScrapCamera()">⏹️ Detener Cámara</button>
-        </div>
-        <div id="scrap-camera-container" class="camera-container">
-            <video id="scrap-camera-video" class="camera-video" autoplay muted playsinline></video>
-            <div class="camera-overlay"></div>
-            <div id="scrap-camera-status" class="camera-status">📷 Posiciona el código QR del shot</div>
-        </div>
-    </div>
-    
-    <!-- Entrada manual -->
-    <div id="manual-entry-section">
-        <div class="grid grid-2">
-            <div class="form-group">
-                <label>🔢 Número de Shot:</label>
-                <input type="number" id="shot-number" placeholder="Ej: 123456" min="1">
-            </div>
-        </div>
-    </div>
-    
-    <div class="grid grid-2">
-        <div class="form-group">
-            <label>📝 Motivo del Scrap:</label>
-            <select id="scrap-reason">
-                <option value="">Seleccionar...</option>
-                <option value="DEFECTO_VISUAL">👁️ Defecto Visual</option>
-                <option value="DIMENSION_FUERA">📏 Dimensión Fuera de Especificación</option>
-                <option value="POROSIDAD">🕳️ Porosidad</option>
-                <option value="REBABA">✂️ Rebaba Excesiva</option>
-                <option value="FALTA_MATERIAL">❌ Falta de Material</option>
-                <option value="OTRO">📝 Otro (especificar)</option>
-            </select>
-        </div>
-        <div class="form-group" id="other-reason-container">
-            <label>📝 Especificar (si es "Otro"):</label>
-            <input type="text" id="other-reason" placeholder="Describe el motivo...">
-        </div>
-    </div>
-    
-    <div style="text-align: center; margin: 20px 0;">
-        <button class="btn btn-success" onclick="addShot()">➕ Agregar Shot</button>
-    </div>
-
-    <!-- Lista de shots registrados -->
-    <div style="margin-top: 20px;">
-        <h4>📋 Shots Registrados (<span id="total-shots">0</span>)</h4>
-        <div id="current-shots-display">
-            <div class="alert alert-info">
-                🔍 Los shots escaneados aparecerán aquí
-            </div>
-        </div>
-        <div id="shots-list"></div>
-        <div style="text-align: center; margin-top: 15px;">
-            <button class="btn btn-warning" onclick="clearCurrentShots()">🗑️ Limpiar Lista</button>
-        </div>
-    </div>
-</div>
-<div class="form-group">
-    <label>📝 Observaciones:</label>
-    <textarea id="observaciones" rows="3" placeholder="Observaciones adicionales..."></textarea>
-</div>
-
-    <div style="text-align: center; margin-top: 30px;">
-        <button class="btn btn-success" onclick="saveScrapSheet()">💾 Guardar Hoja</button>
-        <button class="btn btn-info" onclick="printScrapSheet()">🖨️ Imprimir Hoja</button>
-        <button class="btn btn-warning" onclick="clearForm()">🔄 Limpiar</button>
-    </div>
-</div>
-</div>
-<!-- Retenciones -->
-<div id="retenciones" class="sub-tab-content">
-    <h2>⏸️ Sistema de Retenciones</h2>
-    
-    <!-- Crear Nueva Retención -->
-    <div class="card">
-        <h3>📝 Nueva Retención</h3>
-        
-        <div class="grid grid-3">
-            <div class="form-group">
-                <label>📄 Folio de Retención:</label>
-                <input type="text" id="retencion-folio" readonly style="background: #e9ecef;">
-            </div>
-            <div class="form-group">
-                <label>📅 Fecha de Producción:</label>
-                <input type="date" id="retencion-fecha-produccion" required>
-            </div>
-            <div class="form-group">
-                <label>👤 Creado por:</label>
-                <input type="text" id="retencion-creado-por" placeholder="Nombre del responsable" required>
-            </div>
-        </div>
-        
-        <div class="grid grid-2">
-            <div class="form-group">
-                <label>🏭 Número de Producto:</label>
-                <select id="retencion-producto" onchange="updateRetencionProductInfo()">
-                    <option value="">Seleccionar...</option>
-                    <option value="PX13-10-382">PX13-10-382 (LWR)</option>
-                    <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
-                    <option value="P54G-10-382">P54G-10-382 (LWR)</option>
-                    <option value="PX13-10-301">PX13-10-301 (UPR)</option>
-                    <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
-                    <option value="P54G-10-301-A">P54G-10-301-A (UPR)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>🔧 Número de Molde:</label>
-                <select id="retencion-molde">
-                    <option value="">Primero selecciona un producto...</option>
-                </select>
-            </div>
-        </div>
+    <div id="new-scrap" class="sub-tab-content active">
+        <h2>📝 Nueva Hoja de Retención y Scrap Adicional</h2>
         
         <div class="card">
-            <h4>📊 Alcance de la Retención</h4>
+            <h3>📋 Información General</h3>
+            <div class="grid grid-3">
+                <div class="form-group">
+                    <label>📄 Folio:</label>
+                    <input type="text" id="folio" readonly style="background: #e9ecef;">
+                </div>
+                <div class="form-group">
+                    <label>📅 Fecha de Operación:</label>
+                    <input type="date" id="fecha-operacion" required>
+                </div>
+                <div class="form-group">
+                    <label>👤 Sector de Trabajo:</label>
+                    <select id="sector-trabajo">
+                        <option value="">Seleccionar...</option>
+                        <option value="FUNDICION">🔥 Fundición</option>
+                        <option value="ACABADO">✅ Acabado</option>
+                    </select>
+                </div>
+            </div>
+            
             <div class="grid grid-2">
                 <div class="form-group">
-                    <label>🎯 Shot Inicial:</label>
-                    <input type="number" id="retencion-shot-inicial" placeholder="Ej: 1" min="1" required>
+                    <label>🏭 Número de Producto:</label>
+                    <select id="numero-producto" onchange="updateProductInfo()">
+                        <option value="">Seleccionar...</option>
+                        <option value="PX13-10-382">PX13-10-382 (LWR)</option>
+                        <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
+                        <option value="P54G-10-382">P54G-10-382 (LWR)</option>
+                        <option value="PX13-10-301">PX13-10-301 (UPR)</option>
+                        <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
+                        <option value="P54G-10-301-A">P54G-10-301-A (UPR)</option>
+                    </select>
                 </div>
                 <div class="form-group">
-                    <label>🎯 Shot Final:</label>
-                    <input type="number" id="retencion-shot-final" placeholder="Ej: 50" min="1" required>
+                    <label>📝 Nombre del Producto:</label>
+                    <input type="text" id="nombre-producto" value="" readonly style="background: #e9ecef;">
+                </div>
+            </div>
+
+            <div class="grid grid-3">
+                <div class="form-group">
+                    <label>🔧 Número de Molde:</label>
+                    <select id="molde-producto">
+                        <option value="">Primero selecciona un producto...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>👷 Creado por:</label>
+                    <input type="text" id="creado-por" placeholder="Nombre del operador" required>
+                </div>
+                <div class="form-group">
+                    <label>🏢 Almacén Origen:</label>
+                    <select id="almacen-origen" required>
+                        <option value="">Seleccionar...</option>
+                        <option value="ALMACEN_FUNDICION">🔥 Almacén Fundición</option>
+                        <option value="ALMACEN_ACABADO">✅ Almacén Acabado</option>
+                        <option value="ALMACEN_SCRAP">♻️ Almacén Scrap</option>
+                        <option value="ALMACEN_RETENCION">⚠️ Almacén Retención</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <!-- SECCIÓN DE ESCÁNER DE SHOTS INTEGRADA -->
+        <div class="card">
+            <h3>🔍 Escáner de Shots</h3>
+            
+            <!-- Opción de entrada manual o cámara -->
+            <div style="text-align: center; margin-bottom: 20px;">
+                <button class="btn btn-info" onclick="toggleScrapCameraMode()">
+                    <span id="camera-mode-text">📷 Activar Cámara</span>
+                </button>
+            </div>
+
+            <!-- Contenedor de la cámara (oculto por defecto) -->
+            <div id="scrap-camera-section" style="display: none;">
+                <div class="camera-controls" style="text-align: center; margin-bottom: 15px;">
+                    <button class="btn btn-danger" onclick="stopScrapCamera()">⏹️ Detener Cámara</button>
+                </div>
+                <div id="scrap-camera-container" class="camera-container">
+                    <video id="scrap-camera-video" class="camera-video" autoplay muted playsinline></video>
+                    <div class="camera-overlay"></div>
+                    <div id="scrap-camera-status" class="camera-status">📷 Posiciona el código QR del shot</div>
                 </div>
             </div>
             
-            <div class="form-group">
-                <label>📝 Motivo de la Retención:</label>
-                <select id="retencion-motivo">
-                    <option value="">Seleccionar motivo...</option>
-                    <option value="INSPECCION_CALIDAD">🔍 Inspección de Calidad</option>
-                    <option value="DEFECTO_SOSPECHOSO">⚠️ Defecto Sospechoso</option>
-                    <option value="REVISION_PROCESO">🔧 Revisión de Proceso</option>
-                    <option value="AUDITORIA_INTERNA">📋 Auditoría Interna</option>
-                    <option value="RECLAMO_CLIENTE">📞 Reclamo de Cliente</option>
-                    <option value="OTRO">📝 Otro (especificar)</option>
-                </select>
-            </div>
-            
-            <div class="form-group" id="retencion-otro-motivo" style="display: none;">
-                <label>📝 Especificar motivo:</label>
-                <input type="text" id="retencion-motivo-otro" placeholder="Describe el motivo de la retención...">
-            </div>
-            
-            <div class="form-group">
-                <label>📝 Observaciones:</label>
-                <textarea id="retencion-observaciones" rows="3" placeholder="Observaciones adicionales sobre la retención..."></textarea>
-            </div>
-        </div>
-        
-        <div style="text-align: center; margin-top: 20px;">
-            <button class="btn btn-warning" onclick="validateRetencion()">🔍 Validar Shots</button>
-            <button class="btn btn-success" onclick="createRetencion()" id="create-retencion-btn" disabled>⏸️ Crear Retención</button>
-            <button class="btn btn-info" onclick="clearRetencionForm()">🔄 Limpiar</button>
-        </div>
-        
-        <!-- Resultado de validación -->
-        <div id="retencion-validation-result" style="margin-top: 20px;"></div>
-    </div>
-    
-    <!-- Lista de Retenciones Activas -->
-    <div class="card">
-        <h3>📋 Retenciones Activas</h3>
-        <div style="margin-bottom: 15px;">
-            <button class="btn btn-primary" onclick="refreshRetencionList()">🔄 Actualizar Lista</button>
-        </div>
-        
-        <table class="inventory-table">
-            <thead>
-                <tr>
-                    <th>Folio</th>
-                    <th>Fecha Prod.</th>
-                    <th>Producto</th>
-                    <th>Molde</th>
-                    <th>Rango Shots</th>
-                    <th>Piezas</th>
-                    <th>Motivo</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="retenciones-table-body">
-                <!-- Se llenará dinámicamente -->
-            </tbody>
-        </table>
-    </div>
-</div>
-</div>
-    <!-- Gestionar Hojas -->
-<div id="manage-sheets" class="sub-tab-content">
-    <h2>📋 Gestionar Hojas de Scrap</h2>
-    
-    <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3>📊 Hojas Registradas</h3>
-            <button class="btn btn-primary" onclick="refreshSheetsList()">🔄 Actualizar</button>
-        </div>
-        
-        <table class="inventory-table">
-            <thead>
-                <tr>
-                    <th>Folio</th>
-                    <th>Fecha</th>
-                    <th>Producto</th>
-                    <th>Molde</th>
-                    <th>Sector</th>
-                    <th>Shots</th>
-                    <th>Creado por</th>
-                    <th>Estado</th>
-                    <th>Evidencia</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="sheets-table-body">
-                <!-- Se llenará dinámicamente -->
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Modal para gestionar estado -->
-    <div id="manage-state-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <h3>📋 Gestionar Estado de Hoja</h3>
-            
-            <div class="form-group">
-                <label>📄 Folio:</label>
-                <input type="text" id="modal-folio-manage" readonly style="background: #e9ecef;">
-            </div>
-            
-            <div class="form-group">
-                <label>📊 Estado Actual:</label>
-                <input type="text" id="modal-current-state" readonly style="background: #e9ecef;">
-            </div>
-            
-            <div class="form-group">
-                <label>🔄 Nuevo Estado:</label>
-                <select id="modal-new-state">
-                    <option value="">Seleccionar nuevo estado...</option>
-                    <option value="EN_PROCESO">🔄 En Proceso</option>
-                    <option value="PENDIENTE_FIRMA">✍️ Pendiente de Firma</option>
-                    <option value="CERRADA">✅ Cerrada</option>
-                </select>
-            </div>
-            
-            <div class="form-group" id="evidence-upload-section" style="display: none;">
-                <label>📎 Subir Hoja Firmada (PDF):</label>
-                <div class="file-management-container">
-                    <input type="file" id="modal-evidencia-file" accept=".pdf" style="display: none;" onchange="handleModalEvidenceUpload()">
-                    <div class="file-upload-area" onclick="document.getElementById('modal-evidencia-file').click()">
-                        <div id="modal-file-status">
-                            <span class="file-placeholder">📎 Haz clic para seleccionar archivo PDF</span>
-                        </div>
+            <!-- Entrada manual -->
+            <div id="manual-entry-section">
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label>🔢 Número de Shot:</label>
+                        <input type="number" id="shot-number" placeholder="Ej: 123456" min="1">
                     </div>
                 </div>
             </div>
             
-            <div class="grid grid-2" id="signatures-section" style="display: none;">
+            <div class="grid grid-2">
                 <div class="form-group">
-                    <label>✍️ Firma Supervisor:</label>
-                    <input type="text" id="modal-firma-supervisor" placeholder="Nombre del supervisor">
+                    <label>📝 Motivo del Scrap:</label>
+                    <select id="scrap-reason">
+                        <option value="">Seleccionar...</option>
+                        <option value="DEFECTO_VISUAL">👁️ Defecto Visual</option>
+                        <option value="DIMENSION_FUERA">📏 Dimensión Fuera de Especificación</option>
+                        <option value="POROSIDAD">🕳️ Porosidad</option>
+                        <option value="REBABA">✂️ Rebaba Excesiva</option>
+                        <option value="FALTA_MATERIAL">❌ Falta de Material</option>
+                        <option value="OTRO">📝 Otro (especificar)</option>
+                    </select>
                 </div>
-                <div class="form-group">
-                    <label>✍️ Firma Gerente:</label>
-                    <input type="text" id="modal-firma-gerente" placeholder="Nombre del gerente">
+                <div class="form-group" id="other-reason-container">
+                    <label>📝 Especificar (si es "Otro"):</label>
+                    <input type="text" id="other-reason" placeholder="Describe el motivo...">
                 </div>
             </div>
             
-            <div class="form-group">
-                <label>📝 Comentarios:</label>
-                <textarea id="modal-comentarios" rows="3" placeholder="Comentarios sobre el cambio de estado..."></textarea>
+            <div style="text-align: center; margin: 20px 0;">
+                <button class="btn btn-success" onclick="addShot()">➕ Agregar Shot</button>
+            </div>
+
+            <!-- Lista de shots registrados -->
+            <div style="margin-top: 20px;">
+                <h4>📋 Shots Registrados (<span id="total-shots">0</span>)</h4>
+                <div id="current-shots-display">
+                    <div class="alert alert-info">
+                        🔍 Los shots escaneados aparecerán aquí
+                    </div>
+                </div>
+                <div id="shots-list"></div>
+                <div style="text-align: center; margin-top: 15px;">
+                    <button class="btn btn-warning" onclick="clearCurrentShots()">🗑️ Limpiar Lista</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label>📝 Observaciones:</label>
+            <textarea id="observaciones" rows="3" placeholder="Observaciones adicionales..."></textarea>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="btn btn-success" onclick="saveScrapSheet()">💾 Guardar Hoja</button>
+            <button class="btn btn-info" onclick="printScrapSheet()">🖨️ Imprimir Hoja</button>
+            <button class="btn btn-warning" onclick="clearForm()">🔄 Limpiar</button>
+        </div>
+    </div>
+    
+    <!-- Retenciones -->
+    <div id="retenciones" class="sub-tab-content">
+        <h2>⏸️ Sistema de Retenciones</h2>
+        
+        <!-- Crear Nueva Retención -->
+        <div class="card">
+            <h3>📝 Nueva Retención</h3>
+            
+            <div class="grid grid-3">
+                <div class="form-group">
+                    <label>📄 Folio de Retención:</label>
+                    <input type="text" id="retencion-folio" readonly style="background: #e9ecef;">
+                </div>
+                <div class="form-group">
+                    <label>📅 Fecha de Producción:</label>
+                    <input type="date" id="retencion-fecha-produccion" required>
+                </div>
+                <div class="form-group">
+                    <label>👤 Creado por:</label>
+                    <input type="text" id="retencion-creado-por" placeholder="Nombre del responsable" required>
+                </div>
+            </div>
+            
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>🏭 Número de Producto:</label>
+                    <select id="retencion-producto" onchange="updateRetencionProductInfo()">
+                        <option value="">Seleccionar...</option>
+                        <option value="PX13-10-382">PX13-10-382 (LWR)</option>
+                        <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
+                        <option value="P54G-10-382">P54G-10-382 (LWR)</option>
+                        <option value="PX13-10-301">PX13-10-301 (UPR)</option>
+                        <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
+                        <option value="P54G-10-301-A">P54G-10-301-A (UPR)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>🔧 Número de Molde:</label>
+                    <select id="retencion-molde">
+                        <option value="">Primero selecciona un producto...</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h4>📊 Alcance de la Retención</h4>
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label>🎯 Shot Inicial:</label>
+                        <input type="number" id="retencion-shot-inicial" placeholder="Ej: 1" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label>🎯 Shot Final:</label>
+                        <input type="number" id="retencion-shot-final" placeholder="Ej: 50" min="1" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>📝 Motivo de la Retención:</label>
+                    <select id="retencion-motivo">
+                        <option value="">Seleccionar motivo...</option>
+                        <option value="INSPECCION_CALIDAD">🔍 Inspección de Calidad</option>
+                        <option value="DEFECTO_SOSPECHOSO">⚠️ Defecto Sospechoso</option>
+                        <option value="REVISION_PROCESO">🔧 Revisión de Proceso</option>
+                        <option value="AUDITORIA_INTERNA">📋 Auditoría Interna</option>
+                        <option value="RECLAMO_CLIENTE">📞 Reclamo de Cliente</option>
+                        <option value="OTRO">📝 Otro (especificar)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="retencion-otro-motivo" style="display: none;">
+                    <label>📝 Especificar motivo:</label>
+                    <input type="text" id="retencion-motivo-otro" placeholder="Describe el motivo de la retención...">
+                </div>
+                
+                <div class="form-group">
+                    <label>📝 Observaciones:</label>
+                    <textarea id="retencion-observaciones" rows="3" placeholder="Observaciones adicionales sobre la retención..."></textarea>
+                </div>
             </div>
             
             <div style="text-align: center; margin-top: 20px;">
-                <button class="btn btn-success" onclick="confirmStateChange()">✅ Actualizar Estado</button>
-                <button class="btn btn-secondary" onclick="closeManageModal()">❌ Cancelar</button>
+                <button class="btn btn-warning" onclick="validateRetencion()">🔍 Validar Shots</button>
+                <button class="btn btn-success" onclick="createRetencion()" id="create-retencion-btn" disabled>⏸️ Crear Retención</button>
+                <button class="btn btn-info" onclick="clearRetencionForm()">🔄 Limpiar</button>
+            </div>
+            
+            <!-- Resultado de validación -->
+            <div id="retencion-validation-result" style="margin-top: 20px;"></div>
+        </div>
+        
+        <!-- Lista de Retenciones Activas -->
+        <div class="card">
+            <h3>📋 Retenciones Activas</h3>
+            <div style="margin-bottom: 15px;">
+                <button class="btn btn-primary" onclick="refreshRetencionList()">🔄 Actualizar Lista</button>
+            </div>
+            
+            <table class="inventory-table">
+                <thead>
+                    <tr>
+                        <th>Folio</th>
+                        <th>Fecha Prod.</th>
+                        <th>Producto</th>
+                        <th>Molde</th>
+                        <th>Rango Shots</th>
+                        <th>Piezas</th>
+                        <th>Motivo</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="retenciones-table-body">
+                    <!-- Se llenará dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Gestionar Hojas -->
+    <div id="manage-sheets" class="sub-tab-content">
+        <h2>📋 Gestionar Hojas de Scrap</h2>
+        
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>📊 Hojas Registradas</h3>
+                <button class="btn btn-primary" onclick="refreshSheetsList()">🔄 Actualizar</button>
+            </div>
+            
+            <table class="inventory-table">
+                <thead>
+                    <tr>
+                        <th>Folio</th>
+                        <th>Fecha</th>
+                        <th>Producto</th>
+                        <th>Molde</th>
+                        <th>Sector</th>
+                        <th>Shots</th>
+                        <th>Creado por</th>
+                        <th>Estado</th>
+                        <th>Evidencia</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="sheets-table-body">
+                    <!-- Se llenará dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Modal para gestionar estado -->
+        <div id="manage-state-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>📋 Gestionar Estado de Hoja</h3>
+                
+                <div class="form-group">
+                    <label>📄 Folio:</label>
+                    <input type="text" id="modal-folio-manage" readonly style="background: #e9ecef;">
+                </div>
+                
+                <div class="form-group">
+                    <label>📊 Estado Actual:</label>
+                    <input type="text" id="modal-current-state" readonly style="background: #e9ecef;">
+                </div>
+                
+                <div class="form-group">
+                    <label>🔄 Nuevo Estado:</label>
+                    <select id="modal-new-state">
+                        <option value="">Seleccionar nuevo estado...</option>
+                        <option value="EN_PROCESO">🔄 En Proceso</option>
+                        <option value="PENDIENTE_FIRMA">✍️ Pendiente de Firma</option>
+                        <option value="CERRADA">✅ Cerrada</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="evidence-upload-section" style="display: none;">
+                    <label>📎 Subir Hoja Firmada (PDF):</label>
+                    <div class="file-management-container">
+                        <input type="file" id="modal-evidencia-file" accept=".pdf" style="display: none;" onchange="handleModalEvidenceUpload()">
+                        <div class="file-upload-area" onclick="document.getElementById('modal-evidencia-file').click()">
+                            <div id="modal-file-status">
+                                <span class="file-placeholder">📎 Haz clic para seleccionar archivo PDF</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-2" id="signatures-section" style="display: none;">
+                    <div class="form-group">
+                        <label>✍️ Firma Supervisor:</label>
+                        <input type="text" id="modal-firma-supervisor" placeholder="Nombre del supervisor">
+                    </div>
+                    <div class="form-group">
+                        <label>✍️ Firma Gerente:</label>
+                        <input type="text" id="modal-firma-gerente" placeholder="Nombre del gerente">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>📝 Comentarios:</label>
+                    <textarea id="modal-comentarios" rows="3" placeholder="Comentarios sobre el cambio de estado..."></textarea>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn btn-success" onclick="confirmStateChange()">✅ Actualizar Estado</button>
+                    <button class="btn btn-secondary" onclick="closeManageModal()">❌ Cancelar</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
-</div>
+    
     <!-- Reportes -->
-<div id="reports" class="sub-tab-content">
+    <div id="reports" class="sub-tab-content">
         <h2>📊 Reportes de Scrap Adicional</h2>
         
         <div class="card">
@@ -1735,9 +1729,9 @@
                 <button class="btn btn-success" onclick="exportToExcel()">📗 Exportar Excel</button>
                 <button class="btn btn-info" onclick="exportToPDF()">📄 Exportar PDF</button>
             </div>
-</div>
+        </div>
 
-<div class="card">
+        <div class="card">
             <h3>📈 Resumen de Scrap</h3>
             <div id="scrap-summary">
                 <div class="alert alert-info">
@@ -1745,6 +1739,7 @@
                 </div>
             </div>
         </div>
+    </div>
 </div>
 
     <script>
