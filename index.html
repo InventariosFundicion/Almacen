@@ -1753,6 +1753,33 @@
         let retenciones = JSON.parse(localStorage.getItem('retenciones') || '[]');
         let retencionCounter = parseInt(localStorage.getItem('retencionCounter') || '1');
         let validatedShots = []; // Para almacenar shots validados
+	// Variables globales para el sistema de usuarios
+        let usuarios = [];
+        let currentUser = null;
+        let isLoggedIn = false;
+
+// Roles y permisos
+const ROLES = {
+    ADMIN: 'ADMIN',
+    SUPERVISOR: 'SUPERVISOR', 
+    OPERADOR: 'OPERADOR',
+    CONSULTA: 'CONSULTA'
+};
+
+const ROLE_NAMES = {
+    ADMIN: '👑 Administrador',
+    SUPERVISOR: '👷 Supervisor',
+    OPERADOR: '📋 Operador',
+    CONSULTA: '👁️ Consulta'
+};
+
+// Permisos por rol
+const PERMISSIONS = {
+    ADMIN: ['dashboard', 'excluir-qr', 'inspeccion', 'tarimas', 'produccion', 'tarifas', 'retencion-scrap', 'usuarios'],
+    SUPERVISOR: ['dashboard', 'excluir-qr', 'inspeccion', 'tarimas', 'produccion', 'tarifas', 'retencion-scrap'],
+    OPERADOR: ['dashboard', 'inspeccion', 'tarimas', 'produccion', 'retencion-scrap'],
+    CONSULTA: ['dashboard', 'inspeccion']
+};
 
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
@@ -7274,6 +7301,547 @@ function createScrapFromRetencion(retencion, responsable) {
     
     alert(`📋 Hoja de scrap ${folio} creada automáticamente\n\nPuedes gestionarla desde la pestaña "Gestionar Hojas"`);
 }
+// Inicializar sistema de usuarios
+function initUserSystem() {
+    loadUsers();
+    
+    // Crear usuario admin por defecto si no existe
+    if (usuarios.length === 0) {
+        createDefaultAdmin();
+    }
+    
+    // Verificar si hay sesión activa
+    checkActiveSession();
+}
+
+// Cargar usuarios desde localStorage
+function loadUsers() {
+    const savedUsers = localStorage.getItem('usuarios');
+    if (savedUsers) {
+        usuarios = JSON.parse(savedUsers);
+    }
+}
+
+// Guardar usuarios en localStorage
+function saveUsers() {
+    localStorage.setItem('usuarios', JSON.stringify(usuarios));
+}
+
+// Crear admin por defecto
+function createDefaultAdmin() {
+    const defaultAdmin = {
+        id: 'admin-001',
+        username: 'admin',
+        password: 'admin123', // En producción, esto debe ser hasheado
+        nombre: 'Administrador',
+        apellido: 'del Sistema',
+        email: 'admin@sistema.com',
+        rol: ROLES.ADMIN,
+        fechaCreacion: new Date().toISOString(),
+        activo: true,
+        ultimoAcceso: null
+    };
+    
+    usuarios.push(defaultAdmin);
+    saveUsers();
+    
+    console.log('Usuario admin creado - Usuario: admin, Contraseña: admin123');
+}
+
+// Verificar sesión activa
+function checkActiveSession() {
+    const savedSession = localStorage.getItem('currentSession');
+    if (savedSession) {
+        const session = JSON.parse(savedSession);
+        const user = usuarios.find(u => u.id === session.userId);
+        
+        if (user && user.activo) {
+            currentUser = user;
+            isLoggedIn = true;
+            showMainApp();
+            return;
+        }
+    }
+    
+    showLoginScreen();
+}
+
+// Mostrar pantalla de login
+function showLoginScreen() {
+    document.body.innerHTML = `
+        <div id="login-container" style="min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; justify-content: center; align-items: center; font-family: Arial, sans-serif;">
+            <div style="background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); max-width: 400px; width: 90%;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #333; margin: 0; font-size: 28px;">🏭 Control de Almacén</h1>
+                    <p style="color: #666; margin: 10px 0 0 0;">Sistema de Gestión</p>
+                </div>
+                
+                <form id="login-form" onsubmit="handleLogin(event)">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 5px; color: #333; font-weight: bold;">👤 Usuario:</label>
+                        <input type="text" id="login-username" required style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box;" placeholder="Ingresa tu usuario">
+                    </div>
+                    
+                    <div style="margin-bottom: 30px;">
+                        <label style="display: block; margin-bottom: 5px; color: #333; font-weight: bold;">🔐 Contraseña:</label>
+                        <input type="password" id="login-password" required style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box;" placeholder="Ingresa tu contraseña">
+                    </div>
+                    
+                    <button type="submit" style="width: 100%; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.2s;">
+                        🚀 Iniciar Sesión
+                    </button>
+                </form>
+                
+                <div id="login-error" style="margin-top: 20px; padding: 10px; background: #ffebee; color: #c62828; border-radius: 5px; display: none; text-align: center;">
+                </div>
+                
+                <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 5px; font-size: 14px;">
+                    <strong>👑 Usuario Demo:</strong><br>
+                    Usuario: <code>admin</code><br>
+                    Contraseña: <code>admin123</code>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Manejar login
+function handleLogin(event) {
+    event.preventDefault();
+    
+    const username = document.getElementById('login-username').value;
+    const password = document.getElementById('login-password').value;
+    const errorDiv = document.getElementById('login-error');
+    
+    // Buscar usuario
+    const user = usuarios.find(u => u.username === username && u.activo);
+    
+    if (!user) {
+        showLoginError('❌ Usuario no encontrado o inactivo');
+        return;
+    }
+    
+    // Verificar contraseña (en producción usar hash)
+    if (user.password !== password) {
+        showLoginError('❌ Contraseña incorrecta');
+        return;
+    }
+    
+    // Login exitoso
+    currentUser = user;
+    isLoggedIn = true;
+    
+    // Actualizar último acceso
+    user.ultimoAcceso = new Date().toISOString();
+    saveUsers();
+    
+    // Guardar sesión
+    const session = {
+        userId: user.id,
+        loginTime: new Date().toISOString()
+    };
+    localStorage.setItem('currentSession', JSON.stringify(session));
+    
+    // Mostrar aplicación principal
+    showMainApp();
+}
+
+// Mostrar error de login
+function showLoginError(message) {
+    const errorDiv = document.getElementById('login-error');
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+    
+    setTimeout(() => {
+        errorDiv.style.display = 'none';
+    }, 5000);
+}
+
+// Mostrar aplicación principal
+function showMainApp() {
+    // Restaurar el HTML original pero con modificaciones para usuarios
+    document.body.innerHTML = `
+        <div id="main-app">
+            <!-- Barra superior con info del usuario -->
+            <div style="background: #333; color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong>🏭 Control de Almacén</strong> - Fundición 1.3
+                </div>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <span>👤 ${currentUser.nombre} ${currentUser.apellido} (${ROLE_NAMES[currentUser.rol]})</span>
+                    <button onclick="logout()" style="background: #d32f2f; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">
+                        🚪 Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Resto de la aplicación -->
+            <div id="app-content">
+                <!-- Aquí va el contenido original de tu aplicación -->
+            </div>
+        </div>
+    `;
+    
+    // Cargar el contenido original de la aplicación
+    loadOriginalApp();
+    
+    // Aplicar permisos
+    applyPermissions();
+}
+
+// Cerrar sesión
+function logout() {
+    if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+        currentUser = null;
+        isLoggedIn = false;
+        localStorage.removeItem('currentSession');
+        showLoginScreen();
+    }
+}
+
+// Verificar permisos
+function hasPermission(permission) {
+    if (!currentUser) return false;
+    return PERMISSIONS[currentUser.rol].includes(permission);
+}
+function loadOriginalApp() {
+    // Aquí ponemos el HTML original de tu aplicación
+    document.getElementById('app-content').innerHTML = `
+        <div class="container">
+            <h1>
+                <span class="icon">📦</span>
+                Control de Almacén
+                <span class="version">Fundición 1.3</span>
+            </h1>
+
+            <!-- Botones de navegación principales -->
+            <div class="main-nav">
+                <button id="btn-dashboard" class="nav-btn active" onclick="showSection('dashboard')" data-permission="dashboard">
+                    📊 Dashboard
+                </button>
+                <button id="btn-excluir-qr" class="nav-btn" onclick="showSection('excluir-qr')" data-permission="excluir-qr">
+                    🚫 Excluir QR
+                </button>
+                <button id="btn-inspeccion" class="nav-btn" onclick="showSection('inspeccion')" data-permission="inspeccion">
+                    🔍 Inspección
+                </button>
+                <button id="btn-tarimas" class="nav-btn" onclick="showSection('tarimas')" data-permission="tarimas">
+                    📋 Tarimas
+                </button>
+                <button id="btn-produccion" class="nav-btn" onclick="showSection('produccion')" data-permission="produccion">
+                    🏭 Producción
+                </button>
+                <button id="btn-tarifas" class="nav-btn" onclick="showSection('tarifas')" data-permission="tarifas">
+                    💰 Tarifas y Fletes
+                </button>
+                <button id="btn-retencion-scrap" class="nav-btn" onclick="showSection('retencion-scrap')" data-permission="retencion-scrap">
+                    ♻️ Retención y Scrap
+                </button>
+                <button id="btn-usuarios" class="nav-btn" onclick="showSection('usuarios')" data-permission="usuarios">
+                    👥 Usuarios
+                </button>
+            </div>
+
+            <!-- Todas las secciones de tu aplicación original van aquí -->
+            <!-- Dashboard -->
+            <div id="dashboard" class="section active">
+                <!-- Tu contenido de dashboard -->
+                <h2>📊 Dashboard Principal</h2>
+                <div class="dashboard-info">
+                    <p>Bienvenido al sistema de control de almacén.</p>
+                    <p><strong>Usuario actual:</strong> ${currentUser.nombre} ${currentUser.apellido}</p>
+                    <p><strong>Rol:</strong> ${ROLE_NAMES[currentUser.rol]}</p>
+                    <p><strong>Último acceso:</strong> ${currentUser.ultimoAcceso ? new Date(currentUser.ultimoAcceso).toLocaleString() : 'Primer acceso'}</p>
+                </div>
+            </div>
+
+            <!-- Sección de Usuarios (nueva) -->
+            <div id="usuarios" class="section">
+                <h2>👥 Gestión de Usuarios</h2>
+                <div id="usuarios-content">
+                    <!-- Se carga dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Aquí agregas todas tus otras secciones existentes -->
+            <!-- excluir-qr, inspeccion, tarimas, produccion, tarifas, retencion-scrap -->
+            
+        </div>
+    `;
+    
+    // Cargar la sección de usuarios si el usuario tiene permisos
+    if (hasPermission('usuarios')) {
+        loadUsersSection();
+    }
+}
+function applyPermissions() {
+    // Ocultar botones según permisos
+    const navButtons = document.querySelectorAll('.nav-btn[data-permission]');
+    
+    navButtons.forEach(button => {
+        const permission = button.getAttribute('data-permission');
+        if (!hasPermission(permission)) {
+            button.style.display = 'none';
+        }
+    });
+    
+    // Si el dashboard no está visible, mostrar la primera sección disponible
+    if (!hasPermission('dashboard')) {
+        const firstAvailableButton = document.querySelector('.nav-btn:not([style*="display: none"])');
+        if (firstAvailableButton) {
+            firstAvailableButton.click();
+        }
+    }
+}
+function loadUsersSection() {
+    const usersContent = document.getElementById('usuarios-content');
+    if (!usersContent) return;
+    
+    usersContent.innerHTML = `
+        <div class="users-section">
+            <!-- Botón para crear nuevo usuario -->
+            <div style="margin-bottom: 20px;">
+                <button onclick="showCreateUserForm()" style="background: #4caf50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+                    ➕ Crear Nuevo Usuario
+                </button>
+            </div>
+            
+            <!-- Lista de usuarios -->
+            <div id="users-list">
+                <h3>📋 Usuarios del Sistema</h3>
+                <div id="users-table">
+                    ${generateUsersTable()}
+                </div>
+            </div>
+            
+            <!-- Formulario para crear/editar usuario (oculto inicialmente) -->
+            <div id="user-form-container" style="display: none;">
+                <h3 id="form-title">➕ Crear Nuevo Usuario</h3>
+                <form id="user-form" onsubmit="handleUserSubmit(event)">
+                    <input type="hidden" id="user-id">
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <label>👤 Nombre:</label>
+                            <input type="text" id="user-nombre" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                        <div>
+                            <label>👤 Apellido:</label>
+                            <input type="text" id="user-apellido" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <label>🔑 Usuario:</label>
+                            <input type="text" id="user-username" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                        <div>
+                            <label>📧 Email:</label>
+                            <input type="email" id="user-email" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <label>🔐 Contraseña:</label>
+                            <input type="password" id="user-password" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                        <div>
+                            <label>🎭 Rol:</label>
+                            <select id="user-rol" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <option value="">Seleccionar rol...</option>
+                                <option value="ADMIN">👑 Administrador</option>
+                                <option value="SUPERVISOR">👷 Supervisor</option>
+                                <option value="OPERADOR">📋 Operador</option>
+                                <option value="CONSULTA">👁️ Consulta</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label>
+                            <input type="checkbox" id="user-activo" checked> ✅ Usuario activo
+                        </label>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" style="background: #4caf50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+                            💾 Guardar Usuario
+                        </button>
+                        <button type="button" onclick="cancelUserForm()" style="background: #f44336; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+                            ❌ Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+}
+function generateUsersTable() {
+    if (usuarios.length === 0) {
+        return '<p>No hay usuarios en el sistema.</p>';
+    }
+    
+    let html = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <thead>
+                <tr style="background: #f5f5f5;">
+                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">👤 Usuario</th>
+                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">📧 Email</th>
+                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">🎭 Rol</th>
+                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">📅 Último Acceso</th>
+                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">✅ Estado</th>
+                    <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">⚙️ Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    usuarios.forEach(user => {
+        html += `
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;">
+                    <strong>${user.nombre} ${user.apellido}</strong><br>
+                    <small>@${user.username}</small>
+                </td>
+                <td style="padding: 10px; border: 1px solid #ddd;">${user.email}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">${ROLE_NAMES[user.rol]}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">
+                    ${user.ultimoAcceso ? new Date(user.ultimoAcceso).toLocaleString() : 'Nunca'}
+                </td>
+                <td style="padding: 10px; border: 1px solid #ddd;">
+                    <span style="color: ${user.activo ? 'green' : 'red'};">
+                        ${user.activo ? '✅ Activo' : '❌ Inactivo'}
+                    </span>
+                </td>
+                <td style="padding: 10px; border: 1px solid #ddd;">
+                    <button onclick="editUser('${user.id}')" style="background: #2196f3; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer; margin-right: 5px;">
+                        ✏️ Editar
+                    </button>
+                    ${user.id === currentUser.id ? '' : `
+                        <button onclick="toggleUserStatus('${user.id}')" style="background: ${user.activo ? '#f44336' : '#4caf50'}; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer;">
+                            ${user.activo ? '❌ Desactivar' : '✅ Activar'}
+                        </button>
+                    `}
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table>';
+    return html;
+}
+
+function showCreateUserForm() {
+    document.getElementById('user-form-container').style.display = 'block';
+    document.getElementById('form-title').textContent = '➕ Crear Nuevo Usuario';
+    document.getElementById('user-form').reset();
+    document.getElementById('user-id').value = '';
+    document.getElementById('user-activo').checked = true;
+}
+
+function cancelUserForm() {
+    document.getElementById('user-form-container').style.display = 'none';
+}
+
+function handleUserSubmit(event) {
+    event.preventDefault();
+    
+    const userId = document.getElementById('user-id').value;
+    const isEditing = !!userId;
+    
+    const userData = {
+        id: userId || 'user-' + Date.now(),
+        username: document.getElementById('user-username').value,
+        password: document.getElementById('user-password').value,
+        nombre: document.getElementById('user-nombre').value,
+        apellido: document.getElementById('user-apellido').value,
+        email: document.getElementById('user-email').value,
+        rol: document.getElementById('user-rol').value,
+        activo: document.getElementById('user-activo').checked,
+        fechaCreacion: isEditing ? usuarios.find(u => u.id === userId).fechaCreacion : new Date().toISOString(),
+        ultimoAcceso: isEditing ? usuarios.find(u => u.id === userId).ultimoAcceso : null
+    };
+    
+    // Verificar si el username ya existe (excepto si estamos editando el mismo usuario)
+    const existingUser = usuarios.find(u => u.username === userData.username && u.id !== userData.id);
+    if (existingUser) {
+        alert('❌ El nombre de usuario ya existe. Por favor, elige otro.');
+        return;
+    }
+    
+    if (isEditing) {
+        // Actualizar usuario existente
+        const index = usuarios.findIndex(u => u.id === userId);
+        usuarios[index] = userData;
+    } else {
+        // Crear nuevo usuario
+        usuarios.push(userData);
+    }
+    
+    saveUsers();
+    cancelUserForm();
+    
+    // Actualizar la tabla
+    document.getElementById('users-table').innerHTML = generateUsersTable();
+    
+    alert(isEditing ? '✅ Usuario actualizado correctamente' : '✅ Usuario creado correctamente');
+}
+
+function editUser(userId) {
+    const user = usuarios.find(u => u.id === userId);
+    if (!user) return;
+    
+    document.getElementById('user-form-container').style.display = 'block';
+    document.getElementById('form-title').textContent = '✏️ Editar Usuario';
+    
+    document.getElementById('user-id').value = user.id;
+    document.getElementById('user-username').value = user.username;
+    document.getElementById('user-password').value = user.password;
+    document.getElementById('user-nombre').value = user.nombre;
+    document.getElementById('user-apellido').value = user.apellido;
+    document.getElementById('user-email').value = user.email;
+    document.getElementById('user-rol').value = user.rol;
+    document.getElementById('user-activo').checked = user.activo;
+}
+
+function toggleUserStatus(userId) {
+    const user = usuarios.find(u => u.id === userId);
+    if (!user) return;
+    
+    const action = user.activo ? 'desactivar' : 'activar';
+    if (confirm(`¿Estás seguro de que quieres ${action} al usuario ${user.nombre} ${user.apellido}?`)) {
+        user.activo = !user.activo;
+        saveUsers();
+        
+        // Actualizar la tabla
+        document.getElementById('users-table').innerHTML = generateUsersTable();
+        
+        alert(`✅ Usuario ${user.activo ? 'activado' : 'desactivado'} correctamente`);
+    }
+}
+// Modificar checkActiveSession
+function checkActiveSession() {
+    const savedSession = localStorage.getItem('currentSession');
+    if (savedSession) {
+        const session = JSON.parse(savedSession);
+        const user = usuarios.find(u => u.id === session.userId);
+        
+        if (user && user.activo) {
+            currentUser = user;
+            isLoggedIn = true;
+            showMainApp();
+            return;
+        }
+    }
+    
+    showLoginScreen();
+}
+// Inicializar sistema al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    initUserSystem();
+});
 </script>
 </body>
 </html>
