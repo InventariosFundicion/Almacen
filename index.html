@@ -1477,31 +1477,10 @@
         </div>
     </div>
 </div>
-    <div class="card">
-        <h3>📄 Evidencia y Firmas</h3>
-        <div class="form-group">
-            <label>📎 Subir Hoja Firmada (PDF):</label>
-            <div class="file-upload-area" onclick="document.getElementById('evidencia-file').click()">
-                <input type="file" id="evidencia-file" accept=".pdf" style="display: none;" onchange="handleEvidenceUpload()">
-                <div id="file-status">
-                    <span>📎 Haz clic para seleccionar archivo PDF</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="grid grid-2">
-            <div class="form-group">
-                <label>✍️ Firma de Responsable:</label>
-                <input type="text" id="firma-captura" placeholder="Firma del creador de la hoja">
-            </div>
-        </div>
-        
-        <div class="card">
-        <h3>📝 Observaciones</h3>
-        <div class="form-group">
-            <textarea id="observaciones" rows="3" placeholder="Observaciones adicionales..."></textarea>
-        </div>
-    </div>
+<div class="form-group">
+    <label>📝 Observaciones:</label>
+    <textarea id="observaciones" rows="3" placeholder="Observaciones adicionales..."></textarea>
+</div>
 
     <div style="text-align: center; margin-top: 30px;">
         <button class="btn btn-success" onclick="saveScrapSheet()">💾 Guardar Hoja</button>
@@ -1520,17 +1499,18 @@
             <button class="btn btn-primary" onclick="refreshSheetsList()">🔄 Actualizar</button>
         </div>
         
-        <table class="scrap-table">
+        <table class="inventory-table">
             <thead>
                 <tr>
                     <th>Folio</th>
                     <th>Fecha</th>
                     <th>Producto</th>
+                    <th>Molde</th>
                     <th>Sector</th>
-                    <th>Almacén</th>
                     <th>Shots</th>
                     <th>Creado por</th>
                     <th>Estado</th>
+                    <th>Evidencia</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -1540,44 +1520,62 @@
         </table>
     </div>
 
-    <!-- Modal para cerrar hoja -->
-    <div id="close-sheet-modal" class="modal" style="display: none;">
+    <!-- Modal para gestionar estado -->
+    <div id="manage-state-modal" class="modal" style="display: none;">
         <div class="modal-content">
-            <h3>🔒 Cerrar Hoja de Scrap</h3>
+            <h3>📋 Gestionar Estado de Hoja</h3>
+            
             <div class="form-group">
                 <label>📄 Folio:</label>
-                <input type="text" id="modal-folio" readonly style="background: #e9ecef;">
+                <input type="text" id="modal-folio-manage" readonly style="background: #e9ecef;">
             </div>
             
             <div class="form-group">
+                <label>📊 Estado Actual:</label>
+                <input type="text" id="modal-current-state" readonly style="background: #e9ecef;">
+            </div>
+            
+            <div class="form-group">
+                <label>🔄 Nuevo Estado:</label>
+                <select id="modal-new-state">
+                    <option value="">Seleccionar nuevo estado...</option>
+                    <option value="EN_PROCESO">🔄 En Proceso</option>
+                    <option value="PENDIENTE_FIRMA">✍️ Pendiente de Firma</option>
+                    <option value="CERRADA">✅ Cerrada</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="evidence-upload-section" style="display: none;">
                 <label>📎 Subir Hoja Firmada (PDF):</label>
-                <div class="file-upload-area" onclick="document.getElementById('evidencia-file').click()">
-                    <input type="file" id="evidencia-file" accept=".pdf" style="display: none;" onchange="handleEvidenceUpload()">
-                    <div id="file-status">
-                        <span>📎 Haz clic para seleccionar archivo PDF</span>
+                <div class="file-management-container">
+                    <input type="file" id="modal-evidencia-file" accept=".pdf" style="display: none;" onchange="handleModalEvidenceUpload()">
+                    <div class="file-upload-area" onclick="document.getElementById('modal-evidencia-file').click()">
+                        <div id="modal-file-status">
+                            <span class="file-placeholder">📎 Haz clic para seleccionar archivo PDF</span>
+                        </div>
                     </div>
                 </div>
             </div>
             
-            <div class="grid grid-2">
+            <div class="grid grid-2" id="signatures-section" style="display: none;">
                 <div class="form-group">
-                    <label>✍️ Firma Supervisor/Jefe:</label>
-                    <input type="text" id="firma-supervisor" placeholder="Nombre del supervisor">
+                    <label>✍️ Firma Supervisor:</label>
+                    <input type="text" id="modal-firma-supervisor" placeholder="Nombre del supervisor">
                 </div>
                 <div class="form-group">
                     <label>✍️ Firma Gerente:</label>
-                    <input type="text" id="firma-gerente" placeholder="Nombre del gerente">
+                    <input type="text" id="modal-firma-gerente" placeholder="Nombre del gerente">
                 </div>
             </div>
             
             <div class="form-group">
-                <label>📝 Comentarios de Cierre:</label>
-                <textarea id="comentarios-cierre" rows="3" placeholder="Comentarios del cierre..."></textarea>
+                <label>📝 Comentarios:</label>
+                <textarea id="modal-comentarios" rows="3" placeholder="Comentarios sobre el cambio de estado..."></textarea>
             </div>
             
             <div style="text-align: center; margin-top: 20px;">
-                <button class="btn btn-success" onclick="confirmCloseSheet()">✅ Cerrar Hoja</button>
-                <button class="btn btn-secondary" onclick="closeModal()">❌ Cancelar</button>
+                <button class="btn btn-success" onclick="confirmStateChange()">✅ Actualizar Estado</button>
+                <button class="btn btn-secondary" onclick="closeManageModal()">❌ Cancelar</button>
             </div>
         </div>
     </div>
@@ -1832,49 +1830,55 @@ function clearShotForm() {
         }
 
         // Guardar hoja de scrap
-        function saveScrapSheet() {
-            const folio = document.getElementById('folio').value;
-            const fechaOperacion = document.getElementById('fecha-operacion').value;
-            const sectorTrabajo = document.getElementById('sector-trabajo').value;
-            const numeroProducto = document.getElementById('numero-producto').value;
-            const firmaCaptura = document.getElementById('firma-captura').value;
-            const firmaDirector = document.getElementById('firma-director').value;
-            const observaciones = document.getElementById('observaciones').value;
+function saveScrapSheet() {
+    const folio = document.getElementById('folio').value;
+    const fechaOperacion = document.getElementById('fecha-operacion').value;
+    const sectorTrabajo = document.getElementById('sector-trabajo').value;
+    const numeroProducto = document.getElementById('numero-producto').value;
+    const nombreProducto = document.getElementById('nombre-producto').value;
+    const moldeProducto = document.getElementById('molde-producto').value;
+    const creadoPor = document.getElementById('creado-por').value;
+    const almacenOrigen = document.getElementById('almacen-origen').value;
+    const observaciones = document.getElementById('observaciones').value;
 
-            if (!fechaOperacion || !sectorTrabajo || !numeroProducto || currentShots.length === 0) {
-                alert('⚠️ Por favor completa todos los campos obligatorios y agrega al menos un shot');
-                return;
-            }
+    if (!fechaOperacion || !sectorTrabajo || !numeroProducto || !moldeProducto || !creadoPor || !almacenOrigen) {
+        alert('⚠️ Por favor completa todos los campos obligatorios');
+        return;
+    }
 
-            const scrapSheet = {
-                folio: folio,
-                fechaOperacion: fechaOperacion,
-                fechaCreacion: new Date().toLocaleString(),
-                sectorTrabajo: sectorTrabajo,
-                numeroProducto: numeroProducto,
-                nombreProducto: 'CYLINDER BLOCK',
-                shots: [...currentShots],
-                firmaCaptura: firmaCaptura,
-                firmaDirector: firmaDirector,
-                observaciones: observaciones,
-                estado: 'Abierta',
-                evidencia: document.getElementById('evidencia-file').files[0]?.name || null
-            };
+    if (!scannedShots || scannedShots.length === 0) {
+        alert('⚠️ Debe agregar al menos un shot');
+        return;
+    }
 
-            scrapSheets.push(scrapSheet);
-            localStorage.setItem('scrapSheets', JSON.stringify(scrapSheets));
-            
-            folioCounter++;
-            localStorage.setItem('folioCounter', folioCounter.toString());
+    const scrapSheet = {
+        folio: folio,
+        fechaOperacion: fechaOperacion,
+        fechaCreacion: new Date().toLocaleString(),
+        sectorTrabajo: sectorTrabajo,
+        numeroProducto: numeroProducto,
+        nombreProducto: nombreProducto,
+        moldeProducto: moldeProducto,
+        creadoPor: creadoPor,
+        almacenOrigen: almacenOrigen,
+        shots: [...scannedShots],
+        observaciones: observaciones,
+        estado: 'ABIERTA',
+        evidencia: null
+    };
 
-            alert('✅ Hoja de scrap guardada correctamente');
-            
-            // Limpiar formulario
-            clearForm();
-            generateNewFolio();
-            refreshSheetsList();
-        }
+    scrapSheets.push(scrapSheet);
+    localStorage.setItem('scrapSheets', JSON.stringify(scrapSheets));
+    
+    folioCounter++;
+    localStorage.setItem('folioCounter', folioCounter.toString());
 
+    alert('✅ Hoja de scrap guardada correctamente\n\nPuedes gestionarla desde la pestaña "Gestionar Hojas"');
+    
+    clearForm();
+    generateNewFolio();
+    refreshSheetsList();
+}
         // Limpiar formulario
         function clearForm() {
             document.getElementById('fecha-operacion').value = '';
@@ -1893,30 +1897,60 @@ function clearShotForm() {
         }
 
         // Refrescar lista de hojas
-        function refreshSheetsList() {
-            const tbody = document.getElementById('sheets-table-body');
-            
-            if (scrapSheets.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">📝 No hay hojas registradas</td></tr>';
-                return;
-            }
+function refreshSheetsList() {
+    const tbody = document.getElementById('sheets-table-body');
+    
+    if (scrapSheets.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center;">📝 No hay hojas registradas</td></tr>';
+        return;
+    }
 
-            tbody.innerHTML = scrapSheets.map(sheet => `
-                <tr>
-                    <td><strong>${sheet.folio}</strong></td>
-                    <td>${sheet.fechaOperacion}</td>
-                    <td>${sheet.numeroProducto}</td>
-                    <td>${sheet.sectorTrabajo}</td>
-                    <td>${sheet.shots.length}</td>
-                    <td><span class="status-badge status-${sheet.estado.toLowerCase()}">${sheet.estado}</span></td>
-                    <td>
-                        <button class="btn btn-info btn-sm" onclick="viewSheet('${sheet.folio}')">👁️</button>
-                        <button class="btn btn-warning btn-sm" onclick="editSheet('${sheet.folio}')">✏️</button>
-                        <button class="btn btn-success btn-sm" onclick="generateSheetPDF('${sheet.folio}')">📄</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
+    tbody.innerHTML = scrapSheets.map(sheet => {
+        const estadoBadge = getEstadoBadge(sheet.estado);
+        const evidenciaIcon = sheet.evidencia ? 
+            `<button onclick="viewEvidence('${sheet.folio}')" class="btn btn-sm" style="background: #28a745; color: white;">📄</button>` : 
+            '<span style="color: #6c757d;">Sin evidencia</span>';
+        
+        const accionesButtons = getAccionesButtons(sheet);
+        
+        return `
+            <tr>
+                <td><strong>${sheet.folio}</strong></td>
+                <td>${sheet.fechaOperacion}</td>
+                <td>${sheet.numeroProducto}</td>
+                <td>${sheet.moldeProducto || 'N/A'}</td>
+                <td>${sheet.sectorTrabajo}</td>
+                <td style="text-align: center;">${sheet.shots.length}</td>
+                <td>${sheet.creadoPor}</td>
+                <td>${estadoBadge}</td>
+                <td style="text-align: center;">${evidenciaIcon}</td>
+                <td>${accionesButtons}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function getEstadoBadge(estado) {
+    const badges = {
+        'ABIERTA': '<span style="background: #17a2b8; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">📝 Abierta</span>',
+        'EN_PROCESO': '<span style="background: #ffc107; color: black; padding: 4px 8px; border-radius: 4px; font-size: 12px;">🔄 En Proceso</span>',
+        'PENDIENTE_FIRMA': '<span style="background: #fd7e14; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">✍️ Pendiente Firma</span>',
+        'CERRADA': '<span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">✅ Cerrada</span>'
+    };
+    return badges[estado] || badges['ABIERTA'];
+}
+
+function getAccionesButtons(sheet) {
+    let buttons = `<button class="btn btn-info btn-sm" onclick="viewSheetDetails('${sheet.folio}')">👁️ Ver</button>`;
+    
+    if (sheet.estado !== 'CERRADA') {
+        buttons += ` <button class="btn btn-warning btn-sm" onclick="openManageStateModal('${sheet.folio}')">⚙️ Gestionar</button>`;
+    }
+    
+    buttons += ` <button class="btn btn-success btn-sm" onclick="generateSheetPDF('${sheet.folio}')">📄 PDF</button>`;
+    
+    return buttons;
+}
 
         // Generar PDF
         function generatePDF() {
@@ -6280,6 +6314,182 @@ function confirmCloseSheet() {
         alert('✅ Hoja cerrada correctamente');
         closeModal();
         refreshSheetsList();
+    }
+}
+function openManageStateModal(folio) {
+    const sheet = scrapSheets.find(s => s.folio === folio);
+    if (!sheet) return;
+    
+    document.getElementById('modal-folio-manage').value = sheet.folio;
+    document.getElementById('modal-current-state').value = getEstadoText(sheet.estado);
+    document.getElementById('modal-new-state').value = '';
+    document.getElementById('modal-comentarios').value = '';
+    
+    // Limpiar campos de evidencia y firmas
+    clearModalFields();
+    
+    // Mostrar modal
+    document.getElementById('manage-state-modal').style.display = 'flex';
+    
+    // Event listener para cambio de estado
+    document.getElementById('modal-new-state').onchange = handleStateChange;
+}
+
+function handleStateChange() {
+    const newState = document.getElementById('modal-new-state').value;
+    const evidenceSection = document.getElementById('evidence-upload-section');
+    const signaturesSection = document.getElementById('signatures-section');
+    
+    // Ocultar todas las secciones por defecto
+    evidenceSection.style.display = 'none';
+    signaturesSection.style.display = 'none';
+    
+    if (newState === 'PENDIENTE_FIRMA' || newState === 'CERRADA') {
+        evidenceSection.style.display = 'block';
+    }
+    
+    if (newState === 'CERRADA') {
+        signaturesSection.style.display = 'block';
+    }
+}
+
+function getEstadoText(estado) {
+    const texts = {
+        'ABIERTA': 'Abierta',
+        'EN_PROCESO': 'En Proceso',
+        'PENDIENTE_FIRMA': 'Pendiente de Firma',
+        'CERRADA': 'Cerrada'
+    };
+    return texts[estado] || 'Desconocido';
+}
+
+function clearModalFields() {
+    document.getElementById('modal-evidencia-file').value = '';
+    document.getElementById('modal-file-status').innerHTML = '<span class="file-placeholder">📎 Haz clic para seleccionar archivo PDF</span>';
+    document.getElementById('modal-firma-supervisor').value = '';
+    document.getElementById('modal-firma-gerente').value = '';
+    document.getElementById('evidence-upload-section').style.display = 'none';
+    document.getElementById('signatures-section').style.display = 'none';
+}
+function handleModalEvidenceUpload() {
+    const file = document.getElementById('modal-evidencia-file').files[0];
+    const fileStatus = document.getElementById('modal-file-status');
+    
+    if (file) {
+        if (file.type !== 'application/pdf') {
+            alert('⚠️ Solo se permiten archivos PDF');
+            return;
+        }
+        
+        if (file.size > 5 * 1024 * 1024) {
+            alert('⚠️ El archivo no puede ser mayor a 5MB');
+            return;
+        }
+        
+        const sizeInMB = (file.size / 1024 / 1024).toFixed(2);
+        fileStatus.innerHTML = `<span style="color: green;">✅ ${file.name} (${sizeInMB} MB)</span>`;
+    }
+}
+
+async function confirmStateChange() {
+    const folio = document.getElementById('modal-folio-manage').value;
+    const newState = document.getElementById('modal-new-state').value;
+    const comentarios = document.getElementById('modal-comentarios').value;
+    
+    if (!newState) {
+        alert('⚠️ Selecciona un nuevo estado');
+        return;
+    }
+    
+    // Validaciones según el estado
+    if (newState === 'PENDIENTE_FIRMA' || newState === 'CERRADA') {
+        const evidenceFile = document.getElementById('modal-evidencia-file').files[0];
+        if (!evidenceFile) {
+            alert('⚠️ Debe subir la hoja firmada en PDF para este estado');
+            return;
+        }
+    }
+    
+    if (newState === 'CERRADA') {
+        const supervisor = document.getElementById('modal-firma-supervisor').value;
+        const gerente = document.getElementById('modal-firma-gerente').value;
+        
+        if (!supervisor || !gerente) {
+            alert('⚠️ Se requieren ambas firmas para cerrar la hoja');
+            return;
+        }
+    }
+    
+    // Encontrar y actualizar la hoja
+    const sheetIndex = scrapSheets.findIndex(s => s.folio === folio);
+    if (sheetIndex === -1) return;
+    
+    // Preparar datos de evidencia si existe
+    let evidenciaData = null;
+    const evidenceFile = document.getElementById('modal-evidencia-file').files[0];
+    if (evidenceFile) {
+        try {
+            const base64 = await fileToBase64(evidenceFile);
+            evidenciaData = {
+                nombre: evidenceFile.name,
+                tamaño: evidenceFile.size,
+                fecha: new Date().toISOString(),
+                contenido: base64
+            };
+        } catch (error) {
+            alert('❌ Error al procesar el archivo');
+            return;
+        }
+    }
+    
+    // Actualizar la hoja
+    scrapSheets[sheetIndex].estado = newState;
+    scrapSheets[sheetIndex].fechaUltimaActualizacion = new Date().toISOString();
+    scrapSheets[sheetIndex].comentariosEstado = comentarios;
+    
+    if (evidenciaData) {
+        scrapSheets[sheetIndex].evidencia = evidenciaData;
+    }
+    
+    if (newState === 'CERRADA') {
+        scrapSheets[sheetIndex].firmaSupervisor = document.getElementById('modal-firma-supervisor').value;
+        scrapSheets[sheetIndex].firmaGerente = document.getElementById('modal-firma-gerente').value;
+        scrapSheets[sheetIndex].fechaCierre = new Date().toISOString();
+    }
+    
+    // Guardar en localStorage
+    localStorage.setItem('scrapSheets', JSON.stringify(scrapSheets));
+    
+    alert(`✅ Estado actualizado a: ${getEstadoText(newState)}`);
+    
+    closeManageModal();
+    refreshSheetsList();
+}
+
+function closeManageModal() {
+    document.getElementById('manage-state-modal').style.display = 'none';
+}
+
+function viewEvidence(folio) {
+    const sheet = scrapSheets.find(s => s.folio === folio);
+    if (!sheet || !sheet.evidencia) {
+        alert('❌ No hay evidencia disponible para esta hoja');
+        return;
+    }
+    
+    const evidencia = sheet.evidencia;
+    const sizeInMB = (evidencia.tamaño / 1024 / 1024).toFixed(2);
+    const fecha = new Date(evidencia.fecha).toLocaleString();
+    
+    if (confirm(`📄 Evidencia de ${folio}:\n\n• Archivo: ${evidencia.nombre}\n• Tamaño: ${sizeInMB}MB\n• Subido: ${fecha}\n\n¿Deseas descargar el archivo?`)) {
+        const link = document.createElement('a');
+        link.href = evidencia.contenido;
+        link.download = evidencia.nombre;
+        link.style.display = 'none';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 }
 </script>
