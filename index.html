@@ -1608,6 +1608,7 @@
         </table>
     </div>
 </div>
+</div>
     <!-- Gestionar Hojas -->
 <div id="manage-sheets" class="sub-tab-content">
     <h2>📋 Gestionar Hojas de Scrap</h2>
@@ -1838,7 +1839,7 @@ function updateProductInfo() {
             MODEL_MOLDS[modeloConFUN].forEach(molde => {
                 const option = document.createElement('option');
                 option.value = molde;
-                option.textContent = 'Molde ' + molde;
+                option.textContent = molde;
                 moldeSelect.appendChild(option);
             });
         }
@@ -4073,7 +4074,7 @@ function updateMoldeOptions(prefix) {
         MODEL_MOLDS[modelo].forEach(molde => {
             const option = document.createElement('option');
             option.value = molde;
-            option.textContent = 'Molde ' + molde;
+            option.textContent = molde;
             moldeSelect.appendChild(option);
         });
     }
