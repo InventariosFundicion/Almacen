@@ -7331,11 +7331,11 @@ function saveUsers() {
 function createDefaultAdmin() {
     const defaultAdmin = {
         id: 'admin-001',
-        username: 'admin',
-        password: 'admin123', // En producción, esto debe ser hasheado
-        nombre: 'Administrador',
-        apellido: 'del Sistema',
-        email: 'admin@sistema.com',
+        username: 'Edgar.Mejia',
+        password: 'Admin2025!', // Contraseña más segura
+        nombre: 'Edgar Isaías',
+        apellido: 'Sánchez Mejía',
+        email: 'sanchezei@halmex.com.mx',
         rol: ROLES.ADMIN,
         fechaCreacion: new Date().toISOString(),
         activo: true,
@@ -7345,7 +7345,7 @@ function createDefaultAdmin() {
     usuarios.push(defaultAdmin);
     saveUsers();
     
-    console.log('Usuario admin creado - Usuario: admin, Contraseña: admin123');
+    console.log('Usuario admin creado - Usuario: Edgar.Mejia, Contraseña: Admin2025!');
 }
 
 // Verificar sesión activa
@@ -7395,11 +7395,10 @@ function showLoginScreen() {
                 <div id="login-error" style="margin-top: 20px; padding: 10px; background: #ffebee; color: #c62828; border-radius: 5px; display: none; text-align: center;">
                 </div>
                 
-                <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 5px; font-size: 14px;">
-                    <strong>👑 Usuario Demo:</strong><br>
-                    Usuario: <code>admin</code><br>
-                    Contraseña: <code>admin123</code>
-                </div>
+               <div style="margin-top: 20px; padding: 15px; background: #e8f5e8; border-radius: 5px; font-size: 14px; text-align: center;">
+                   <strong>🔐 Sistema Seguro</strong><br>
+                   <small>Contacta al administrador para obtener acceso</small>
+               </div>
             </div>
         </div>
     `;
@@ -7459,6 +7458,11 @@ function showLoginError(message) {
 
 // Mostrar aplicación principal
 function showMainApp() {
+    // Verificar si ya existe la barra de usuario para evitar duplicados
+    if (document.getElementById('user-bar')) {
+        return; // Ya está cargada la aplicación
+    }
+    
     // Crear barra superior con info del usuario
     const userBar = `
         <div id="user-bar" style="background: #333; color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000;">
@@ -7757,7 +7761,7 @@ function toggleUserStatus(userId) {
         alert(`✅ Usuario ${user.activo ? 'activado' : 'desactivado'} correctamente`);
     }
 }
-// Modificar checkActiveSession
+// Verificar sesión activa
 function checkActiveSession() {
     const savedSession = localStorage.getItem('currentSession');
     if (savedSession) {
@@ -7772,7 +7776,10 @@ function checkActiveSession() {
         }
     }
     
-    showLoginScreen();
+    // Solo mostrar login si no hay sesión válida
+    if (!isLoggedIn) {
+        showLoginScreen();
+    }
 }
 // Mostrar modal de gestión de usuarios
 function showUsersModal() {
