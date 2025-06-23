@@ -7367,9 +7367,22 @@ function checkActiveSession() {
 }
 
 // Mostrar pantalla de login
+// Mostrar pantalla de login
 function showLoginScreen() {
-    document.body.innerHTML = `
-        <div id="login-container" style="min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; justify-content: center; align-items: center; font-family: Arial, sans-serif;">
+    // Ocultar contenido principal si existe
+    const container = document.querySelector('.container');
+    if (container) {
+        container.style.display = 'none';
+    }
+    
+    // Remover barra de usuario si existe
+    const userBar = document.getElementById('user-bar');
+    if (userBar) {
+        userBar.remove();
+    }
+    
+    document.body.insertAdjacentHTML('beforeend', `
+        <div id="login-container" style="min-height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; justify-content: center; align-items: center; font-family: Arial, sans-serif; position: fixed; top: 0; left: 0; width: 100%; z-index: 9999;">
             <div style="background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); max-width: 400px; width: 90%;">
                 <div style="text-align: center; margin-bottom: 30px;">
                     <h1 style="color: #333; margin: 0; font-size: 28px;">🏭 Control de Almacén</h1>
@@ -7395,15 +7408,14 @@ function showLoginScreen() {
                 <div id="login-error" style="margin-top: 20px; padding: 10px; background: #ffebee; color: #c62828; border-radius: 5px; display: none; text-align: center;">
                 </div>
                 
-               <div style="margin-top: 20px; padding: 15px; background: #e8f5e8; border-radius: 5px; font-size: 14px; text-align: center;">
-                   <strong>🔐 Sistema Seguro</strong><br>
-                   <small>Contacta al administrador para obtener acceso</small>
-               </div>
+                <div style="margin-top: 20px; padding: 15px; background: #e8f5e8; border-radius: 5px; font-size: 14px; text-align: center;">
+                    <strong>🔐 Sistema Seguro</strong><br>
+                    <small>Contacta al administrador para obtener acceso</small>
+                </div>
             </div>
         </div>
-    `;
+    `);
 }
-
 // Manejar login
 function handleLogin(event) {
     event.preventDefault();
@@ -7463,6 +7475,12 @@ function showMainApp() {
         return; // Ya está cargada la aplicación
     }
     
+    // Ocultar pantalla de login si existe
+    const loginContainer = document.getElementById('login-container');
+    if (loginContainer) {
+        loginContainer.remove();
+    }
+    
     // Crear barra superior con info del usuario
     const userBar = `
         <div id="user-bar" style="background: #333; color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000;">
@@ -7482,8 +7500,20 @@ function showMainApp() {
     // Insertar barra de usuario al inicio del body
     document.body.insertAdjacentHTML('afterbegin', userBar);
     
+    // Asegurar que el contenido principal sea visible
+    const container = document.querySelector('.container');
+    if (container) {
+        container.style.display = 'block';
+        container.style.visibility = 'visible';
+    }
+    
     // Aplicar permisos a la aplicación existente
     applyPermissions();
+    
+    // Inicializar la aplicación si no se ha hecho
+    if (typeof updateAllDisplays === 'function') {
+        updateAllDisplays();
+    }
 }
 // Cerrar sesión
 function logout() {
@@ -7858,6 +7888,22 @@ function resetUserSystem() {
     localStorage.removeItem('usuarios');
     localStorage.removeItem('currentSession');
     location.reload();
+}
+// Cerrar sesión
+function logout() {
+    if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+        currentUser = null;
+        isLoggedIn = false;
+        localStorage.removeItem('currentSession');
+        
+        // Remover barra de usuario
+        const userBar = document.getElementById('user-bar');
+        if (userBar) {
+            userBar.remove();
+        }
+        
+        showLoginScreen();
+    }
 }
 </script>
 </body>
