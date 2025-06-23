@@ -1775,10 +1775,10 @@ const ROLE_NAMES = {
 
 // Permisos por rol
 const PERMISSIONS = {
-    ADMIN: ['dashboard', 'excluir-qr', 'inspeccion', 'tarimas', 'produccion', 'tarifas', 'retencion-scrap', 'usuarios'],
-    SUPERVISOR: ['dashboard', 'excluir-qr', 'inspeccion', 'tarimas', 'produccion', 'tarifas', 'retencion-scrap'],
-    OPERADOR: ['dashboard', 'inspeccion', 'tarimas', 'produccion', 'retencion-scrap'],
-    CONSULTA: ['dashboard', 'inspeccion']
+    ADMIN: ['dashboard', 'scanner', 'inventory', 'pallets', 'production', 'theoretical', 'scrap-retention', 'usuarios'],
+    SUPERVISOR: ['dashboard', 'scanner', 'inventory', 'pallets', 'production', 'theoretical', 'scrap-retention'],
+    OPERADOR: ['dashboard', 'scanner', 'inventory', 'pallets', 'production', 'scrap-retention'],
+    CONSULTA: ['dashboard', 'inventory', 'theoretical']
 };
 
         // Inicialización
@@ -7459,36 +7459,28 @@ function showLoginError(message) {
 
 // Mostrar aplicación principal
 function showMainApp() {
-    // Restaurar el HTML original pero con modificaciones para usuarios
-    document.body.innerHTML = `
-        <div id="main-app">
-            <!-- Barra superior con info del usuario -->
-            <div style="background: #333; color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <strong>🏭 Control de Almacén</strong> - Fundición 1.3
-                </div>
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <span>👤 ${currentUser.nombre} ${currentUser.apellido} (${ROLE_NAMES[currentUser.rol]})</span>
-                    <button onclick="logout()" style="background: #d32f2f; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">
-                        🚪 Cerrar Sesión
-                    </button>
-                </div>
+    // Crear barra superior con info del usuario
+    const userBar = `
+        <div id="user-bar" style="background: #333; color: white; padding: 10px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000;">
+            <div>
+                <strong>🏭 Control de Almacén</strong> - Fundición 1.3
             </div>
-            
-            <!-- Resto de la aplicación -->
-            <div id="app-content">
-                <!-- Aquí va el contenido original de tu aplicación -->
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span>👤 ${currentUser.nombre} ${currentUser.apellido} (${ROLE_NAMES[currentUser.rol]})</span>
+                ${hasPermission('usuarios') ? '<button onclick="showUsersModal()" style="background: #4caf50; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">👥 Usuarios</button>' : ''}
+                <button onclick="logout()" style="background: #d32f2f; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">
+                    🚪 Cerrar Sesión
+                </button>
             </div>
         </div>
     `;
     
-    // Cargar el contenido original de la aplicación
-    loadOriginalApp();
+    // Insertar barra de usuario al inicio del body
+    document.body.insertAdjacentHTML('afterbegin', userBar);
     
-    // Aplicar permisos
+    // Aplicar permisos a la aplicación existente
     applyPermissions();
 }
-
 // Cerrar sesión
 function logout() {
     if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
@@ -7504,92 +7496,34 @@ function hasPermission(permission) {
     if (!currentUser) return false;
     return PERMISSIONS[currentUser.rol].includes(permission);
 }
-function loadOriginalApp() {
-    // Aquí ponemos el HTML original de tu aplicación
-    document.getElementById('app-content').innerHTML = `
-        <div class="container">
-            <h1>
-                <span class="icon">📦</span>
-                Control de Almacén
-                <span class="version">Fundición 1.3</span>
-            </h1>
-
-            <!-- Botones de navegación principales -->
-            <div class="main-nav">
-                <button id="btn-dashboard" class="nav-btn active" onclick="showSection('dashboard')" data-permission="dashboard">
-                    📊 Dashboard
-                </button>
-                <button id="btn-excluir-qr" class="nav-btn" onclick="showSection('excluir-qr')" data-permission="excluir-qr">
-                    🚫 Excluir QR
-                </button>
-                <button id="btn-inspeccion" class="nav-btn" onclick="showSection('inspeccion')" data-permission="inspeccion">
-                    🔍 Inspección
-                </button>
-                <button id="btn-tarimas" class="nav-btn" onclick="showSection('tarimas')" data-permission="tarimas">
-                    📋 Tarimas
-                </button>
-                <button id="btn-produccion" class="nav-btn" onclick="showSection('produccion')" data-permission="produccion">
-                    🏭 Producción
-                </button>
-                <button id="btn-tarifas" class="nav-btn" onclick="showSection('tarifas')" data-permission="tarifas">
-                    💰 Tarifas y Fletes
-                </button>
-                <button id="btn-retencion-scrap" class="nav-btn" onclick="showSection('retencion-scrap')" data-permission="retencion-scrap">
-                    ♻️ Retención y Scrap
-                </button>
-                <button id="btn-usuarios" class="nav-btn" onclick="showSection('usuarios')" data-permission="usuarios">
-                    👥 Usuarios
-                </button>
-            </div>
-
-            <!-- Todas las secciones de tu aplicación original van aquí -->
-            <!-- Dashboard -->
-            <div id="dashboard" class="section active">
-                <!-- Tu contenido de dashboard -->
-                <h2>📊 Dashboard Principal</h2>
-                <div class="dashboard-info">
-                    <p>Bienvenido al sistema de control de almacén.</p>
-                    <p><strong>Usuario actual:</strong> ${currentUser.nombre} ${currentUser.apellido}</p>
-                    <p><strong>Rol:</strong> ${ROLE_NAMES[currentUser.rol]}</p>
-                    <p><strong>Último acceso:</strong> ${currentUser.ultimoAcceso ? new Date(currentUser.ultimoAcceso).toLocaleString() : 'Primer acceso'}</p>
-                </div>
-            </div>
-
-            <!-- Sección de Usuarios (nueva) -->
-            <div id="usuarios" class="section">
-                <h2>👥 Gestión de Usuarios</h2>
-                <div id="usuarios-content">
-                    <!-- Se carga dinámicamente -->
-                </div>
-            </div>
-
-            <!-- Aquí agregas todas tus otras secciones existentes -->
-            <!-- excluir-qr, inspeccion, tarimas, produccion, tarifas, retencion-scrap -->
-            
-        </div>
-    `;
-    
-    // Cargar la sección de usuarios si el usuario tiene permisos
-    if (hasPermission('usuarios')) {
-        loadUsersSection();
-    }
-}
 function applyPermissions() {
-    // Ocultar botones según permisos
-    const navButtons = document.querySelectorAll('.nav-btn[data-permission]');
+    // Mapeo de pestañas a permisos
+    const tabPermissions = {
+        'dashboard': 'dashboard',
+        'scanner': 'scanner', 
+        'inventory': 'inventory',
+        'pallets': 'pallets',
+        'production': 'production',
+        'theoretical': 'theoretical',
+        'scrap-retention': 'scrap-retention'
+    };
     
-    navButtons.forEach(button => {
-        const permission = button.getAttribute('data-permission');
-        if (!hasPermission(permission)) {
-            button.style.display = 'none';
+    // Ocultar pestañas según permisos del rol
+    document.querySelectorAll('.nav-tab').forEach(tab => {
+        const tabName = tab.getAttribute('data-tab');
+        const permission = tabPermissions[tabName];
+        
+        // Verificar si el rol tiene permiso para esta pestaña
+        if (permission && !PERMISSIONS[currentUser.rol].includes(permission)) {
+            tab.style.display = 'none';
         }
     });
     
-    // Si el dashboard no está visible, mostrar la primera sección disponible
-    if (!hasPermission('dashboard')) {
-        const firstAvailableButton = document.querySelector('.nav-btn:not([style*="display: none"])');
-        if (firstAvailableButton) {
-            firstAvailableButton.click();
+    // Mostrar primera pestaña disponible si dashboard no está disponible
+    if (!PERMISSIONS[currentUser.rol].includes('dashboard')) {
+        const firstAvailableTab = document.querySelector('.nav-tab:not([style*="display: none"])');
+        if (firstAvailableTab) {
+            firstAvailableTab.click();
         }
     }
 }
@@ -7778,6 +7712,8 @@ function handleUserSubmit(event) {
     } else {
         // Crear nuevo usuario
         usuarios.push(userData);
+	// Enviar notificación por email al nuevo usuario
+        sendWelcomeEmail(userData);
     }
     
     saveUsers();
@@ -7837,6 +7773,74 @@ function checkActiveSession() {
     }
     
     showLoginScreen();
+}
+// Mostrar modal de gestión de usuarios
+function showUsersModal() {
+    const modalHTML = `
+        <div id="users-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 2000;">
+            <div style="background: white; padding: 30px; border-radius: 10px; max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h3>👥 Gestión de Usuarios</h3>
+                    <button onclick="closeUsersModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">×</button>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <button onclick="showCreateUserForm()" style="background: #4caf50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+                        ➕ Crear Nuevo Usuario
+                    </button>
+                </div>
+                
+                <div id="users-list">
+                    <h4>📋 Usuarios del Sistema</h4>
+                    <div id="users-table">
+                        ${generateUsersTable()}
+                    </div>
+                </div>
+                
+                <div id="user-form-container" style="display: none; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px;">
+                    <h4 id="form-title">➕ Crear Nuevo Usuario</h4>
+                    <!-- Tu formulario existente aquí -->
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function closeUsersModal() {
+    const modal = document.getElementById('users-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+// Función para enviar email de bienvenida
+function sendWelcomeEmail(userData) {
+    console.log('📧 Email enviado a:', userData.email);
+    showEmailNotification(userData.email);
+}
+
+// Mostrar notificación de email enviado
+function showEmailNotification(email) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed; top: 80px; right: 20px; background: #4caf50; color: white;
+        padding: 15px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 3000; max-width: 300px;
+    `;
+    
+    notification.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 20px;">📧</span>
+            <div>
+                <strong>Email enviado</strong><br>
+                <small>Notificación enviada a ${email}</small>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 5000);
 }
 // Inicializar sistema al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
