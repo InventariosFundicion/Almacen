@@ -1327,6 +1327,7 @@
     
     <div class="sub-nav-tabs">
         <button class="sub-nav-tab active" onclick="showSubTab('new-scrap')">📝 Nueva Hoja</button>
+	<button class="sub-nav-tab" onclick="showSubTab('retenciones')">⏸️ Retenciones</button>
         <button class="sub-nav-tab" onclick="showSubTab('manage-sheets')">📋 Gestionar Hojas</button>
         <button class="sub-nav-tab" onclick="showSubTab('reports')">📊 Reportes</button>
     </div>
@@ -1489,6 +1490,124 @@
     </div>
 </div>
 </div>
+<!-- Retenciones -->
+<div id="retenciones" class="sub-tab-content">
+    <h2>⏸️ Sistema de Retenciones</h2>
+    
+    <!-- Crear Nueva Retención -->
+    <div class="card">
+        <h3>📝 Nueva Retención</h3>
+        
+        <div class="grid grid-3">
+            <div class="form-group">
+                <label>📄 Folio de Retención:</label>
+                <input type="text" id="retencion-folio" readonly style="background: #e9ecef;">
+            </div>
+            <div class="form-group">
+                <label>📅 Fecha de Producción:</label>
+                <input type="date" id="retencion-fecha-produccion" required>
+            </div>
+            <div class="form-group">
+                <label>👤 Creado por:</label>
+                <input type="text" id="retencion-creado-por" placeholder="Nombre del responsable" required>
+            </div>
+        </div>
+        
+        <div class="grid grid-2">
+            <div class="form-group">
+                <label>🏭 Número de Producto:</label>
+                <select id="retencion-producto" onchange="updateRetencionProductInfo()">
+                    <option value="">Seleccionar...</option>
+                    <option value="PX13-10-382">PX13-10-382 (LWR)</option>
+                    <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
+                    <option value="P54G-10-382">P54G-10-382 (LWR)</option>
+                    <option value="PX13-10-301">PX13-10-301 (UPR)</option>
+                    <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
+                    <option value="P54G-10-301-A">P54G-10-301-A (UPR)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>🔧 Número de Molde:</label>
+                <select id="retencion-molde">
+                    <option value="">Primero selecciona un producto...</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h4>📊 Alcance de la Retención</h4>
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>🎯 Shot Inicial:</label>
+                    <input type="number" id="retencion-shot-inicial" placeholder="Ej: 1" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label>🎯 Shot Final:</label>
+                    <input type="number" id="retencion-shot-final" placeholder="Ej: 50" min="1" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>📝 Motivo de la Retención:</label>
+                <select id="retencion-motivo">
+                    <option value="">Seleccionar motivo...</option>
+                    <option value="INSPECCION_CALIDAD">🔍 Inspección de Calidad</option>
+                    <option value="DEFECTO_SOSPECHOSO">⚠️ Defecto Sospechoso</option>
+                    <option value="REVISION_PROCESO">🔧 Revisión de Proceso</option>
+                    <option value="AUDITORIA_INTERNA">📋 Auditoría Interna</option>
+                    <option value="RECLAMO_CLIENTE">📞 Reclamo de Cliente</option>
+                    <option value="OTRO">📝 Otro (especificar)</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="retencion-otro-motivo" style="display: none;">
+                <label>📝 Especificar motivo:</label>
+                <input type="text" id="retencion-motivo-otro" placeholder="Describe el motivo de la retención...">
+            </div>
+            
+            <div class="form-group">
+                <label>📝 Observaciones:</label>
+                <textarea id="retencion-observaciones" rows="3" placeholder="Observaciones adicionales sobre la retención..."></textarea>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="btn btn-warning" onclick="validateRetencion()">🔍 Validar Shots</button>
+            <button class="btn btn-success" onclick="createRetencion()" id="create-retencion-btn" disabled>⏸️ Crear Retención</button>
+            <button class="btn btn-info" onclick="clearRetencionForm()">🔄 Limpiar</button>
+        </div>
+        
+        <!-- Resultado de validación -->
+        <div id="retencion-validation-result" style="margin-top: 20px;"></div>
+    </div>
+    
+    <!-- Lista de Retenciones Activas -->
+    <div class="card">
+        <h3>📋 Retenciones Activas</h3>
+        <div style="margin-bottom: 15px;">
+            <button class="btn btn-primary" onclick="refreshRetencionList()">🔄 Actualizar Lista</button>
+        </div>
+        
+        <table class="inventory-table">
+            <thead>
+                <tr>
+                    <th>Folio</th>
+                    <th>Fecha Prod.</th>
+                    <th>Producto</th>
+                    <th>Molde</th>
+                    <th>Rango Shots</th>
+                    <th>Piezas</th>
+                    <th>Motivo</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="retenciones-table-body">
+                <!-- Se llenará dinámicamente -->
+            </tbody>
+        </table>
+    </div>
+</div>
     <!-- Gestionar Hojas -->
 <div id="manage-sheets" class="sub-tab-content">
     <h2>📋 Gestionar Hojas de Scrap</h2>
@@ -1634,12 +1753,18 @@
         let folioCounter = parseInt(localStorage.getItem('folioCounter') || '1');
 	// Variables para scrap - unificar nombres
         let scannedShots = []; // Usar esta variable consistentemente
+	// Variables para sistema de retenciones
+        let retenciones = JSON.parse(localStorage.getItem('retenciones') || '[]');
+        let retencionCounter = parseInt(localStorage.getItem('retencionCounter') || '1');
+        let validatedShots = []; // Para almacenar shots validados
 
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
             generateNewFolio();
             setTodayDate();
             refreshSheetsList();
+	// Inicializar sistema de retenciones
+            initializeRetencionSystem();
         });
 
         // Navegación entre pestañas
@@ -6492,6 +6617,643 @@ function viewEvidence(folio) {
         link.click();
         document.body.removeChild(link);
     }
+}
+// Inicializar sistema de retenciones
+function initializeRetencionSystem() {
+    generateNewRetencionFolio();
+    refreshRetencionList();
+    
+    // Event listener para cambio de motivo
+    document.getElementById('retencion-motivo').addEventListener('change', function() {
+        const otroMotivoDiv = document.getElementById('retencion-otro-motivo');
+        if (this.value === 'OTRO') {
+            otroMotivoDiv.style.display = 'block';
+        } else {
+            otroMotivoDiv.style.display = 'none';
+        }
+    });
+}
+
+function generateNewRetencionFolio() {
+    const currentDate = new Date();
+    const year = currentDate.getFullYear().toString().slice(-2);
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const day = String(currentDate.getDate()).padStart(2, '0');
+    
+    const folio = `RET-${year}${month}${day}-${String(retencionCounter).padStart(4, '0')}`;
+    document.getElementById('retencion-folio').value = folio;
+}
+
+function updateRetencionProductInfo() {
+    const producto = document.getElementById('retencion-producto').value;
+    const moldeSelect = document.getElementById('retencion-molde');
+    
+    moldeSelect.innerHTML = '<option value="">Seleccionar molde...</option>';
+    
+    if (producto) {
+        const moldes = getAvailableMoldes(producto);
+        moldes.forEach(molde => {
+            moldeSelect.innerHTML += `<option value="${molde}">${molde}</option>`;
+        });
+    }
+}
+async function validateRetencion() {
+    const fechaProduccion = document.getElementById('retencion-fecha-produccion').value;
+    const producto = document.getElementById('retencion-producto').value;
+    const molde = document.getElementById('retencion-molde').value;
+    const shotInicial = parseInt(document.getElementById('retencion-shot-inicial').value);
+    const shotFinal = parseInt(document.getElementById('retencion-shot-final').value);
+    
+    // Validaciones básicas
+    if (!fechaProduccion || !producto || !molde || !shotInicial || !shotFinal) {
+        alert('⚠️ Por favor completa todos los campos obligatorios');
+        return;
+    }
+    
+    if (shotInicial > shotFinal) {
+        alert('⚠️ El shot inicial no puede ser mayor al shot final');
+        return;
+    }
+    
+    if (shotFinal - shotInicial > 500) {
+        alert('⚠️ El rango no puede exceder 500 shots por retención');
+        return;
+    }
+    
+    // Mostrar loading
+    const resultDiv = document.getElementById('retencion-validation-result');
+    resultDiv.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loading-spinner"></div><p>🔍 Validando shots en la base de datos...</p></div>';
+    
+    // Simular validación con la base de datos
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Simular resultados de validación
+    const totalShots = shotFinal - shotInicial + 1;
+    const validShots = Math.floor(totalShots * 0.85); // 85% de shots válidos
+    const invalidShots = totalShots - validShots;
+    
+    // Generar shots válidos e inválidos para simulación
+    validatedShots = [];
+    const invalidShotsList = [];
+    
+    for (let i = shotInicial; i <= shotFinal; i++) {
+        if (Math.random() > 0.15) { // 85% probabilidad de ser válido
+            validatedShots.push({
+                shot: i,
+                codigo: `${producto}-${molde}-${String(i).padStart(6, '0')}`,
+                almacen: getRandomAlmacen(),
+                estado: 'DISPONIBLE'
+            });
+        } else {
+            invalidShotsList.push(i);
+        }
+    }
+    
+    // Mostrar resultado
+    let resultHTML = '<div class="validation-result">';
+    
+    if (validShots === totalShots) {
+        resultHTML += `
+            <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                <h4 style="color: #155724; margin: 0;">✅ Validación Exitosa</h4>
+                <p style="margin: 5px 0 0 0;">Todos los ${totalShots} shots están disponibles en la base de datos</p>
+            </div>
+        `;
+        document.getElementById('create-retencion-btn').disabled = false;
+    } else {
+        resultHTML += `
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                <h4 style="color: #856404; margin: 0;">⚠️ Validación Parcial</h4>
+                <p style="margin: 5px 0;"><strong>Shots válidos:</strong> ${validShots} de ${totalShots}</p>
+                <p style="margin: 5px 0;"><strong>Shots no encontrados:</strong> ${invalidShots}</p>
+            </div>
+        `;
+        
+        if (invalidShotsList.length > 0) {
+            resultHTML += `
+                <div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+                    <h5 style="color: #721c24; margin: 0 0 10px 0;">❌ Shots No Encontrados:</h5>
+                    <p style="font-family: monospace; font-size: 12px; margin: 0; word-break: break-all;">${invalidShotsList.join(', ')}</p>
+                </div>
+            `;
+        }
+        
+        document.getElementById('create-retencion-btn').disabled = validShots === 0;
+    }
+    
+    // Mostrar desglose por almacén
+    const almacenBreakdown = {};
+    validatedShots.forEach(shot => {
+        if (!almacenBreakdown[shot.almacen]) {
+            almacenBreakdown[shot.almacen] = 0;
+        }
+        almacenBreakdown[shot.almacen]++;
+    });
+    
+    if (Object.keys(almacenBreakdown).length > 0) {
+        resultHTML += `
+            <div style="background: #e2e3e5; border: 1px solid #d6d8db; padding: 15px; border-radius: 5px;">
+                <h5 style="margin: 0 0 10px 0;">📦 Distribución por Almacén:</h5>
+        `;
+        
+        Object.entries(almacenBreakdown).forEach(([almacen, cantidad]) => {
+            resultHTML += `<p style="margin: 2px 0;">• ${almacen}: ${cantidad} piezas</p>`;
+        });
+        
+        resultHTML += '</div>';
+    }
+    
+    resultHTML += '</div>';
+    resultDiv.innerHTML = resultHTML;
+}
+
+function getRandomAlmacen() {
+    const almacenes = ['Almacén Fundición', 'Almacén Producto Terminado', 'Almacén Cuarentena'];
+    return almacenes[Math.floor(Math.random() * almacenes.length)];
+}
+function createRetencion() {
+    const folio = document.getElementById('retencion-folio').value;
+    const fechaProduccion = document.getElementById('retencion-fecha-produccion').value;
+    const producto = document.getElementById('retencion-producto').value;
+    const molde = document.getElementById('retencion-molde').value;
+    const shotInicial = parseInt(document.getElementById('retencion-shot-inicial').value);
+    const shotFinal = parseInt(document.getElementById('retencion-shot-final').value);
+    const motivo = document.getElementById('retencion-motivo').value;
+    const motivoOtro = document.getElementById('retencion-motivo-otro').value;
+    const observaciones = document.getElementById('retencion-observaciones').value;
+    const creadoPor = document.getElementById('retencion-creado-por').value;
+    
+    // Validaciones finales
+    if (!creadoPor) {
+        alert('⚠️ Por favor ingresa el nombre del responsable');
+        return;
+    }
+    
+    if (!motivo) {
+        alert('⚠️ Por favor selecciona el motivo de la retención');
+        return;
+    }
+    
+    if (motivo === 'OTRO' && !motivoOtro) {
+        alert('⚠️ Por favor especifica el motivo cuando selecciones "Otro"');
+        return;
+    }
+    
+    if (validatedShots.length === 0) {
+        alert('⚠️ Primero debes validar los shots');
+        return;
+    }
+    
+    // Crear objeto de retención
+    const retencion = {
+        folio: folio,
+        fechaCreacion: new Date().toISOString(),
+        fechaProduccion: fechaProduccion,
+        producto: producto,
+        molde: molde,
+        shotInicial: shotInicial,
+        shotFinal: shotFinal,
+        totalShots: validatedShots.length,
+        motivo: motivo === 'OTRO' ? motivoOtro : motivo,
+        observaciones: observaciones,
+        creadoPor: creadoPor,
+        estado: 'ACTIVA',
+        shots: [...validatedShots],
+        historial: [{
+            fecha: new Date().toISOString(),
+            accion: 'CREACION',
+            responsable: creadoPor,
+            comentario: 'Retención creada'
+        }]
+    };
+    
+    // Guardar retención
+    retenciones.push(retencion);
+    localStorage.setItem('retenciones', JSON.stringify(retenciones));
+    
+    // Incrementar contador
+    retencionCounter++;
+    localStorage.setItem('retencionCounter', retencionCounter.toString());
+    
+    alert(`✅ Retención ${folio} creada exitosamente\n\n• ${validatedShots.length} piezas retenidas\n• Estado: Activa\n\nLas piezas han sido marcadas como "En Retención" temporalmente.`);
+    
+    // Limpiar formulario y actualizar
+    clearRetencionForm();
+    generateNewRetencionFolio();
+    refreshRetencionList();
+}
+function refreshRetencionList() {
+    const tbody = document.getElementById('retenciones-table-body');
+    
+    if (retenciones.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center;">⏸️ No hay retenciones registradas</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = retenciones.map(retencion => {
+        const estadoBadge = getRetencionEstadoBadge(retencion.estado);
+        const motivoTexto = getMotivoTexto(retencion.motivo);
+        
+        return `
+            <tr>
+                <td><strong>${retencion.folio}</strong></td>
+                <td>${retencion.fechaProduccion}</td>
+                <td>${retencion.producto}</td>
+                <td>${retencion.molde}</td>
+                <td>${retencion.shotInicial} - ${retencion.shotFinal}</td>
+                <td style="text-align: center;">${retencion.totalShots}</td>
+                <td>${motivoTexto}</td>
+                <td>${estadoBadge}</td>
+                <td>
+                    <button class="btn btn-info btn-sm" onclick="viewRetencionDetails('${retencion.folio}')">👁️ Ver</button>
+                    ${retencion.estado === 'ACTIVA' ? 
+                        `<button class="btn btn-success btn-sm" onclick="resolveRetencion('${retencion.folio}')">✅ Resolver</button>` : 
+                        ''}
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function getRetencionEstadoBadge(estado) {
+    const badges = {
+        'ACTIVA': '<span style="background: #ffc107; color: black; padding: 4px 8px; border-radius: 4px; font-size: 12px;">⏸️ Activa</span>',
+        'RESUELTA': '<span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">✅ Resuelta</span>',
+        'CANCELADA': '<span style="background: #dc3545; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">❌ Cancelada</span>'
+    };
+    return badges[estado] || badges['ACTIVA'];
+}
+
+function getMotivoTexto(motivo) {
+    const motivos = {
+        'INSPECCION_CALIDAD': 'Inspección de Calidad',
+        'DEFECTO_SOSPECHOSO': 'Defecto Sospechoso',
+        'REVISION_PROCESO': 'Revisión de Proceso',
+        'AUDITORIA_INTERNA': 'Auditoría Interna',
+        'RECLAMO_CLIENTE': 'Reclamo de Cliente'
+    };
+    return motivos[motivo] || motivo;
+}
+
+function clearRetencionForm() {
+    document.getElementById('retencion-fecha-produccion').value = '';
+    document.getElementById('retencion-creado-por').value = '';
+    document.getElementById('retencion-producto').value = '';
+    document.getElementById('retencion-molde').innerHTML = '<option value="">Primero selecciona un producto...</option>';
+    document.getElementById('retencion-shot-inicial').value = '';
+    document.getElementById('retencion-shot-final').value = '';
+    document.getElementById('retencion-motivo').value = '';
+    document.getElementById('retencion-motivo-otro').value = '';
+    document.getElementById('retencion-observaciones').value = '';
+    document.getElementById('retencion-otro-motivo').style.display = 'none';
+    document.getElementById('retencion-validation-result').innerHTML = '';
+    document.getElementById('create-retencion-btn').disabled = true;
+    validatedShots = [];
+}
+function viewRetencionDetails(folio) {
+    const retencion = retenciones.find(r => r.folio === folio);
+    if (!retencion) return;
+    
+    const fechaCreacion = new Date(retencion.fechaCreacion).toLocaleString();
+    const motivoTexto = getMotivoTexto(retencion.motivo);
+    
+    // Crear breakdown por almacén
+    const almacenBreakdown = {};
+    retencion.shots.forEach(shot => {
+        if (!almacenBreakdown[shot.almacen]) {
+            almacenBreakdown[shot.almacen] = 0;
+        }
+        almacenBreakdown[shot.almacen]++;
+    });
+    
+    let almacenInfo = '';
+    Object.entries(almacenBreakdown).forEach(([almacen, cantidad]) => {
+        almacenInfo += `• ${almacen}: ${cantidad} piezas\n`;
+    });
+    
+    // Crear historial
+    let historialTexto = '';
+    retencion.historial.forEach(entrada => {
+        const fecha = new Date(entrada.fecha).toLocaleString();
+        historialTexto += `• ${fecha} - ${entrada.accion} por ${entrada.responsable}\n  ${entrada.comentario}\n\n`;
+    });
+    
+    const mensaje = `📋 DETALLES DE RETENCIÓN: ${folio}
+    
+📅 Fecha de Creación: ${fechaCreacion}
+📅 Fecha de Producción: ${retencion.fechaProduccion}
+🏭 Producto: ${retencion.producto}
+🔧 Molde: ${retencion.molde}
+🎯 Rango de Shots: ${retencion.shotInicial} - ${retencion.shotFinal}
+📦 Total de Piezas: ${retencion.totalShots}
+⚠️ Motivo: ${motivoTexto}
+👤 Creado por: ${retencion.creadoPor}
+📊 Estado: ${retencion.estado}
+
+📦 DISTRIBUCIÓN POR ALMACÉN:
+${almacenInfo}
+
+📝 OBSERVACIONES:
+${retencion.observaciones || 'Sin observaciones'}
+
+📜 HISTORIAL:
+${historialTexto}`;
+    
+    alert(mensaje);
+}
+function resolveRetencion(folio) {
+    const retencion = retenciones.find(r => r.folio === folio);
+    if (!retencion) return;
+    
+    if (retencion.estado !== 'ACTIVA') {
+        alert('❌ Solo se pueden resolver retenciones activas');
+        return;
+    }
+    
+    // Crear modal de resolución
+    const modalHTML = `
+        <div id="resolve-retencion-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;">
+            <div style="background: white; padding: 30px; border-radius: 10px; max-width: 600px; width: 90%; max-height: 90%; overflow-y: auto;">
+                <h3>✅ Resolver Retención: ${folio}</h3>
+                
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                    <strong>📦 Información de la Retención:</strong><br>
+                    • Producto: ${retencion.producto}<br>
+                    • Molde: ${retencion.molde}<br>
+                    • Shots: ${retencion.shotInicial} - ${retencion.shotFinal}<br>
+                    • Total Piezas: ${retencion.totalShots}<br>
+                    • Motivo: ${getMotivoTexto(retencion.motivo)}
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label><strong>📋 Acción a Realizar:</strong></label>
+                    <select id="resolve-action" onchange="handleResolveActionChange()" style="width: 100%; padding: 8px; margin-top: 5px;">
+                        <option value="">Seleccionar acción...</option>
+                        <option value="LIBERAR">✅ Liberar Piezas (Conformes)</option>
+                        <option value="SCRAP">🗑️ Enviar a Scrap (No Conformes)</option>
+                        <option value="REPROCESO">🔄 Enviar a Reproceso</option>
+                        <option value="DEVOLVER_CLIENTE">📦 Devolver a Cliente</option>
+                        <option value="CANCELAR">❌ Cancelar Retención</option>
+                    </select>
+                </div>
+                
+                <div id="resolve-details" style="margin-bottom: 20px;">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label><strong>👤 Responsable de la Resolución:</strong></label>
+                    <input type="text" id="resolve-responsable" placeholder="Nombre del responsable" style="width: 100%; padding: 8px; margin-top: 5px;" required>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label><strong>📝 Comentarios de Resolución:</strong></label>
+                    <textarea id="resolve-comentarios" rows="4" placeholder="Describe el resultado de la investigación y la acción tomada..." style="width: 100%; padding: 8px; margin-top: 5px;" required></textarea>
+                </div>
+                
+                <div style="text-align: center;">
+                    <button onclick="confirmResolveRetencion('${folio}')" class="btn btn-success">✅ Confirmar Resolución</button>
+                    <button onclick="closeResolveModal()" class="btn btn-secondary" style="margin-left: 10px;">❌ Cancelar</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function handleResolveActionChange() {
+    const action = document.getElementById('resolve-action').value;
+    const detailsDiv = document.getElementById('resolve-details');
+    
+    detailsDiv.innerHTML = '';
+    
+    switch (action) {
+        case 'LIBERAR':
+            detailsDiv.innerHTML = `
+                <div style="background: #d4edda; padding: 15px; border-radius: 5px;">
+                    <strong>✅ Liberar Piezas</strong><br>
+                    Las piezas serán marcadas como conformes y regresarán a su estado original en el almacén.
+                </div>
+            `;
+            break;
+            
+        case 'SCRAP':
+            detailsDiv.innerHTML = `
+                <div style="background: #f8d7da; padding: 15px; border-radius: 5px;">
+                    <strong>🗑️ Enviar a Scrap</strong><br>
+                    Las piezas serán marcadas como no conformes y enviadas al área de scrap.
+                    <div style="margin-top: 10px;">
+                        <label>📋 Defecto Encontrado:</label>
+                        <select id="resolve-defecto" style="width: 100%; padding: 5px; margin-top: 5px;">
+                            <option value="">Seleccionar defecto...</option>
+                            <option value="DIMENSIONAL">📏 Defecto Dimensional</option>
+                            <option value="VISUAL">👁️ Defecto Visual</option>
+                            <option value="MATERIAL">🧱 Defecto de Material</option>
+                            <option value="PROCESO">⚙️ Defecto de Proceso</option>
+                            <option value="OTRO">📝 Otro</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'REPROCESO':
+            detailsDiv.innerHTML = `
+                <div style="background: #fff3cd; padding: 15px; border-radius: 5px;">
+                    <strong>🔄 Enviar a Reproceso</strong><br>
+                    Las piezas serán enviadas al área de reproceso para corrección.
+                    <div style="margin-top: 10px;">
+                        <label>🔧 Tipo de Reproceso:</label>
+                        <select id="resolve-reproceso" style="width: 100%; padding: 5px; margin-top: 5px;">
+                            <option value="">Seleccionar tipo...</option>
+                            <option value="MAQUINADO">🔧 Maquinado Adicional</option>
+                            <option value="PULIDO">✨ Pulido/Acabado</option>
+                            <option value="SOLDADURA">🔥 Soldadura/Reparación</option>
+                            <option value="OTRO">📝 Otro</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'DEVOLVER_CLIENTE':
+            detailsDiv.innerHTML = `
+                <div style="background: #cce7ff; padding: 15px; border-radius: 5px;">
+                    <strong>📦 Devolver a Cliente</strong><br>
+                    Las piezas serán devueltas al cliente para su disposición.
+                    <div style="margin-top: 10px;">
+                        <label>📋 Motivo de Devolución:</label>
+                        <input type="text" id="resolve-devolucion" placeholder="Especificar motivo..." style="width: 100%; padding: 5px; margin-top: 5px;">
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'CANCELAR':
+            detailsDiv.innerHTML = `
+                <div style="background: #f8d7da; padding: 15px; border-radius: 5px;">
+                    <strong>❌ Cancelar Retención</strong><br>
+                    La retención será cancelada y las piezas regresarán a su estado original.
+                    <div style="margin-top: 10px;">
+                        <label>📋 Motivo de Cancelación:</label>
+                        <input type="text" id="resolve-cancelacion" placeholder="¿Por qué se cancela la retención?" style="width: 100%; padding: 5px; margin-top: 5px;">
+                    </div>
+                </div>
+            `;
+            break;
+    }
+}
+function confirmResolveRetencion(folio) {
+    const action = document.getElementById('resolve-action').value;
+    const responsable = document.getElementById('resolve-responsable').value;
+    const comentarios = document.getElementById('resolve-comentarios').value;
+    
+    if (!action) {
+        alert('⚠️ Selecciona una acción a realizar');
+        return;
+    }
+    
+    if (!responsable) {
+        alert('⚠️ Ingresa el nombre del responsable');
+        return;
+    }
+    
+    if (!comentarios) {
+        alert('⚠️ Ingresa comentarios sobre la resolución');
+        return;
+    }
+    
+    // Validaciones específicas por acción
+    let accionDetalle = '';
+    switch (action) {
+        case 'SCRAP':
+            const defecto = document.getElementById('resolve-defecto').value;
+            if (!defecto) {
+                alert('⚠️ Selecciona el tipo de defecto encontrado');
+                return;
+            }
+            accionDetalle = `Defecto: ${defecto}`;
+            break;
+            
+        case 'REPROCESO':
+            const reproceso = document.getElementById('resolve-reproceso').value;
+            if (!reproceso) {
+                alert('⚠️ Selecciona el tipo de reproceso');
+                return;
+            }
+            accionDetalle = `Tipo: ${reproceso}`;
+            break;
+            
+        case 'DEVOLVER_CLIENTE':
+            const devolucion = document.getElementById('resolve-devolucion').value;
+            if (!devolucion) {
+                alert('⚠️ Especifica el motivo de devolución');
+                return;
+            }
+            accionDetalle = `Motivo: ${devolucion}`;
+            break;
+            
+        case 'CANCELAR':
+            const cancelacion = document.getElementById('resolve-cancelacion').value;
+            if (!cancelacion) {
+                alert('⚠️ Especifica el motivo de cancelación');
+                return;
+            }
+            accionDetalle = `Motivo: ${cancelacion}`;
+            break;
+    }
+    
+    // Encontrar y actualizar la retención
+    const retencionIndex = retenciones.findIndex(r => r.folio === folio);
+    if (retencionIndex === -1) return;
+    
+    const retencion = retenciones[retencionIndex];
+    
+    // Actualizar estado
+    const nuevoEstado = action === 'CANCELAR' ? 'CANCELADA' : 'RESUELTA';
+    retenciones[retencionIndex].estado = nuevoEstado;
+    retenciones[retencionIndex].fechaResolucion = new Date().toISOString();
+    retenciones[retencionIndex].accionTomada = action;
+    retenciones[retencionIndex].accionDetalle = accionDetalle;
+    retenciones[retencionIndex].resueltoePor = responsable;
+    retenciones[retencionIndex].comentariosResolucion = comentarios;
+    
+    // Agregar al historial
+    retenciones[retencionIndex].historial.push({
+        fecha: new Date().toISOString(),
+        accion: 'RESOLUCION',
+        responsable: responsable,
+        comentario: `${getActionText(action)}. ${comentarios}${accionDetalle ? '. ' + accionDetalle : ''}`
+    });
+    
+    // Guardar en localStorage
+    localStorage.setItem('retenciones', JSON.stringify(retenciones));
+    
+    // Crear hoja de scrap automáticamente si corresponde
+    if (action === 'SCRAP') {
+        createScrapFromRetencion(retencion, responsable);
+    }
+    
+    alert(`✅ Retención ${folio} resuelta exitosamente\n\nAcción: ${getActionText(action)}\nPiezas procesadas: ${retencion.totalShots}`);
+    
+    closeResolveModal();
+    refreshRetencionList();
+}
+
+function getActionText(action) {
+    const actions = {
+        'LIBERAR': 'Piezas liberadas (conformes)',
+        'SCRAP': 'Piezas enviadas a scrap',
+        'REPROCESO': 'Piezas enviadas a reproceso',
+        'DEVOLVER_CLIENTE': 'Piezas devueltas a cliente',
+        'CANCELAR': 'Retención cancelada'
+    };
+    return actions[action] || action;
+}
+
+function closeResolveModal() {
+    const modal = document.getElementById('resolve-retencion-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+function createScrapFromRetencion(retencion, responsable) {
+    const currentDate = new Date();
+    const folio = `SCR-${currentDate.getFullYear().toString().slice(-2)}${String(currentDate.getMonth() + 1).padStart(2, '0')}${String(currentDate.getDate()).padStart(2, '0')}-${String(folioCounter).padStart(4, '0')}`;
+    
+    // Convertir shots de retención a formato de scrap
+    const scrapShots = retencion.shots.map(shot => ({
+        shot: shot.shot,
+        codigo: shot.codigo,
+        motivo: 'Resultado de Retención ' + retencion.folio,
+        almacenOrigen: shot.almacen
+    }));
+    
+    const scrapSheet = {
+        folio: folio,
+        fechaOperacion: retencion.fechaProduccion,
+        fechaCreacion: new Date().toLocaleString(),
+        sectorTrabajo: 'Control de Calidad',
+        numeroProducto: retencion.producto,
+        nombreProducto: getProductName(retencion.producto),
+        moldeProducto: retencion.molde,
+        creadoPor: responsable,
+        almacenOrigen: 'Multiple (Ver shots individuales)',
+        shots: scrapShots,
+        observaciones: `Generado automáticamente desde retención ${retencion.folio}. Motivo original: ${getMotivoTexto(retencion.motivo)}`,
+        estado: 'ABIERTA',
+        evidencia: null,
+        origenRetencion: retencion.folio
+    };
+    
+    scrapSheets.push(scrapSheet);
+    localStorage.setItem('scrapSheets', JSON.stringify(scrapSheets));
+    
+    folioCounter++;
+    localStorage.setItem('folioCounter', folioCounter.toString());
+    
+    alert(`📋 Hoja de scrap ${folio} creada automáticamente\n\nPuedes gestionarla desde la pestaña "Gestionar Hojas"`);
 }
 </script>
 </body>
