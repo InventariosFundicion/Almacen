@@ -6375,23 +6375,6 @@ function removeShot(shotId) {
         updateShotsDisplay();
     }
 }
-// Manejar la visibilidad del campo "Otro"
-
-    const scrapReasonSelect = document.getElementById('scrap-reason');
-    if (scrapReasonSelect) {
-        scrapReasonSelect.addEventListener('change', function() {
-            const otherContainer = document.getElementById('other-reason-container');
-            if (otherContainer) {
-                if (this.value === 'OTRO') {
-                    otherContainer.style.display = 'block';
-                } else {
-                    otherContainer.style.display = 'none';
-                    document.getElementById('other-reason').value = '';
-                }
-            }
-        });
-    }
-});
 // 🔄 FUNCIÓN checkInventoryShots ACTUALIZADA
 async function checkInventoryShots(shotsList) {
     const inventoryShots = [];
