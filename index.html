@@ -7996,10 +7996,6 @@ function showEmailNotification(email) {
     document.body.appendChild(notification);
     setTimeout(() => notification.remove(), 5000);
 }
-// Inicializar sistema al cargar la página
-
-    await initUserSystem();
-});
 // Función para limpiar datos corruptos (ejecutar una vez si hay problemas)
 function resetUserSystem() {
     localStorage.removeItem('usuarios');
