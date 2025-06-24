@@ -849,9 +849,9 @@
 			</div>
 		</div>
 
-		<button class="btn btn-success" onclick="processQRCode()">✅ Procesar Código QR</button>
+		<button class="btn btn-success" onclick="handleProcessQRCode()">✅ Procesar Código QR</button>
 		<button class="btn btn-info" onclick="clearForm()">🔄 Limpiar</button>
-		<button class="btn btn-warning" onclick="startNewShiftVerification()">🆕 Nuevo Turno</button>
+		<button class="btn btn-warning" onclick="handleStartNewShiftVerification()">🆕 Nuevo Turno</button>
 		<div id="process-result" style="margin-top: 20px;"></div>
 	</div>
 	<!-- Modo Generador (Nuevo) -->
@@ -941,7 +941,7 @@
 		<h2>📋 Inventario Detallado</h2>
 
 		<div style="text-align: center; margin-bottom: 20px;">
-			<button class="btn btn-danger" onclick="clearAllData()">🗑️ Limpiar Todos los Datos</button>
+			<button class="btn btn-danger" onclick="handleClearAllData()">🗑️ Limpiar Todos los Datos</button>
 		</div>
 		<div class="card">
 			<h3>📊 Inventario por Modelo y Estado</h3>
@@ -1084,7 +1084,7 @@
 						</div>
 					</div>
 				</div>
-				<button type="button" class="btn btn-success" onclick="saveProductionReport('fundicion')">🔥 Guardar Reporte de Fundición</button>
+				<button type="button" class="btn btn-success" onclick="handleSaveProductionReport('fundicion')">🔥 Guardar Reporte de Fundición</button>
 			</form>
 		</div>
 
@@ -1168,7 +1168,7 @@
 						</div>
 					</div>
 				</div>
-				<button type="button" class="btn btn-success" onclick="saveProductionReport('acabado')">✅ Guardar Reporte de Acabado</button>
+				<button type="button" class="btn btn-success" onclick="handleSaveProductionReport('acabado')">✅ Guardar Reporte de Acabado</button>
 			</form>
 		</div>
 
@@ -1259,7 +1259,7 @@
 						</div>
 					</div>
 				</div>
-				<button type="button" class="btn btn-success" onclick="saveMovementReport()">📦 Guardar Movimiento</button>
+				<button type="button" class="btn btn-success" onclick="handleSaveMovementReport()">📦 Guardar Movimiento</button>
 			</form>
 		</div>
 
@@ -1481,7 +1481,7 @@
         </div>
 
         <div style="text-align: center; margin-top: 30px;">
-            <button class="btn btn-success" onclick="saveScrapSheet()">💾 Guardar Hoja</button>
+            <button class="btn btn-success" onclick="handleSaveScrapSheet()">💾 Guardar Hoja</button>
             <button class="btn btn-info" onclick="printScrapSheet()">🖨️ Imprimir Hoja</button>
             <button class="btn btn-warning" onclick="clearForm()">🔄 Limpiar</button>
         </div>
@@ -1570,7 +1570,7 @@
             
             <div style="text-align: center; margin-top: 20px;">
                 <button class="btn btn-warning" onclick="validateRetencion()">🔍 Validar Shots</button>
-                <button class="btn btn-success" onclick="createRetencion()" id="create-retencion-btn" disabled>⏸️ Crear Retención</button>
+                <button class="btn btn-success" onclick="handldeCreateRetencion()" id="create-retencion-btn" disabled>⏸️ Crear Retención</button>
                 <button class="btn btn-info" onclick="clearRetencionForm()">🔄 Limpiar</button>
             </div>
             
@@ -1691,7 +1691,7 @@
                 </div>
                 
                 <div style="text-align: center; margin-top: 20px;">
-                    <button class="btn btn-success" onclick="confirmStateChange()">✅ Actualizar Estado</button>
+                    <button class="btn btn-success" onclick="handleConfirmStateChange()">✅ Actualizar Estado</button>
                     <button class="btn btn-secondary" onclick="closeManageModal()">❌ Cancelar</button>
                 </div>
             </div>
@@ -1799,15 +1799,6 @@
       OPERADOR: ['dashboard', 'scanner', 'inventory', 'pallets', 'production', 'scrap-retention'],
       CONSULTA: ['dashboard', 'inventory', 'theoretical']
   };
-
-  // 📱 INICIALIZACIÓN (sin cambios por ahora)
-  document.addEventListener('DOMContentLoaded', function() {
-      generateNewFolio();
-      setTodayDate();
-      refreshSheetsList();
-      initializeRetencionSystem();
-  });
-
   // 🔄 NAVEGACIÓN (sin cambios)
   function showTab(tabName) {
       document.querySelectorAll('.tab-content').forEach(tab => {
@@ -1834,14 +1825,21 @@
           showSubTab('new-scrap');
       }
   }
-        // Generar nuevo folio
-        function generateNewFolio() {
-            const today = new Date();
-            const year = today.getFullYear().toString().slice(-2);
-            const month = (today.getMonth() + 1).toString().padStart(2, '0');
-            const folio = `SA-${year}${month}-${folioCounter.toString().padStart(4, '0')}`;
-            document.getElementById('folio').value = folio;
-        }
+// 🔄 FUNCIÓN generateNewFolio ACTUALIZADA
+async function generateNewFolio() {
+    const today = new Date();
+    const year = today.getFullYear().toString().slice(-2);
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    
+    // Asegurar que tenemos el contador más reciente
+    const currentCounter = await loadFromFirebase('folioCounter');
+    if (currentCounter) {
+        folioCounter = parseInt(currentCounter);
+    }
+    
+    const folio = `SA-${year}${month}-${folioCounter.toString().padStart(4, '0')}`;
+    document.getElementById('folio').value = folio;
+}
 
         // Establecer fecha de hoy
         function setTodayDate() {
@@ -2007,7 +2005,14 @@ function clearShotForm() {
         }
 
         // Refrescar lista de hojas
-function refreshSheetsList() {
+// 🔄 FUNCIÓN refreshSheetsList ACTUALIZADA
+async function refreshSheetsList() {
+    // Cargar datos más recientes desde Firebase
+    const sheetsData = await loadFromFirebase('scrapSheets');
+    if (sheetsData) {
+        scrapSheets = firebaseObjectToArray(JSON.parse(sheetsData));
+    }
+    
     const tbody = document.getElementById('sheets-table-body');
     
     if (scrapSheets.length === 0) {
@@ -2039,7 +2044,6 @@ function refreshSheetsList() {
         `;
     }).join('');
 }
-
 function getEstadoBadge(estado) {
     const badges = {
         'ABIERTA': '<span style="background: #17a2b8; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">📝 Abierta</span>',
@@ -2876,7 +2880,8 @@ function processQRCode() {
             document.getElementById('qr-input').focus();
         }
 
-function processIndividualCode(code, type, movementType, shift, warehouse, palletId = null) {
+// 🔄 FUNCIÓN processIndividualCode ACTUALIZADA
+async function processIndividualCode(code, type, movementType, shift, warehouse, palletId = null) {
     const codeData = extractCodeData(code);
     const partNumber = codeData ? codeData.partNumber : (type === 'UPR' ? 'PX13-10-301' : 'PX13-10-382');
     
@@ -2923,6 +2928,35 @@ function processIndividualCode(code, type, movementType, shift, warehouse, palle
         shift: shift,
         palletId: palletId
     });
+    
+    // 🔥 GUARDAR EN FIREBASE
+    await saveToFirebase('inventory', JSON.stringify(arrayToFirebaseObject(inventory)));
+    await saveToFirebase('movements', JSON.stringify(arrayToFirebaseObject(movements)));
+}
+
+// 🔄 FUNCIÓN processQRCode ACTUALIZADA (solo agregar guardado al final)
+// En la función processQRCode, al final antes de clearForm(), agregar:
+async function processQRCode() {
+    // ... todo el código existente ...
+    
+    // Al final, antes de clearForm(), agregar:
+    try {
+        // Guardar datos actualizados
+        await saveToFirebase('inventory', JSON.stringify(arrayToFirebaseObject(inventory)));
+        await saveToFirebase('movements', JSON.stringify(arrayToFirebaseObject(movements)));
+        if (analysis.isPallet) {
+            await saveToFirebase('pallets', JSON.stringify(arrayToFirebaseObject(pallets)));
+        }
+        if (inventoryType === 'turno') {
+            await saveToFirebase('physicalVerification', JSON.stringify(physicalVerification));
+        }
+    } catch (error) {
+        console.error('Error guardando datos:', error);
+    }
+    
+    clearForm();
+    updateAllDisplays();
+    setTimeout(() => resultDiv.innerHTML = '', 6000);
 }
 function movePallet(palletId) {
     const pallet = pallets.find(p => p.systemId === palletId);
@@ -3021,26 +3055,27 @@ function closeMoveModal() {
             alert('📦 DETALLES DE TARIMA\n\n🆔 ID: ' + pallet.systemId + '\n📋 Original: ' + pallet.originalId + '\n🔧 Tipo: ' + pallet.type + '\n📦 Piezas: ' + pallet.codesCount + '\n🏪 Almacén: ' + getWarehouseName(pallet.warehouse) + '\n\n📋 CÓDIGOS:\n' + codes);
         }
 
-        function exportData() {
-            const data = {
-                inventory: inventory,
-                movements: movements,
-                pallets: pallets,
-                exportDate: new Date()
-            };
-            
-            const jsonString = JSON.stringify(data, null, 2);
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'almacen-completo-' + new Date().toISOString().split('T')[0] + '.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
+// 🔄 FUNCIÓN exportData ACTUALIZADA (mantener igual, solo para referencia)
+function exportData() {
+    const data = {
+        inventory: inventory,
+        movements: movements,
+        pallets: pallets,
+        exportDate: new Date()
+    };
+    
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'almacen-completo-' + new Date().toISOString().split('T')[0] + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
 
    function loadSampleData() {
     const samples = [
@@ -3111,11 +3146,16 @@ function closeMoveModal() {
     
     return theoretical;
 }
-                function startNewShiftVerification() {
+// 🔄 FUNCIÓN startNewShiftVerification ACTUALIZADA
+async function startNewShiftVerification() {
     const confirmReset = confirm('🔄 NUEVO TURNO\n\n¿Quieres limpiar las verificaciones físicas del turno anterior para comenzar una nueva verificación?\n\n✅ Sí = Limpiar verificaciones\n❌ No = Mantener datos actuales');
     
     if (confirmReset) {
         physicalVerification = {};
+        
+        // 🔥 GUARDAR EN FIREBASE
+        await saveToFirebase('physicalVerification', JSON.stringify({}));
+        
         alert('✅ Verificaciones físicas limpiadas. Puedes comenzar el nuevo turno.');
         updateAllDisplays();
     }
@@ -3632,7 +3672,8 @@ function calculateDiscrepancies(theoretical) {
     printWindow.document.close();
     printWindow.print();
 }
-        function clearAllData() {
+// 🔄 FUNCIÓN clearAllData ACTUALIZADA
+async function clearAllData() {
     const confirmClear = confirm('⚠️ LIMPIAR TODOS LOS DATOS\n\n¿Estás SEGURO de que quieres eliminar:\n• Todo el inventario\n• Todos los movimientos\n• Todas las tarimas\n• Todas las verificaciones físicas\n\nEsta acción NO se puede deshacer.\n\n✅ Aceptar = Eliminar todo\n❌ Cancelar = Mantener datos');
     
     if (confirmClear) {
@@ -3642,6 +3683,20 @@ function calculateDiscrepancies(theoretical) {
         pallets = [];
         physicalVerification = {};
         theoreticalInventory = {};
+        productionReports = [];
+        movementReports = [];
+        scrapSheets = [];
+        retenciones = [];
+        
+        // 🔥 LIMPIAR EN FIREBASE
+        await saveToFirebase('inventory', JSON.stringify([]));
+        await saveToFirebase('movements', JSON.stringify([]));
+        await saveToFirebase('pallets', JSON.stringify([]));
+        await saveToFirebase('physicalVerification', JSON.stringify({}));
+        await saveToFirebase('productionReports', JSON.stringify([]));
+        await saveToFirebase('movementReports', JSON.stringify([]));
+        await saveToFirebase('scrapSheets', JSON.stringify([]));
+        await saveToFirebase('retenciones', JSON.stringify([]));
         
         // Actualizar displays
         updateAllDisplays();
@@ -3943,58 +3998,244 @@ function toggleModelSection(sectionId) {
             });
         }
 
-        document.addEventListener('DOMContentLoaded', async function() {
-    // Inicializar datos de Firebase primero
-    await initializeAppData(); // ← NUEVA función
+// 🔄 DOMCONTENTLOADED PRINCIPAL ACTUALIZADO
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('🚀 Iniciando aplicación...');
     
-    // Luego inicializar sistema de usuarios
-    await initUserSystem(); // ← Agregar await
-    
-    // Event listeners para pestañas
-    document.querySelectorAll('.nav-tab').forEach(function(tab) {
-        tab.addEventListener('click', function() {
-            const tabName = this.getAttribute('data-tab');
-            showTab(tabName);
-        });
-    });
+    try {
+        // 1. Inicializar Firebase y cargar datos principales
+        console.log('📊 Cargando datos principales...');
+        await initializeAppData();
+        
+        // 2. Inicializar sistema de usuarios
+        console.log('👥 Inicializando sistema de usuarios...');
+        await initUserSystem();
+        
+        // 3. Inicializar sistemas específicos solo si el usuario está logueado
+        if (isLoggedIn && currentUser) {
+            console.log('⚙️ Inicializando sistemas específicos...');
             
-            // Event listeners
-            document.getElementById('qr-input').addEventListener('input', analyzeQRCode);
-            document.getElementById('inventory-type').addEventListener('change', updateFormSections);
+            // Inicializar sistema de scrap
+            await generateNewFolio();
+            setTodayDate();
+            await refreshSheetsList();
             
-            document.getElementById('qr-input').addEventListener('paste', function(e) {
-                setTimeout(function() {
-                    const content = e.target.value.trim();
-                    if (content && (content.includes('|') || content.length >= 13)) {
-                        analyzeQRCode();
+            // Inicializar sistema de retenciones
+            initializeRetencionSystem();
+            await generateNewRetencionFolio();
+            await refreshRetencionList();
+            
+            // Event listeners para pestañas
+            document.querySelectorAll('.nav-tab').forEach(function(tab) {
+                tab.addEventListener('click', function() {
+                    const tabName = this.getAttribute('data-tab');
+                    showTab(tabName);
+                });
+            });
+            
+            // Event listeners para QR
+            const qrInput = document.getElementById('qr-input');
+            if (qrInput) {
+                qrInput.addEventListener('input', analyzeQRCode);
+                qrInput.addEventListener('paste', function(e) {
+                    setTimeout(function() {
+                        const content = e.target.value.trim();
+                        if (content && (content.includes('|') || content.length >= 13)) {
+                            analyzeQRCode();
+                        }
+                    }, 100);
+                });
+            }
+            
+            // Event listeners para selección de almacén
+            const inventoryTypeSelect = document.getElementById('inventory-type');
+            if (inventoryTypeSelect) {
+                inventoryTypeSelect.addEventListener('change', updateFormSections);
+            }
+            
+            const warehouseSelector = document.getElementById('warehouse-selector');
+            if (warehouseSelector) {
+                warehouseSelector.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('warehouse-btn')) {
+                        this.querySelectorAll('.warehouse-btn').forEach(function(btn) {
+                            btn.classList.remove('selected');
+                        });
+                        e.target.classList.add('selected');
+                        selectedWarehouse = e.target.dataset.warehouse;
                     }
-                }, 100);
-            });
+                });
+            }
             
-            document.getElementById('warehouse-selector').addEventListener('click', function(e) {
-                if (e.target.classList.contains('warehouse-btn')) {
-                    this.querySelectorAll('.warehouse-btn').forEach(function(btn) {
-                        btn.classList.remove('selected');
+            const movementSelector = document.getElementById('movement-selector');
+            if (movementSelector) {
+                movementSelector.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('warehouse-btn')) {
+                        this.querySelectorAll('.warehouse-btn').forEach(function(btn) {
+                            btn.classList.remove('selected');
+                        });
+                        e.target.classList.add('selected');
+                        selectedMovement = e.target.dataset.movement;
+                    }
+                });
+            }
+            
+            // Event listeners para retenciones
+            const retencionMotivo = document.getElementById('retencion-motivo');
+            if (retencionMotivo) {
+                retencionMotivo.addEventListener('change', function() {
+                    const otroMotivoDiv = document.getElementById('retencion-otro-motivo');
+                    if (otroMotivoDiv) {
+                        if (this.value === 'OTRO') {
+                            otroMotivoDiv.style.display = 'block';
+                        } else {
+                            otroMotivoDiv.style.display = 'none';
+                        }
+                    }
+                });
+            }
+            
+            // Event listeners para scrap
+            const scrapReasonSelect = document.getElementById('scrap-reason');
+            if (scrapReasonSelect) {
+                scrapReasonSelect.addEventListener('change', function() {
+                    const otherContainer = document.getElementById('other-reason-container');
+                    if (otherContainer) {
+                        if (this.value === 'OTRO') {
+                            otherContainer.style.display = 'block';
+                        } else {
+                            otherContainer.style.display = 'none';
+                            const otherReasonInput = document.getElementById('other-reason');
+                            if (otherReasonInput) {
+                                otherReasonInput.value = '';
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Event listeners para el generador
+            const codigosTextarea = document.getElementById('gen-codigos');
+            if (codigosTextarea) {
+                codigosTextarea.addEventListener('input', function() {
+                    console.log('Textarea cambió, procesando códigos...');
+                    
+                    const lines = this.value.split('\n').filter(line => line.trim().length > 0);
+                    console.log('Líneas encontradas:', lines);
+                    
+                    const oldGeneratedCodes = [...generatedCodes];
+                    generatedCodes = [];
+                    duplicateAttempts = 0;
+                    
+                    const seenCodes = new Set();
+                    
+                    lines.forEach((line, index) => {
+                        const code = line.trim();
+                        if (code) {
+                            console.log(`Procesando línea ${index + 1}: ${code}`);
+                            
+                            if (seenCodes.has(code)) {
+                                duplicateAttempts++;
+                                console.log(`Duplicado detectado en textarea: ${code}`);
+                            } else {
+                                seenCodes.add(code);
+                                
+                                const isValid = (code.length === 13 || code.length === 17);
+                                const type = code.length === 13 ? 'UPR' : code.length === 17 ? 'LWR' : 'UNKNOWN';
+                                
+                                generatedCodes.push({
+                                    code: code,
+                                    type: type,
+                                    valid: isValid,
+                                    timestamp: new Date()
+                                });
+                            }
+                        }
                     });
-                    e.target.classList.add('selected');
-                    selectedWarehouse = e.target.dataset.warehouse;
-                }
-            });
+                    
+                    console.log('Códigos finales:', generatedCodes);
+                    console.log('Duplicados detectados:', duplicateAttempts);
+                    
+                    updateCodesValidationList();
+                    updateValidationInfo();
+                    updateGenerateButton();
+                });
+            }
             
-            document.getElementById('movement-selector').addEventListener('click', function(e) {
-                if (e.target.classList.contains('warehouse-btn')) {
-                    this.querySelectorAll('.warehouse-btn').forEach(function(btn) {
-                        btn.classList.remove('selected');
-                    });
-                    e.target.classList.add('selected');
-                    selectedMovement = e.target.dataset.movement;
-                }
-            });
+            // Event listeners para campos del formulario generador
+            const zonaInput = document.getElementById('gen-zona');
+            if (zonaInput) {
+                zonaInput.addEventListener('input', function() {
+                    console.log('Zona cambió a:', this.value);
+                    updateGenerateButton();
+                });
+            }
             
-            // Inicializar datos y displays
-            loadSampleData();
+            const tipoSelect = document.getElementById('gen-tipo');
+            if (tipoSelect) {
+                tipoSelect.addEventListener('change', function() {
+                    console.log('Tipo cambió a:', this.value);
+                    updateGenerateButton();
+                });
+            }
+            
+            // 4. Verificar disponibilidad de cámara
+            console.log('📷 Verificando cámara...');
+            await checkCameraAvailability();
+            
+            // 5. Inicializar modo del generador
+            showScannerMode();
+            
+            // 6. Cargar datos de muestra si es necesario (solo para desarrollo)
+            if (inventory.length === 0) {
+                console.log('📦 Cargando datos de muestra...');
+                loadSampleData();
+            }
+            
+            // 7. Actualizar todas las visualizaciones
+            console.log('🔄 Actualizando displays...');
             updateAllDisplays();
-        });
+            
+        } else {
+            console.log('👤 Usuario no logueado, esperando login...');
+        }
+        
+        console.log('✅ Aplicación inicializada correctamente');
+        
+    } catch (error) {
+        console.error('❌ Error inicializando aplicación:', error);
+        alert('❌ Error inicializando la aplicación. Por favor, recarga la página.');
+    }
+});
+
+// 🔄 FUNCIÓN HELPER PARA MANEJAR ASYNC EN BOTONES (agregar si no existe)
+window.handleAsync = async function(asyncFunction, ...args) {
+    try {
+        await asyncFunction(...args);
+    } catch (error) {
+        console.error('Error en operación async:', error);
+        alert('❌ Error: ' + error.message);
+    }
+};
+
+// 🔄 FUNCIONES ONCLICK ACTUALIZADAS PARA BOTONES PRINCIPALES
+// Reemplaza las llamadas directas en los botones HTML por estas:
+
+// Para los botones de formularios:
+window.handleSaveScrapSheet = () => handleAsync(saveScrapSheet);
+window.handleSaveProductionReport = (tipo) => handleAsync(saveProductionReport, tipo);
+window.handleSaveMovementReport = () => handleAsync(saveMovementReport);
+window.handleCreateRetencion = () => handleAsync(createRetencion);
+window.handleConfirmStateChange = () => handleAsync(confirmStateChange);
+window.handleConfirmResolveRetencion = (folio) => handleAsync(confirmResolveRetencion, folio);
+window.handleProcessQRCode = () => handleAsync(processQRCode);
+window.handleStartNewShiftVerification = () => handleAsync(startNewShiftVerification);
+window.handleClearAllData = () => handleAsync(clearAllData);
+window.handleHandleUserSubmit = (event) => handleAsync(handleUserSubmit, event);
+window.handleToggleUserStatus = (userId) => handleAsync(toggleUserStatus, userId);
+window.handleHandleLogin = (event) => handleAsync(handleLogin, event);
+window.handleLogout = () => handleAsync(logout);
+
+console.log('🔧 Funciones helper cargadas');
         function updateVerificationSummary() {
     // Actualizar contador de verificaciones en dashboard si existe
     const verificationCount = Object.keys(physicalVerification).length;
@@ -4077,7 +4318,7 @@ function calculateGoodParts(prefix) {
     document.getElementById(prefix + '-buenas').value = buenas;
 }
 
-// Guardar reporte de producción
+// 🔄 FUNCIÓN saveProductionReport ACTUALIZADA
 async function saveProductionReport(tipo) {
     const prefix = tipo === 'fundicion' ? 'fund' : 'acab';
     const form = document.getElementById('production-' + tipo + '-form');
@@ -4086,12 +4327,14 @@ async function saveProductionReport(tipo) {
         form.reportValidity();
         return;
     }
-     // VALIDACIÓN OBLIGATORIA DE EVIDENCIA
+    
+    // VALIDACIÓN OBLIGATORIA DE EVIDENCIA
     const evidencia = await getEvidenceFile(prefix + '-evidencia');
     if (!evidencia) {
         alert('⚠️ EVIDENCIA REQUERIDA\n\nDebe adjuntar un archivo PDF como evidencia del reporte antes de guardar.\n\nPor favor, selecciona un archivo PDF.');
         return;
     }      
+    
     const reporte = {
         id: Date.now(),
         tipo: tipo,
@@ -4101,7 +4344,7 @@ async function saveProductionReport(tipo) {
         cantidadTotal: parseInt(document.getElementById(prefix + '-total').value),
         cantidadNG: parseInt(document.getElementById(prefix + '-ng').value),
         piezasBuenas: parseInt(document.getElementById(prefix + '-buenas').value),
-        evidencia: evidencia, // Archivo PDF
+        evidencia: evidencia,
         timestamp: new Date()
     };
     
@@ -4110,11 +4353,13 @@ async function saveProductionReport(tipo) {
         reporte.maquina = document.getElementById('fund-maquina').value;
         reporte.molde = document.getElementById('fund-molde').value;
     } else {
-        // Para acabado agregar máquina de acabado
         reporte.maquina = document.getElementById('acab-maquina').value;
     }
     
     productionReports.push(reporte);
+    
+    // 🔥 GUARDAR EN FIREBASE
+    await saveToFirebase('productionReports', JSON.stringify(arrayToFirebaseObject(productionReports)));
     
     let alertMessage = `✅ Reporte de ${tipo} guardado exitosamente!\n\n📊 Resumen:\n• Modelo: ${reporte.modelo}\n• Máquina: ${reporte.maquina}\n• Piezas buenas: ${reporte.piezasBuenas}\n• Fecha: ${reporte.fecha}\n• Turno: ${reporte.turno}`;
     
@@ -4124,13 +4369,12 @@ async function saveProductionReport(tipo) {
     
     alert(alertMessage);
     
-    // Limpiar formulario
     form.reset();
-    // Limpiar archivos después de guardar
-clearFormFiles('production-' + tipo + '-form'); // Para producción
+    clearFormFiles('production-' + tipo + '-form');
     updateProductionSummary();
 }
-// Guardar movimiento de material
+
+// 🔄 FUNCIÓN saveMovementReport ACTUALIZADA
 async function saveMovementReport() {
     const form = document.getElementById('production-movimientos-form');
     
@@ -4138,25 +4382,30 @@ async function saveMovementReport() {
         form.reportValidity();
         return;
     }
-     // VALIDACIÓN OBLIGATORIA DE EVIDENCIA
+    
+    // VALIDACIÓN OBLIGATORIA DE EVIDENCIA
     const evidencia = await getEvidenceFile('mov-evidencia');
     if (!evidencia) {
         alert('⚠️ EVIDENCIA REQUERIDA\n\nDebe adjuntar un archivo PDF como evidencia del movimiento antes de guardar.\n\nPor favor, selecciona un archivo PDF.');
         return;
     }
+    
     const movimiento = {
         id: Date.now(),
         tipo: document.getElementById('mov-tipo').value,
         fecha: document.getElementById('mov-fecha').value,
-        maquina: document.getElementById('mov-maquina').value, // Nueva máquina
+        maquina: document.getElementById('mov-maquina').value,
         modelo: document.getElementById('mov-modelo').value,
         cantidad: parseInt(document.getElementById('mov-cantidad').value),
         comentarios: document.getElementById('mov-comentarios').value,
-        evidencia: evidencia, // Archivo PDF
+        evidencia: evidencia,
         timestamp: new Date()
     };
     
     movementReports.push(movimiento);
+    
+    // 🔥 GUARDAR EN FIREBASE
+    await saveToFirebase('movementReports', JSON.stringify(arrayToFirebaseObject(movementReports)));
     
     const tipoNames = {
         'scrap': '♻️ Scrap',
@@ -4173,10 +4422,8 @@ async function saveMovementReport() {
     
     alert(alertMessage);
     
-    // Limpiar formulario
     form.reset();
-    // Limpiar archivos después de guardar
-    clearFormFiles('production-movimientos-form'); // Para movimientos
+    clearFormFiles('production-movimientos-form');
     updateProductionSummary();
 }
 // Actualizar resumen de producción
@@ -5153,7 +5400,7 @@ function showEvidenceInfo(reportId) {
 }
 
 // Configurar event listeners cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', function() {
+
     // Event listeners para pestañas
     document.querySelectorAll('.nav-tab').forEach(function(tab) {
         tab.addEventListener('click', function() {
@@ -5849,7 +6096,7 @@ function showTemporaryMessage(message, type = 'info') {
 }
 
 // Event listeners adicionales para el generador
-document.addEventListener('DOMContentLoaded', function() {
+
     // Event listener para cambios en el textarea de códigos
     const codigosTextarea = document.getElementById('gen-codigos');
     if (codigosTextarea) {
@@ -6249,7 +6496,7 @@ function removeShot(shotId) {
     }
 }
 // Manejar la visibilidad del campo "Otro"
-document.addEventListener('DOMContentLoaded', function() {
+
     const scrapReasonSelect = document.getElementById('scrap-reason');
     if (scrapReasonSelect) {
         scrapReasonSelect.addEventListener('change', function() {
@@ -6265,16 +6512,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-// Función para verificar shots en inventario
+// 🔄 FUNCIÓN checkInventoryShots ACTUALIZADA
 async function checkInventoryShots(shotsList) {
     const inventoryShots = [];
     const notInInventory = [];
     
-    // Obtener el inventario actual
-    const inventory = getFromLocalStorage('inventory') || [];
+    // Obtener el inventario actual desde Firebase
+    const inventoryData = await getFromFirebase('inventory') || [];
+    const currentInventory = firebaseObjectToArray(inventoryData);
     
     shotsList.forEach(shot => {
-        const inventoryItem = inventory.find(item => 
+        const inventoryItem = currentInventory.find(item => 
             item.shotNumber === shot.shotNumber && 
             item.location !== 'DESCONTADO'
         );
@@ -6293,6 +6541,8 @@ async function checkInventoryShots(shotsList) {
     return { inventoryShots, notInInventory };
 }
 
+
+// 🔄 FUNCIÓN saveScrapSheet ACTUALIZADA
 async function saveScrapSheet() {
     const folio = document.getElementById('folio').value;
     const fechaOperacion = document.getElementById('fecha-operacion').value;
@@ -6315,14 +6565,14 @@ async function saveScrapSheet() {
         return;
     }
 
-    // Verificar shots en inventario (de la segunda versión)
+    // Verificar shots en inventario
     const { inventoryShots, notInInventory } = checkInventoryShots(scannedShots);
 
-    // Preparar datos de la hoja (combinando ambas versiones)
+    // Preparar datos de la hoja
     const scrapSheet = {
         folio: folio,
         fechaOperacion: fechaOperacion,
-        fechaCreacion: new Date().toISOString(), // Cambiar a ISO para consistencia
+        fechaCreacion: new Date().toISOString(),
         sectorTrabajo: sectorTrabajo,
         numeroProducto: numeroProducto,
         nombreProducto: nombreProducto,
@@ -6336,7 +6586,6 @@ async function saveScrapSheet() {
         observaciones: observaciones,
         estado: 'ABIERTA',
         evidencia: null,
-        // Campos adicionales de la segunda versión
         inventoryShots: inventoryShots.length,
         newShots: notInInventory.length,
         id: Date.now()
@@ -6347,15 +6596,15 @@ async function saveScrapSheet() {
         updateInventoryForScrap(inventoryShots);
     }
 
-    // Guardar en Firebase (de la primera versión)
     scrapSheets.push(scrapSheet);
-    await saveToFirebase('scrapSheets', JSON.stringify(scrapSheets));
+    
+    // 🔥 GUARDAR EN FIREBASE
+    await saveToFirebase('scrapSheets', JSON.stringify(arrayToFirebaseObject(scrapSheets)));
     
     // Incrementar contador y guardar
     folioCounter++;
     await saveToFirebase('folioCounter', folioCounter.toString());
 
-    // Mostrar resumen mejorado (combinando ambas versiones)
     alert(`✅ Hoja de scrap guardada correctamente\n\n` +
           `📋 Folio: ${folio}\n` +
           `📦 Shots del inventario: ${inventoryShots.length}\n` +
@@ -6363,28 +6612,31 @@ async function saveScrapSheet() {
           `📊 Total shots: ${scannedShots.length}\n\n` +
           `Puedes gestionarla desde la pestaña "Gestionar Hojas"`);
 
-    // Limpiar formulario y actualizar displays (de la primera versión)
     clearForm();
     generateNewFolio();
     refreshSheetsList();
 }
-
-// Función para descontar del inventario
-function updateInventoryForScrap(inventoryShots) {
-    let inventory = getFromLocalStorage('inventory') || [];
+// 🔄 FUNCIÓN updateInventoryForScrap ACTUALIZADA (versión completa)
+async function updateInventoryForScrap(inventoryShots) {
+    // Obtener inventario actual
+    const inventoryData = await getFromFirebase('inventory') || [];
+    let currentInventory = firebaseObjectToArray(inventoryData);
     
     inventoryShots.forEach(shot => {
-        const index = inventory.findIndex(item => item.id === shot.inventoryId);
+        const index = currentInventory.findIndex(item => item.id === shot.inventoryId);
         if (index !== -1) {
-            inventory[index].location = 'SCRAP_ADICIONAL';
-            inventory[index].lastUpdate = new Date().toISOString();
-            inventory[index].scrapReason = shot.scrapReason;
+            currentInventory[index].location = 'SCRAP_ADICIONAL';
+            currentInventory[index].lastUpdate = new Date().toISOString();
+            currentInventory[index].scrapReason = shot.scrapReason;
         }
     });
     
-    saveToLocalStorage('inventory', inventory);
+    // Guardar inventario actualizado
+    await saveToFirebaseHelper('inventory', arrayToFirebaseObject(currentInventory));
+    
+    // Actualizar la variable global también
+    inventory = currentInventory;
 }
-
 // Función para imprimir hoja
 function printScrapSheet() {
     // Generar contenido para imprimir
@@ -6513,6 +6765,7 @@ function handleModalEvidenceUpload() {
     }
 }
 
+// 🔄 FUNCIÓN confirmStateChange ACTUALIZADA
 async function confirmStateChange() {
     const folio = document.getElementById('modal-folio-manage').value;
     const newState = document.getElementById('modal-new-state').value;
@@ -6579,15 +6832,14 @@ async function confirmStateChange() {
         scrapSheets[sheetIndex].fechaCierre = new Date().toISOString();
     }
     
-    // Guardar en localStorage
-    await saveToFirebase('scrapSheets', JSON.stringify(scrapSheets));
+    // 🔥 GUARDAR EN FIREBASE
+    await saveToFirebase('scrapSheets', JSON.stringify(arrayToFirebaseObject(scrapSheets)));
     
     alert(`✅ Estado actualizado a: ${getEstadoText(newState)}`);
     
     closeManageModal();
     refreshSheetsList();
 }
-
 function closeManageModal() {
     document.getElementById('manage-state-modal').style.display = 'none';
 }
@@ -6630,16 +6882,22 @@ function initializeRetencionSystem() {
     });
 }
 
-function generateNewRetencionFolio() {
+// 🔄 FUNCIÓN generateNewRetencionFolio ACTUALIZADA
+async function generateNewRetencionFolio() {
     const currentDate = new Date();
     const year = currentDate.getFullYear().toString().slice(-2);
     const month = String(currentDate.getMonth() + 1).padStart(2, '0');
     const day = String(currentDate.getDate()).padStart(2, '0');
     
+    // Asegurar que tenemos el contador más reciente
+    const currentCounter = await loadFromFirebase('retencionCounter');
+    if (currentCounter) {
+        retencionCounter = parseInt(currentCounter);
+    }
+    
     const folio = `RET-${year}${month}${day}-${String(retencionCounter).padStart(4, '0')}`;
     document.getElementById('retencion-folio').value = folio;
 }
-
 function updateRetencionProductInfo() {
     const producto = document.getElementById('retencion-producto').value;
     const moldeSelect = document.getElementById('retencion-molde');
@@ -6790,6 +7048,7 @@ function getRandomAlmacen() {
     const almacenes = ['Almacén Fundición', 'Almacén Producto Terminado', 'Almacén Cuarentena'];
     return almacenes[Math.floor(Math.random() * almacenes.length)];
 }
+// 🔄 FUNCIÓN createRetencion ACTUALIZADA
 async function createRetencion() {
     const folio = document.getElementById('retencion-folio').value;
     const fechaProduccion = document.getElementById('retencion-fecha-produccion').value;
@@ -6848,7 +7107,9 @@ async function createRetencion() {
     
     // Guardar retención
     retenciones.push(retencion);
-    await saveToFirebase('retenciones', JSON.stringify(retenciones));
+    
+    // 🔥 GUARDAR EN FIREBASE
+    await saveToFirebase('retenciones', JSON.stringify(arrayToFirebaseObject(retenciones)));
     
     // Incrementar contador
     retencionCounter++;
@@ -6861,7 +7122,14 @@ async function createRetencion() {
     generateNewRetencionFolio();
     refreshRetencionList();
 }
-function refreshRetencionList() {
+// 🔄 FUNCIÓN refreshRetencionList ACTUALIZADA
+async function refreshRetencionList() {
+    // Cargar datos más recientes desde Firebase
+    const retencionesData = await loadFromFirebase('retenciones');
+    if (retencionesData) {
+        retenciones = firebaseObjectToArray(JSON.parse(retencionesData));
+    }
+    
     const tbody = document.getElementById('retenciones-table-body');
     
     if (retenciones.length === 0) {
@@ -6893,7 +7161,6 @@ function refreshRetencionList() {
         `;
     }).join('');
 }
-
 function getRetencionEstadoBadge(estado) {
     const badges = {
         'ACTIVA': '<span style="background: #ffc107; color: black; padding: 4px 8px; border-radius: 4px; font-size: 12px;">⏸️ Activa</span>',
@@ -7031,7 +7298,7 @@ function resolveRetencion(folio) {
                 </div>
                 
                 <div style="text-align: center;">
-                    <button onclick="confirmResolveRetencion('${folio}')" class="btn btn-success">✅ Confirmar Resolución</button>
+                    <button onclick="handleConfirmResolveRetencion('${folio}')" class="btn btn-success">✅ Confirmar Resolución</button>
                     <button onclick="closeResolveModal()" class="btn btn-secondary" style="margin-left: 10px;">❌ Cancelar</button>
                 </div>
             </div>
@@ -7123,6 +7390,7 @@ function handleResolveActionChange() {
             break;
     }
 }
+// 🔄 FUNCIÓN confirmResolveRetencion ACTUALIZADA
 async function confirmResolveRetencion(folio) {
     const action = document.getElementById('resolve-action').value;
     const responsable = document.getElementById('resolve-responsable').value;
@@ -7206,8 +7474,8 @@ async function confirmResolveRetencion(folio) {
         comentario: `${getActionText(action)}. ${comentarios}${accionDetalle ? '. ' + accionDetalle : ''}`
     });
     
-    // Guardar en localStorage
-    await saveToFirebase('retenciones', JSON.stringify(retenciones));
+    // 🔥 GUARDAR EN FIREBASE
+    await saveToFirebase('retenciones', JSON.stringify(arrayToFirebaseObject(retenciones)));
     
     // Crear hoja de scrap automáticamente si corresponde
     if (action === 'SCRAP') {
@@ -7219,6 +7487,7 @@ async function confirmResolveRetencion(folio) {
     closeResolveModal();
     refreshRetencionList();
 }
+
 
 function getActionText(action) {
     const actions = {
@@ -7237,6 +7506,7 @@ function closeResolveModal() {
         modal.remove();
     }
 }
+// 🔄 FUNCIÓN createScrapFromRetencion ACTUALIZADA
 async function createScrapFromRetencion(retencion, responsable) {
     const currentDate = new Date();
     const folio = `SCR-${currentDate.getFullYear().toString().slice(-2)}${String(currentDate.getMonth() + 1).padStart(2, '0')}${String(currentDate.getDate()).padStart(2, '0')}-${String(folioCounter).padStart(4, '0')}`;
@@ -7267,16 +7537,29 @@ async function createScrapFromRetencion(retencion, responsable) {
     };
     
     scrapSheets.push(scrapSheet);
-    await saveToFirebase('scrapSheets', JSON.stringify(scrapSheets));
+    
+    // 🔥 GUARDAR EN FIREBASE
+    await saveToFirebase('scrapSheets', JSON.stringify(arrayToFirebaseObject(scrapSheets)));
     
     folioCounter++;
     await saveToFirebase('folioCounter', folioCounter.toString());
     
     alert(`📋 Hoja de scrap ${folio} creada automáticamente\n\nPuedes gestionarla desde la pestaña "Gestionar Hojas"`);
 }
-// Cargar usuarios desde Firebase
+// 🔄 FUNCIÓN loadUsers ACTUALIZADA
 async function loadUsers() {
-    usuarios = await loadFromFirebase('usuarios');
+    try {
+        const usersData = await loadFromFirebase('usuarios');
+        if (usersData) {
+            usuarios = firebaseObjectToArray(JSON.parse(usersData));
+        } else {
+            usuarios = [];
+        }
+        console.log(`✅ Usuarios cargados: ${usuarios.length}`);
+    } catch (error) {
+        console.error('❌ Error cargando usuarios:', error);
+        usuarios = [];
+    }
 }
 
 // Inicializar con datos de Firebase
@@ -7297,11 +7580,16 @@ async function initUserSystem() {
         // Actualizar UI si es necesario
     });
 }
-// Guardar usuarios en localStorage
+// 🔄 FUNCIÓN saveUsers ACTUALIZADA
 async function saveUsers() {
-    await saveToFirebase('usuarios', JSON.stringify(usuarios));
+    try {
+        await saveToFirebase('usuarios', JSON.stringify(arrayToFirebaseObject(usuarios)));
+        console.log('✅ Usuarios guardados en Firebase');
+    } catch (error) {
+        console.error('❌ Error guardando usuarios:', error);
+        throw error;
+    }
 }
-
 // Crear admin por defecto
 async function createDefaultAdmin() {
     const defaultAdmin = {
@@ -7323,25 +7611,30 @@ async function createDefaultAdmin() {
     console.log('Usuario admin creado');
 }
 
-// Verificar sesión activa
+// 🔄 FUNCIÓN checkActiveSession ACTUALIZADA
 async function checkActiveSession() {
-    const savedSession = await loadFromFirebase('currentSession');
-    if (savedSession) {
-        const session = JSON.parse(savedSession);
-        const user = usuarios.find(u => u.id === session.userId);
-        
-        if (user && user.activo) {
-            currentUser = user;
-            isLoggedIn = true;
-            showMainApp();
-            return;
+    try {
+        const savedSession = await loadFromFirebase('currentSession');
+        if (savedSession) {
+            const session = JSON.parse(savedSession);
+            const user = usuarios.find(u => u.id === session.userId);
+            
+            if (user && user.activo) {
+                currentUser = user;
+                isLoggedIn = true;
+                showMainApp();
+                return;
+            }
         }
+    } catch (error) {
+        console.error('Error verificando sesión:', error);
     }
     
-    showLoginScreen();
+    // Solo mostrar login si no hay sesión válida
+    if (!isLoggedIn) {
+        showLoginScreen();
+    }
 }
-
-// Mostrar pantalla de login
 // Mostrar pantalla de login
 function showLoginScreen() {
     // Ocultar contenido principal si existe
@@ -7364,7 +7657,7 @@ function showLoginScreen() {
                     <p style="color: #666; margin: 10px 0 0 0;">Sistema de Gestión</p>
                 </div>
                 
-                <form id="login-form" onsubmit="handleLogin(event)">
+                <form id="login-form" onsubmit="handleHandleLogin(event)">
                     <div style="margin-bottom: 20px;">
                         <label style="display: block; margin-bottom: 5px; color: #333; font-weight: bold;">👤 Usuario:</label>
                         <input type="text" id="login-username" required style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box;" placeholder="Ingresa tu usuario">
@@ -7391,7 +7684,7 @@ function showLoginScreen() {
         </div>
     `);
 }
-// Manejar login
+// 🔄 FUNCIÓN handleLogin ACTUALIZADA
 async function handleLogin(event) {
     event.preventDefault();
     
@@ -7465,7 +7758,7 @@ function showMainApp() {
             <div style="display: flex; align-items: center; gap: 15px;">
                 <span>👤 ${currentUser.nombre} ${currentUser.apellido} (${ROLE_NAMES[currentUser.rol]})</span>
                 ${hasPermission('usuarios') ? '<button onclick="showUsersModal()" style="background: #4caf50; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">👥 Usuarios</button>' : ''}
-                <button onclick="logout()" style="background: #d32f2f; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">
+                <button onclick="handleLogout()" style="background: #d32f2f; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">
                     🚪 Cerrar Sesión
                 </button>
             </div>
@@ -7560,7 +7853,7 @@ function loadUsersSection() {
             <!-- Formulario para crear/editar usuario (oculto inicialmente) -->
             <div id="user-form-container" style="display: none;">
                 <h3 id="form-title">➕ Crear Nuevo Usuario</h3>
-                <form id="user-form" onsubmit="handleUserSubmit(event)">
+                <form id="user-form" onsubmit="handleHandleUserSubmit(event)">
                     <input type="hidden" id="user-id">
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
@@ -7688,6 +7981,7 @@ function cancelUserForm() {
     document.getElementById('user-form-container').style.display = 'none';
 }
 
+// 🔄 FUNCIÓN handleUserSubmit ACTUALIZADA
 async function handleUserSubmit(event) {
     event.preventDefault();
     
@@ -7721,11 +8015,13 @@ async function handleUserSubmit(event) {
     } else {
         // Crear nuevo usuario
         usuarios.push(userData);
-	// Enviar notificación por email al nuevo usuario
+        // Enviar notificación por email al nuevo usuario
         sendWelcomeEmail(userData);
     }
     
+    // 🔥 GUARDAR EN FIREBASE
     await saveUsers();
+    
     cancelUserForm();
     
     // Actualizar la tabla
@@ -7751,6 +8047,7 @@ function editUser(userId) {
     document.getElementById('user-activo').checked = user.activo;
 }
 
+// 🔄 FUNCIÓN toggleUserStatus ACTUALIZADA
 async function toggleUserStatus(userId) {
     const user = usuarios.find(u => u.id === userId);
     if (!user) return;
@@ -7758,10 +8055,12 @@ async function toggleUserStatus(userId) {
     const action = user.activo ? 'desactivar' : 'activar';
     if (confirm(`¿Estás seguro de que quieres ${action} al usuario ${user.nombre} ${user.apellido}?`)) {
         user.activo = !user.activo;
-        await saveUsers(); // ← Agregar await
+        
+        // 🔥 GUARDAR EN FIREBASE
+        await saveUsers();
         
         // Actualizar la tabla
-       document.getElementById('users-table').innerHTML = generateUsersTable();
+        document.getElementById('users-table').innerHTML = generateUsersTable();
         
         alert(`✅ Usuario ${user.activo ? 'activado' : 'desactivado'} correctamente`);
     }
@@ -7855,7 +8154,7 @@ function showEmailNotification(email) {
     setTimeout(() => notification.remove(), 5000);
 }
 // Inicializar sistema al cargar la página
-document.addEventListener('DOMContentLoaded', function() {
+
     await initUserSystem();
 });
 // Función para limpiar datos corruptos (ejecutar una vez si hay problemas)
@@ -7864,12 +8163,14 @@ function resetUserSystem() {
     localStorage.removeItem('currentSession');
     location.reload();
 }
-// Cerrar sesión
-function logout() {
+// 🔄 FUNCIÓN logout ACTUALIZADA
+async function logout() {
     if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
         currentUser = null;
         isLoggedIn = false;
-        localStorage.removeItem('currentSession');
+        
+        // 🔥 LIMPIAR SESIÓN EN FIREBASE
+        await saveToFirebase('currentSession', null);
         
         // Remover barra de usuario
         const userBar = document.getElementById('user-bar');
@@ -7880,21 +8181,66 @@ function logout() {
         showLoginScreen();
     }
 }
-// Agregar nueva función async para cargar datos iniciales:
+// 🔄 FUNCIÓN DE INICIALIZACIÓN ACTUALIZADA
 async function initializeAppData() {
     try {
-        scrapSheets = await loadFromFirebase('scrapSheets') || [];
-        folioCounter = parseInt(await loadFromFirebase('folioCounter')) || 1;
-        retenciones = await loadFromFirebase('retenciones') || [];
-        retencionCounter = parseInt(await loadFromFirebase('retencionCounter')) || 1;
+        console.log('🔄 Cargando datos desde Firebase...');
         
-        console.log('✅ Datos iniciales cargados desde Firebase');
+        // Cargar todos los datos principales
+        const inventoryData = await loadFromFirebase('inventory');
+        inventory = inventoryData ? firebaseObjectToArray(JSON.parse(inventoryData)) : [];
+        
+        const movementsData = await loadFromFirebase('movements');
+        movements = movementsData ? firebaseObjectToArray(JSON.parse(movementsData)) : [];
+        
+        const palletsData = await loadFromFirebase('pallets');
+        pallets = palletsData ? firebaseObjectToArray(JSON.parse(palletsData)) : [];
+        
+        const physicalVerificationData = await loadFromFirebase('physicalVerification');
+        physicalVerification = physicalVerificationData ? JSON.parse(physicalVerificationData) : {};
+        
+        const productionReportsData = await loadFromFirebase('productionReports');
+        productionReports = productionReportsData ? firebaseObjectToArray(JSON.parse(productionReportsData)) : [];
+        
+        const movementReportsData = await loadFromFirebase('movementReports');
+        movementReports = movementReportsData ? firebaseObjectToArray(JSON.parse(movementReportsData)) : [];
+        
+        // Cargar datos de scrap y retenciones
+        const scrapSheetsData = await loadFromFirebase('scrapSheets');
+        scrapSheets = scrapSheetsData ? firebaseObjectToArray(JSON.parse(scrapSheetsData)) : [];
+        
+        const retencionesData = await loadFromFirebase('retenciones');
+        retenciones = retencionesData ? firebaseObjectToArray(JSON.parse(retencionesData)) : [];
+        
+        // Cargar contadores
+        const folioCounterData = await loadFromFirebase('folioCounter');
+        folioCounter = folioCounterData ? parseInt(folioCounterData) : 1;
+        
+        const retencionCounterData = await loadFromFirebase('retencionCounter');
+        retencionCounter = retencionCounterData ? parseInt(retencionCounterData) : 1;
+        
+        const palletCounterData = await loadFromFirebase('palletCounter');
+        if (palletCounterData) {
+            palletCounter = parseInt(palletCounterData);
+        }
+        
+        console.log('✅ Todos los datos cargados desde Firebase');
+        console.log(`📊 Inventario: ${inventory.length} items`);
+        console.log(`📦 Tarimas: ${pallets.length} items`);
+        console.log(`📋 Hojas Scrap: ${scrapSheets.length} items`);
+        
     } catch (error) {
         console.error('❌ Error cargando datos iniciales:', error);
-        // Usar valores por defecto
+        // Usar valores por defecto en caso de error
+        inventory = [];
+        movements = [];
+        pallets = [];
+        physicalVerification = {};
+        productionReports = [];
+        movementReports = [];
         scrapSheets = [];
-        folioCounter = 1;
         retenciones = [];
+        folioCounter = 1;
         retencionCounter = 1;
     }
 }
@@ -7915,6 +8261,109 @@ async function handleAsyncForm(event, asyncFunction) {
     } catch (error) {
         console.error('Error en formulario async:', error);
         alert('❌ Error: ' + error.message);
+    }
+}
+// 🔥 FUNCIONES BASE DE FIREBASE - VERSIÓN MODERNA
+async function saveToFirebase(path, data) {
+    try {
+        const dbRef = ref(database, path);
+        await set(dbRef, data);
+        console.log(`✅ Guardado en Firebase: ${path}`);
+    } catch (error) {
+        console.error(`❌ Error guardando ${path}:`, error);
+        throw error;
+    }
+}
+
+async function loadFromFirebase(path) {
+    try {
+        const dbRef = ref(database, path);
+        const snapshot = await get(dbRef);
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            console.log(`✅ Cargado de Firebase: ${path}`);
+            return data;
+        } else {
+            console.log(`📭 No existe en Firebase: ${path}`);
+            return null;
+        }
+    } catch (error) {
+        console.error(`❌ Error cargando ${path}:`, error);
+        throw error;
+    }
+}
+
+
+// Función para escuchar cambios en tiempo real (opcional)
+function listenToFirebaseChanges(key, callback) {
+    try {
+        const db = getDatabase();
+        onValue(ref(db, key), (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                callback(data);
+            }
+        });
+    } catch (error) {
+        console.error(`❌ Error escuchando cambios en ${key}:`, error);
+    }
+}
+
+// Función helper para arrays (Firebase guarda objetos, no arrays)
+function arrayToFirebaseObject(array) {
+    if (!Array.isArray(array)) return array;
+    const obj = {};
+    array.forEach((item, index) => {
+        obj[index] = item;
+    });
+    return obj;
+}
+
+function firebaseObjectToArray(obj) {
+    if (!obj) return [];
+    if (Array.isArray(obj)) return obj;
+    return Object.values(obj);
+}
+// 🔄 FUNCIONES AUXILIARES PARA REEMPLAZAR getFromLocalStorage/saveToLocalStorage
+async function getFromFirebase(key) {
+    try {
+        const data = await loadFromFirebase(key);
+        if (data) {
+            return JSON.parse(data);
+        }
+        return null;
+    } catch (error) {
+        console.error(`Error obteniendo ${key}:`, error);
+        return null;
+    }
+}
+async function saveToFirebaseHelper(key, data) {
+    try {
+        await saveToFirebase(key, JSON.stringify(data));
+    } catch (error) {
+        console.error(`Error guardando ${key}:`, error);
+    }
+}
+async function deleteFromFirebase(path) {
+    try {
+        const dbRef = ref(database, path);
+        await remove(dbRef);
+        console.log(`🗑️ Eliminado de Firebase: ${path}`);
+    } catch (error) {
+        console.error(`❌ Error eliminando ${path}:`, error);
+        throw error;
+    }
+}
+async function pushToFirebase(path, data) {
+    try {
+        const dbRef = ref(database, path);
+        const newRef = push(dbRef);
+        await set(newRef, data);
+        console.log(`✅ Push a Firebase: ${path}`);
+        return newRef.key;
+    } catch (error) {
+        console.error(`❌ Error push ${path}:`, error);
+        throw error;
     }
 }
 </script>
