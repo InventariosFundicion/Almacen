@@ -2126,7 +2126,7 @@ function getAccionesButtons(sheet) {
         }
 
         // Editar hoja
-        function editSheet(folio) {
+	async function editSheet(folio) {
             const sheet = scrapSheets.find(s => s.folio === folio);
             if (!sheet) return;
 
@@ -3996,8 +3996,7 @@ function toggleModelSection(sectionId) {
                 tbody.appendChild(row);
             });
         }
-
-// 🔄 DOMCONTENTLOADED PRINCIPAL ACTUALIZADO
+// 🔄 DOMCONTENTLOADED PRINCIPAL - VERSIÓN CORREGIDA SIN DUPLICACIONES
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Iniciando aplicación...');
     
@@ -4024,6 +4023,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             await generateNewRetencionFolio();
             await refreshRetencionList();
             
+            // EVENT LISTENERS PRINCIPALES
             // Event listeners para pestañas
             document.querySelectorAll('.nav-tab').forEach(function(tab) {
                 tab.addEventListener('click', function() {
@@ -4112,30 +4112,36 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
-            // Event listeners para el generador
+            // EVENT LISTENERS PARA EL GENERADOR
+            // Event listener para cambios en el textarea de códigos
             const codigosTextarea = document.getElementById('gen-codigos');
             if (codigosTextarea) {
                 codigosTextarea.addEventListener('input', function() {
-                    console.log('Textarea cambió, procesando códigos...');
+                    console.log('Textarea cambió, procesando códigos...'); // DEBUG
                     
+                    // Obtener líneas del textarea
                     const lines = this.value.split('\n').filter(line => line.trim().length > 0);
-                    console.log('Líneas encontradas:', lines);
+                    console.log('Líneas encontradas:', lines); // DEBUG
                     
-                    const oldGeneratedCodes = [...generatedCodes];
+                    // Resetear arrays y contadores
+                    const oldGeneratedCodes = [...generatedCodes]; // Backup
                     generatedCodes = [];
                     duplicateAttempts = 0;
                     
+                    // Procesar cada línea
                     const seenCodes = new Set();
                     
                     lines.forEach((line, index) => {
                         const code = line.trim();
                         if (code) {
-                            console.log(`Procesando línea ${index + 1}: ${code}`);
+                            console.log(`Procesando línea ${index + 1}: ${code}`); // DEBUG
                             
                             if (seenCodes.has(code)) {
+                                // Es duplicado dentro del mismo textarea
                                 duplicateAttempts++;
-                                console.log(`Duplicado detectado en textarea: ${code}`);
+                                console.log(`Duplicado detectado en textarea: ${code}`); // DEBUG
                             } else {
+                                // Es único, agregar
                                 seenCodes.add(code);
                                 
                                 const isValid = (code.length === 13 || code.length === 17);
@@ -4151,9 +4157,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                         }
                     });
                     
-                    console.log('Códigos finales:', generatedCodes);
-                    console.log('Duplicados detectados:', duplicateAttempts);
+                    console.log('Códigos finales:', generatedCodes); // DEBUG
+                    console.log('Duplicados detectados:', duplicateAttempts); // DEBUG
                     
+                    // Actualizar interfaz
                     updateCodesValidationList();
                     updateValidationInfo();
                     updateGenerateButton();
@@ -4164,7 +4171,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const zonaInput = document.getElementById('gen-zona');
             if (zonaInput) {
                 zonaInput.addEventListener('input', function() {
-                    console.log('Zona cambió a:', this.value);
+                    console.log('Zona cambió a:', this.value); // DEBUG
                     updateGenerateButton();
                 });
             }
@@ -4172,7 +4179,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const tipoSelect = document.getElementById('gen-tipo');
             if (tipoSelect) {
                 tipoSelect.addEventListener('change', function() {
-                    console.log('Tipo cambió a:', this.value);
+                    console.log('Tipo cambió a:', this.value); // DEBUG
                     updateGenerateButton();
                 });
             }
@@ -6041,81 +6048,6 @@ function showTemporaryMessage(message, type = 'info') {
         resultDiv.innerHTML = '';
     }, 4000);
 }
-
-// Event listeners adicionales para el generador
-
-    // Event listener para cambios en el textarea de códigos
-    const codigosTextarea = document.getElementById('gen-codigos');
-    if (codigosTextarea) {
-        codigosTextarea.addEventListener('input', function() {
-            console.log('Textarea cambió, procesando códigos...'); // DEBUG
-            
-            // Obtener líneas del textarea
-            const lines = this.value.split('\n').filter(line => line.trim().length > 0);
-            console.log('Líneas encontradas:', lines); // DEBUG
-            
-            // Resetear arrays y contadores
-            const oldGeneratedCodes = [...generatedCodes]; // Backup
-            generatedCodes = [];
-            duplicateAttempts = 0;
-            
-            // Procesar cada línea
-            const seenCodes = new Set();
-            
-            lines.forEach((line, index) => {
-                const code = line.trim();
-                if (code) {
-                    console.log(`Procesando línea ${index + 1}: ${code}`); // DEBUG
-                    
-                    if (seenCodes.has(code)) {
-                        // Es duplicado dentro del mismo textarea
-                        duplicateAttempts++;
-                        console.log(`Duplicado detectado en textarea: ${code}`); // DEBUG
-                    } else {
-                        // Es único, agregar
-                        seenCodes.add(code);
-                        
-                        const isValid = (code.length === 13 || code.length === 17);
-                        const type = code.length === 13 ? 'UPR' : code.length === 17 ? 'LWR' : 'UNKNOWN';
-                        
-                        generatedCodes.push({
-                            code: code,
-                            type: type,
-                            valid: isValid,
-                            timestamp: new Date()
-                        });
-                    }
-                }
-            });
-            
-            console.log('Códigos finales:', generatedCodes); // DEBUG
-            console.log('Duplicados detectados:', duplicateAttempts); // DEBUG
-            
-            // Actualizar interfaz
-            updateCodesValidationList();
-            updateValidationInfo();
-            updateGenerateButton();
-        });
-    }
-    
-    // Event listeners para campos del formulario generador
-    const zonaInput = document.getElementById('gen-zona');
-    const tipoSelect = document.getElementById('gen-tipo');
-    
-    if (zonaInput) {
-        zonaInput.addEventListener('input', function() {
-            console.log('Zona cambió a:', this.value); // DEBUG
-            updateGenerateButton();
-        });
-    }
-    
-    if (tipoSelect) {
-        tipoSelect.addEventListener('change', function() {
-            console.log('Tipo cambió a:', this.value); // DEBUG
-            updateGenerateButton();
-        });
-    }   
-});
        // Mostrar modo scanner por defecto
     showScannerMode();
        // Actualizar estado del botón generar
