@@ -6126,7 +6126,8 @@ function removeCode(index) {
 // Integración con inventario existente
 function updateInventoryFromScrap(scrapData) {
     // Actualizar el inventario cuando se registre scrap adicional
-    const existingInventory = JSON.parse(await loadFromFirebase('scannedData') || '[]');
+    const data = await loadFromFirebase('scannedData');
+    const existingInventory = JSON.parse(data || '[]');
     
     scrapData.shots.forEach(shot => {
         const scrapEntry = {
