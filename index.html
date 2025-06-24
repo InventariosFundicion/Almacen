@@ -1744,8 +1744,6 @@
         </div>
     </div>
 </div>
-
-    <script>
 <script type="module">
   // 🔥 CONFIGURACIÓN DE FIREBASE - SOLO UNA VEZ
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -1765,7 +1763,8 @@
   // Inicializar Firebase
   const app = initializeApp(firebaseConfig);
   const database = getDatabase(app);
-
+</script>
+    <script>
   // 🚀 TUS VARIABLES GLOBALES (sin cambios)
   let currentShots = [];
   let scrapSheets = [];
@@ -5398,58 +5397,6 @@ function showEvidenceInfo(reportId) {
         alert('❌ No hay evidencia disponible para este reporte.');
     }
 }
-
-// Configurar event listeners cuando el DOM esté listo
-
-    // Event listeners para pestañas
-    document.querySelectorAll('.nav-tab').forEach(function(tab) {
-        tab.addEventListener('click', function() {
-            const tabName = this.getAttribute('data-tab');
-            showTab(tabName);
-        });
-    });
-    
-    // Event listeners
-    document.getElementById('qr-input').addEventListener('input', analyzeQRCode);
-    document.getElementById('inventory-type').addEventListener('change', updateFormSections);
-    
-    document.getElementById('qr-input').addEventListener('paste', function(e) {
-        setTimeout(function() {
-            const content = e.target.value.trim();
-            if (content && (content.includes('|') || content.length >= 13)) {
-                analyzeQRCode();
-            }
-        }, 100);
-    });
-    
-    document.getElementById('warehouse-selector').addEventListener('click', function(e) {
-        if (e.target.classList.contains('warehouse-btn')) {
-            this.querySelectorAll('.warehouse-btn').forEach(function(btn) {
-                btn.classList.remove('selected');
-            });
-            e.target.classList.add('selected');
-            selectedWarehouse = e.target.dataset.warehouse;
-        }
-    });
-    
-    document.getElementById('movement-selector').addEventListener('click', function(e) {
-        if (e.target.classList.contains('warehouse-btn')) {
-            this.querySelectorAll('.warehouse-btn').forEach(function(btn) {
-                btn.classList.remove('selected');
-            });
-            e.target.classList.add('selected');
-            selectedMovement = e.target.dataset.movement;
-        }
-    });
-    
-    // Inicializar datos y displays
-    loadSampleData();
-    updateAllDisplays();
-    // Verificar disponibilidad de cámara  ← AQUÍ
-    checkCameraAvailability();
-   // Inicializar modo del generador
-    showScannerMode();
-});
 // Variables para la cámara
 let qrScanner = null;
 let currentCamera = 'environment'; // 'environment' = cámara trasera, 'user' = frontal
