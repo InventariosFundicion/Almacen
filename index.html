@@ -6124,8 +6124,8 @@ function removeCode(index) {
     }
 }
 // Integración con inventario existente
-function updateInventoryFromScrap(scrapData) {
-    // Actualizar el inventario cuando se registre scrap adicional
+async function updateInventoryFromScrap(scrapData) {
+// Actualizar el inventario cuando se registre scrap adicional
     const data = await loadFromFirebase('scannedData');
     const existingInventory = JSON.parse(data || '[]');
     
