@@ -7928,26 +7928,6 @@ async function toggleUserStatus(userId) {
         alert(`✅ Usuario ${user.activo ? 'activado' : 'desactivado'} correctamente`);
     }
 }
-// Verificar sesión activa
-function checkActiveSession() {
-    const savedSession = await loadFromFirebase('currentSession');
-    if (savedSession) {
-        const session = JSON.parse(savedSession);
-        const user = usuarios.find(u => u.id === session.userId);
-        
-        if (user && user.activo) {
-            currentUser = user;
-            isLoggedIn = true;
-            showMainApp();
-            return;
-        }
-    }
-    
-    // Solo mostrar login si no hay sesión válida
-    if (!isLoggedIn) {
-        showLoginScreen();
-    }
-}
 // Mostrar modal de gestión de usuarios
 function showUsersModal() {
     const modalHTML = `
