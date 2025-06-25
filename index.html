@@ -2,7 +2,7 @@
 <html lang="es">
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <head>
    <script src="https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner.umd.min.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1745,24 +1745,22 @@
     </div>
 </div>
 <script type="module">
-  // 🔥 CONFIGURACIÓN DE FIREBASE - SOLO UNA VEZ
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-  import { getDatabase, ref, push, set, get, remove, onValue } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+// 🔥 FUNCIONES BASE DE FIREBASE - VERSIÓN COMPAT
+function initializeFirebase() {
+    const firebaseConfig = {
+        apiKey: "AIzaSyAzZFG2GeL1qvUhwgK_9UeVXSbG6_FeZa",
+        authDomain: "control-almacen-fundicion.firebaseapp.com",
+        databaseURL: "https://control-almacen-fundicion-default-rtdb.firebaseio.com",
+        projectId: "control-almacen-fundicion",
+        storageBucket: "control-almacen-fundicion.firebasestorage.app",
+        messagingSenderId: "944421577173",
+        appId: "1:944421577173:web:1db4ae3a41e7128ce55d5c"
+    };
 
-  // Tu configuración de Firebase
-  const firebaseConfig = {
-    apiKey: "AIzaSyAzZFG2GeL1qvUhwgK_9UeVXSbG6_FeZa",
-    authDomain: "control-almacen-fundicion.firebaseapp.com",
-    databaseURL: "https://control-almacen-fundicion-default-rtdb.firebaseio.com",
-    projectId: "control-almacen-fundicion",
-    storageBucket: "control-almacen-fundicion.firebasestorage.app",
-    messagingSenderId: "944421577173",
-    appId: "1:944421577173:web:1db4ae3a41e7128ce55d5c"
-  };
-
-  // Inicializar Firebase
-  const app = initializeApp(firebaseConfig);
-  const database = getDatabase(app);
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    window.database = firebase.database();
+}
 </script>
     <script>
   // 🚀 TUS VARIABLES GLOBALES (sin cambios)
@@ -4001,15 +3999,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Iniciando aplicación...');
     
     try {
-        // 1. Inicializar Firebase y cargar datos principales
+        // 1. INICIALIZAR FIREBASE PRIMERO
+        initializeFirebase();
+        
+        // 2. Inicializar Firebase y cargar datos principales
         console.log('📊 Cargando datos principales...');
         await initializeAppData();
         
-        // 2. Inicializar sistema de usuarios
+        // 3. Inicializar sistema de usuarios
         console.log('👥 Inicializando sistema de usuarios...');
         await initUserSystem();
         
-        // 3. Inicializar sistemas específicos solo si el usuario está logueado
+        // 4. Inicializar sistemas específicos solo si el usuario está logueado
         if (isLoggedIn && currentUser) {
             console.log('⚙️ Inicializando sistemas específicos...');
             
@@ -4184,20 +4185,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                 });
             }
             
-            // 4. Verificar disponibilidad de cámara
+            // 5. Verificar disponibilidad de cámara
             console.log('📷 Verificando cámara...');
             await checkCameraAvailability();
             
-            // 5. Inicializar modo del generador
+            // 6. Inicializar modo del generador
             showScannerMode();
             
-            // 6. Cargar datos de muestra si es necesario (solo para desarrollo)
+            // 7. Cargar datos de muestra si es necesario (solo para desarrollo)
             if (inventory.length === 0) {
                 console.log('📦 Cargando datos de muestra...');
                 loadSampleData();
             }
             
-            // 7. Actualizar todas las visualizaciones
+            // 8. Actualizar todas las visualizaciones
             console.log('🔄 Actualizando displays...');
             updateAllDisplays();
             
@@ -8105,8 +8106,7 @@ async function handleAsyncForm(event, asyncFunction) {
 // 🔥 FUNCIONES BASE DE FIREBASE - VERSIÓN MODERNA
 async function saveToFirebase(path, data) {
     try {
-        const dbRef = ref(database, path);
-        await set(dbRef, data);
+        await window.database.ref(path).set(data);
         console.log(`✅ Guardado en Firebase: ${path}`);
     } catch (error) {
         console.error(`❌ Error guardando ${path}:`, error);
@@ -8116,8 +8116,7 @@ async function saveToFirebase(path, data) {
 
 async function loadFromFirebase(path) {
     try {
-        const dbRef = ref(database, path);
-        const snapshot = await get(dbRef);
+        const snapshot = await window.database.ref(path).once('value');
         if (snapshot.exists()) {
             const data = snapshot.val();
             console.log(`✅ Cargado de Firebase: ${path}`);
@@ -8136,8 +8135,7 @@ async function loadFromFirebase(path) {
 // Función para escuchar cambios en tiempo real (opcional)
 function listenToFirebaseChanges(key, callback) {
     try {
-        const db = getDatabase();
-        onValue(ref(db, key), (snapshot) => {
+        window.database.ref(key).on('value', (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
                 callback(data);
@@ -8176,17 +8174,9 @@ async function getFromFirebase(key) {
         return null;
     }
 }
-async function saveToFirebaseHelper(key, data) {
-    try {
-        await saveToFirebase(key, JSON.stringify(data));
-    } catch (error) {
-        console.error(`Error guardando ${key}:`, error);
-    }
-}
 async function deleteFromFirebase(path) {
     try {
-        const dbRef = ref(database, path);
-        await remove(dbRef);
+        await window.database.ref(path).remove();
         console.log(`🗑️ Eliminado de Firebase: ${path}`);
     } catch (error) {
         console.error(`❌ Error eliminando ${path}:`, error);
@@ -8195,9 +8185,7 @@ async function deleteFromFirebase(path) {
 }
 async function pushToFirebase(path, data) {
     try {
-        const dbRef = ref(database, path);
-        const newRef = push(dbRef);
-        await set(newRef, data);
+        const newRef = await window.database.ref(path).push(data);
         console.log(`✅ Push a Firebase: ${path}`);
         return newRef.key;
     } catch (error) {
