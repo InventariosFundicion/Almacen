@@ -2270,9 +2270,100 @@ function exportToExcel() {
 	let scrapScanner = null;
 	// Variable para el modo de cámara
         let cameraMode = false;
-	
+// 🔥 FUNCIONES BASE DE FIREBASE - DEBE IR ANTES DEL DOMContentLoaded
+function initializeFirebase() {
+    const firebaseConfig = {
+        apiKey: "AIzaSyAzZFG2GeL1qvUhwgK_9UeVXSbG6_FeZa",
+        authDomain: "control-almacen-fundicion.firebaseapp.com",
+        databaseURL: "https://control-almacen-fundicion-default-rtdb.firebaseio.com",
+        projectId: "control-almacen-fundicion",
+        storageBucket: "control-almacen-fundicion.firebasestorage.app",
+        messagingSenderId: "944421577173",
+        appId: "1:944421577173:web:1db4ae3a41e7128ce55d5c"
+    };
 
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+    window.database = firebase.database();
+    console.log('🔥 Firebase inicializado correctamente');
+}
 
+async function saveToFirebase(path, data) {
+    try {
+        await window.database.ref(path).set(data);
+        console.log(`✅ Guardado en Firebase: ${path}`);
+    } catch (error) {
+        console.error(`❌ Error guardando ${path}:`, error);
+        throw error;
+    }
+}
+
+async function loadFromFirebase(path) {
+    try {
+        const snapshot = await window.database.ref(path).once('value');
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            console.log(`✅ Cargado de Firebase: ${path}`);
+            return data;
+        } else {
+            console.log(`📭 No existe en Firebase: ${path}`);
+            return null;
+        }
+    } catch (error) {
+        console.error(`❌ Error cargando ${path}:`, error);
+        throw error;
+    }
+}
+
+function listenToFirebaseChanges(key, callback) {
+    try {
+        window.database.ref(key).on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                callback(data);
+            }
+        });
+    } catch (error) {
+        console.error(`❌ Error escuchando cambios en ${key}:`, error);
+    }
+}
+
+async function deleteFromFirebase(path) {
+    try {
+        await window.database.ref(path).remove();
+        console.log(`🗑️ Eliminado de Firebase: ${path}`);
+    } catch (error) {
+        console.error(`❌ Error eliminando ${path}:`, error);
+        throw error;
+    }
+}
+
+async function pushToFirebase(path, data) {
+    try {
+        const newRef = await window.database.ref(path).push(data);
+        console.log(`✅ Push a Firebase: ${path}`);
+        return newRef.key;
+    } catch (error) {
+        console.error(`❌ Error push ${path}:`, error);
+        throw error;
+    }
+}
+
+// Función helper para arrays (Firebase guarda objetos, no arrays)
+function arrayToFirebaseObject(array) {
+    if (!Array.isArray(array)) return array;
+    const obj = {};
+    array.forEach((item, index) => {
+        obj[index] = item;
+    });
+    return obj;
+}
+
+function firebaseObjectToArray(obj) {
+    if (!obj) return [];
+    if (Array.isArray(obj)) return obj;
+    return Object.values(obj);
+}
 // Configuración de modelos por máquina
 const MACHINE_MODELS = {
     '30': ['PX13-10-382-FUN', 'PEDD-10-382-A-FUN', 'P54G-10-382-FUN'],
@@ -8103,64 +8194,6 @@ async function handleAsyncForm(event, asyncFunction) {
         alert('❌ Error: ' + error.message);
     }
 }
-// 🔥 FUNCIONES BASE DE FIREBASE - VERSIÓN MODERNA
-async function saveToFirebase(path, data) {
-    try {
-        await window.database.ref(path).set(data);
-        console.log(`✅ Guardado en Firebase: ${path}`);
-    } catch (error) {
-        console.error(`❌ Error guardando ${path}:`, error);
-        throw error;
-    }
-}
-
-async function loadFromFirebase(path) {
-    try {
-        const snapshot = await window.database.ref(path).once('value');
-        if (snapshot.exists()) {
-            const data = snapshot.val();
-            console.log(`✅ Cargado de Firebase: ${path}`);
-            return data;
-        } else {
-            console.log(`📭 No existe en Firebase: ${path}`);
-            return null;
-        }
-    } catch (error) {
-        console.error(`❌ Error cargando ${path}:`, error);
-        throw error;
-    }
-}
-
-
-// Función para escuchar cambios en tiempo real (opcional)
-function listenToFirebaseChanges(key, callback) {
-    try {
-        window.database.ref(key).on('value', (snapshot) => {
-            if (snapshot.exists()) {
-                const data = snapshot.val();
-                callback(data);
-            }
-        });
-    } catch (error) {
-        console.error(`❌ Error escuchando cambios en ${key}:`, error);
-    }
-}
-
-// Función helper para arrays (Firebase guarda objetos, no arrays)
-function arrayToFirebaseObject(array) {
-    if (!Array.isArray(array)) return array;
-    const obj = {};
-    array.forEach((item, index) => {
-        obj[index] = item;
-    });
-    return obj;
-}
-
-function firebaseObjectToArray(obj) {
-    if (!obj) return [];
-    if (Array.isArray(obj)) return obj;
-    return Object.values(obj);
-}
 // 🔄 FUNCIONES AUXILIARES PARA REEMPLAZAR getFromLocalStorage/saveToLocalStorage
 async function getFromFirebase(key) {
     try {
@@ -8174,25 +8207,8 @@ async function getFromFirebase(key) {
         return null;
     }
 }
-async function deleteFromFirebase(path) {
-    try {
-        await window.database.ref(path).remove();
-        console.log(`🗑️ Eliminado de Firebase: ${path}`);
-    } catch (error) {
-        console.error(`❌ Error eliminando ${path}:`, error);
-        throw error;
-    }
-}
-async function pushToFirebase(path, data) {
-    try {
-        const newRef = await window.database.ref(path).push(data);
-        console.log(`✅ Push a Firebase: ${path}`);
-        return newRef.key;
-    } catch (error) {
-        console.error(`❌ Error push ${path}:`, error);
-        throw error;
-    }
-}
+
+
 </script>
 </body>
 </html>
