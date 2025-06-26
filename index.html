@@ -4005,10 +4005,11 @@ function generateDetailedSection(items, type) {
     
     return html;
 }
-
 function fillFilterOptions(selectId, options) {
     const select = document.getElementById(selectId);
     if (select) {
+        const currentValue = select.value; // Preservar selección actual
+        
         // Limpiar opciones existentes excepto la primera
         while (select.children.length > 1) {
             select.removeChild(select.lastChild);
@@ -4019,6 +4020,7 @@ function fillFilterOptions(selectId, options) {
             const optionElement = document.createElement('option');
             optionElement.value = option;
             optionElement.textContent = option;
+            optionElement.selected = option === currentValue;
             select.appendChild(optionElement);
         });
     }
@@ -4027,6 +4029,8 @@ function applyFilters() {
     const filterModel = document.getElementById('filter-model').value;
     const filterLote = document.getElementById('filter-lote').value;
     const filterMolde = document.getElementById('filter-molde').value;
+    
+    console.log('🔍 Aplicando filtros:', { filterModel, filterLote, filterMolde }); // DEBUG
     
     // Filtrar inventario disponible
     let filteredInventory = inventory.filter(i => 
@@ -4046,24 +4050,97 @@ function applyFilters() {
         filteredInventory = filteredInventory.filter(i => i.codeData.molde === filterMolde);
     }
     
-    // Regenerar secciones con items filtrados
+    console.log('📊 Inventario filtrado:', filteredInventory.length, 'items'); // DEBUG
+    
+    // Regenerar TODO el inventario con los datos filtrados
+    const detailedDiv = document.getElementById('detailed-inventory');
+    
+    // Agrupar por tipo
     const uprItems = filteredInventory.filter(i => i.type === 'UPR');
     const lwrItems = filteredInventory.filter(i => i.type === 'LWR');
     
-    // Actualizar contenido de las secciones existentes
-    const uprSection = document.querySelector('[id^="model-UPR"]')?.parentElement;
-    const lwrSection = document.querySelector('[id^="model-LWR"]')?.parentElement;
+    // Regenerar solo las secciones de contenido (mantener filtros)
+    let html = `
+        <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
+            <h4>🔍 Filtros</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                <select id="filter-model" onchange="applyFilters()">
+                    <option value="">Todos los Modelos</option>
+                </select>
+                <select id="filter-lote" onchange="applyFilters()">
+                    <option value="">Todos los Lotes</option>
+                </select>
+                <select id="filter-molde" onchange="applyFilters()">
+                    <option value="">Todos los Moldes</option>
+                </select>
+            </div>
+        </div>
+    `;
     
-    if (uprSection) {
-        uprSection.querySelector('.model-header').innerHTML = `🔺 UPR (${uprItems.length} piezas disponibles)`;
-        const contentDiv = uprSection.querySelector('[id^="model-UPR"]').parentElement;
-        contentDiv.innerHTML = generateDetailedSection(uprItems, 'UPR');
+    // Sección UPR
+    html += '<div class="model-section">';
+    html += `<div class="model-header">🔺 UPR (${uprItems.length} piezas ${filterModel || filterLote || filterMolde ? 'filtradas' : 'disponibles'})</div>`;
+    html += generateDetailedSection(uprItems, 'UPR');
+    html += '</div>';
+    
+    // Sección LWR
+    html += '<div class="model-section">';
+    html += `<div class="model-header">🔻 LWR (${lwrItems.length} piezas ${filterModel || filterLote || filterMolde ? 'filtradas' : 'disponibles'})</div>`;
+    html += generateDetailedSection(lwrItems, 'LWR');
+    html += '</div>';
+    
+    detailedDiv.innerHTML = html;
+    
+    // Repoblar las opciones de filtros con los valores seleccionados
+    fillFilterOptionsWithSelection(filterModel, filterLote, filterMolde);
+}
+function fillFilterOptionsWithSelection(selectedModel, selectedLote, selectedMolde) {
+    // Obtener valores únicos del inventario original (no filtrado)
+    const availableInventory = inventory.filter(i => 
+        i.quantity > 0 && (i.warehouse === 'fundidos' || i.warehouse === 'acabados') && i.codeData
+    );
+    
+    const modelos = [...new Set(availableInventory.map(i => i.codeData.modelo))];
+    const lotes = [...new Set(availableInventory.map(i => i.codeData.lote))];
+    const moldes = [...new Set(availableInventory.map(i => i.codeData.molde))];
+    
+    // Llenar select de modelos
+    const modelSelect = document.getElementById('filter-model');
+    if (modelSelect) {
+        modelSelect.innerHTML = '<option value="">Todos los Modelos</option>';
+        modelos.sort().forEach(modelo => {
+            const option = document.createElement('option');
+            option.value = modelo;
+            option.textContent = modelo;
+            option.selected = modelo === selectedModel;
+            modelSelect.appendChild(option);
+        });
     }
     
-    if (lwrSection) {
-        lwrSection.querySelector('.model-header').innerHTML = `🔻 LWR (${lwrItems.length} piezas disponibles)`;
-        const contentDiv = lwrSection.querySelector('[id^="model-LWR"]').parentElement;
-        contentDiv.innerHTML = generateDetailedSection(lwrItems, 'LWR');
+    // Llenar select de lotes
+    const loteSelect = document.getElementById('filter-lote');
+    if (loteSelect) {
+        loteSelect.innerHTML = '<option value="">Todos los Lotes</option>';
+        lotes.sort().forEach(lote => {
+            const option = document.createElement('option');
+            option.value = lote;
+            option.textContent = lote;
+            option.selected = lote === selectedLote;
+            loteSelect.appendChild(option);
+        });
+    }
+    
+    // Llenar select de moldes
+    const moldeSelect = document.getElementById('filter-molde');
+    if (moldeSelect) {
+        moldeSelect.innerHTML = '<option value="">Todos los Moldes</option>';
+        moldes.sort().forEach(molde => {
+            const option = document.createElement('option');
+            option.value = molde;
+            option.textContent = molde;
+            option.selected = molde === selectedMolde;
+            moldeSelect.appendChild(option);
+        });
     }
 }
 function toggleModelSection(sectionId) {
