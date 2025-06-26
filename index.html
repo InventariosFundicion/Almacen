@@ -7758,8 +7758,8 @@ function showMainApp() {
             <div style="display: flex; align-items: center; gap: 15px;">
                 <span>👤 ${currentUser.nombre} ${currentUser.apellido} (${ROLE_NAMES[currentUser.rol]})</span>
                 ${hasPermission('usuarios') ? '<button onclick="showUsersModal()" style="background: #4caf50; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">👥 Usuarios</button>' : ''}
-                <button onclick="handleLogout()" style="background: #d32f2f; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">
-                    🚪 Cerrar Sesión
+                <button onclick="logout()" style="background: #f44336; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px;">
+                      🚪 Cerrar Sesión
                 </button>
             </div>
         </div>
@@ -8249,23 +8249,32 @@ function resetUserSystem() {
     localStorage.removeItem('currentSession');
     location.reload();
 }
-// 🔄 FUNCIÓN logout ACTUALIZADA
+// 🔄 FUNCIÓN logout PRINCIPAL
 async function logout() {
-    if (confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+    try {
+        console.log('👋 Cerrando sesión...'); // DEBUG
+        
+        // Limpiar datos de sesión
         currentUser = null;
-        isLoggedIn = false;
+        sessionToken = null;
         
-        // 🔥 LIMPIAR SESIÓN EN FIREBASE
-        await saveToFirebase('currentSession', null);
+        // Limpiar localStorage
+        localStorage.removeItem('sessionToken');
+        localStorage.removeItem('currentUser');
         
-        // Remover barra de usuario
-        const userBar = document.getElementById('user-bar');
-        if (userBar) {
-            userBar.remove();
-        }
+        // Mostrar login
+        showLogin();
         
-        showLoginScreen();
+        console.log('✅ Sesión cerrada correctamente'); // DEBUG
+        
+    } catch (error) {
+        console.error('❌ Error cerrando sesión:', error);
+        alert('❌ Error cerrando sesión: ' + error.message);
     }
+}
+// 🔄 WRAPPER para handleLogout (para mantener compatibilidad con HTML)
+function handleLogout() {
+    logout();
 }
 // 🔄 FUNCIÓN DE INICIALIZACIÓN ACTUALIZADA
 async function initializeAppData() {
@@ -8362,7 +8371,70 @@ async function getFromFirebase(key) {
         return null;
     }
 }
-
+// 🔄 FUNCIONES DE COMPATIBILIDAD PARA HTML
+function handleLogin(event) {
+    event.preventDefault();
+    
+    const username = document.getElementById('login-username').value;
+    const password = document.getElementById('login-password').value;
+    
+    console.log('🔍 DEBUG Login - usuarios:', usuarios);
+    console.log('🔍 DEBUG Login - es array?', Array.isArray(usuarios));
+    console.log('🔍 DEBUG Login - longitud:', usuarios?.length);
+    
+    // Asegurar que usuarios sea un array
+    if (!Array.isArray(usuarios)) {
+        console.error('❌ usuarios no es array en login:', usuarios);
+        usuarios = [];
+        loadUsers(); // Intentar recargar
+        return;
+    }
+    
+    // Buscar usuario
+    const user = usuarios.find(u => u.username === username && u.activo);
+    
+    if (!user) {
+        showLoginError('❌ Usuario no encontrado o inactivo');
+        return;
+    }
+    
+    if (user.password !== password) {
+        showLoginError('❌ Contraseña incorrecta');
+        return;
+    }
+    
+    // Login exitoso
+    currentUser = user;
+    sessionToken = 'session-' + Date.now();
+    
+    // Actualizar último acceso
+    user.ultimoAcceso = new Date().toISOString();
+    saveUsers();
+    
+    // Guardar sesión
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    localStorage.setItem('sessionToken', sessionToken);
+    
+    // Mostrar aplicación
+    showApp();
+    
+    console.log('✅ Login exitoso:', user.username);
+}
+function showLogin() {
+    const loginModal = document.getElementById('login-modal');
+    const mainApp = document.getElementById('main-app');
+    
+    if (loginModal && mainApp) {
+        loginModal.style.display = 'flex';
+        mainApp.style.display = 'none';
+        
+        // Limpiar campos
+        document.getElementById('login-username').value = '';
+        document.getElementById('login-password').value = '';
+        
+        console.log('🔐 Pantalla de login mostrada');
+    }
+}
 
 </script>
 </body>
