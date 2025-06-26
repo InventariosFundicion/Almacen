@@ -7619,11 +7619,6 @@ function checkActiveSession() {
     } catch (error) {
         console.error('Error verificando sesión:', error);
     }
-    
-    // Solo mostrar login si no hay sesión válida
-    if (!isLoggedIn) {
-        showLoginScreen();
-    }
 }
 // Mostrar pantalla de login
 function showLoginScreen() {
