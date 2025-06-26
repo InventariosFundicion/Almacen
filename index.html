@@ -7548,7 +7548,7 @@ async function initUserSystem() {
     }
     
     // Verificar si hay sesión activa
-    await checkActiveSession();
+    checkActiveSession();
     
     console.log('✅ Sistema de usuarios inicializado');
 }
@@ -7602,9 +7602,9 @@ async function createDefaultAdmin() {
     console.log('👑 Usuario admin creado');
 }
 // 🔄 FUNCIÓN checkActiveSession ACTUALIZADA
-async function checkActiveSession() {
+function checkActiveSession() {
     try {
-        const savedSession = await loadFromFirebase('currentSession');
+        const savedSession = localStorage.getItem('currentSession');
         if (savedSession) {
             const session = JSON.parse(savedSession);
             const user = usuarios.find(u => u.id === session.userId);
@@ -7719,7 +7719,7 @@ async function handleLogin(event) {
         userId: user.id,
         loginTime: new Date().toISOString()
     };
-    await saveToFirebase('currentSession', JSON.stringify(session));
+    localStorage.setItem('currentSession', JSON.stringify(session));
     
     // Mostrar aplicación principal
     showMainApp();
