@@ -4120,197 +4120,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         // 3. Inicializar sistema de usuarios
         console.log('👥 Inicializando sistema de usuarios...');
         await initUserSystem();
-        
-        // 4. Inicializar sistemas específicos solo si el usuario está logueado
-        if (isLoggedIn && currentUser) {
-            console.log('⚙️ Inicializando sistemas específicos...');
             
-            // Inicializar sistema de scrap
-            await generateNewFolio();
-            setTodayDate();
-            await refreshSheetsList();
-            
-            // Inicializar sistema de retenciones
-            initializeRetencionSystem();
-            await generateNewRetencionFolio();
-            await refreshRetencionList();
-            
-            // EVENT LISTENERS PRINCIPALES
-            // Event listeners para pestañas
-            document.querySelectorAll('.nav-tab').forEach(function(tab) {
-                tab.addEventListener('click', function() {
-                    const tabName = this.getAttribute('data-tab');
-		    console.log('🖱️ Click en pestaña:', tabName); // DEBUG
-                    showTab(tabName);
-                });
-            });
-            
-            // Event listeners para QR
-            const qrInput = document.getElementById('qr-input');
-            if (qrInput) {
-                qrInput.addEventListener('input', analyzeQRCode);
-                qrInput.addEventListener('paste', function(e) {
-                    setTimeout(function() {
-                        const content = e.target.value.trim();
-                        if (content && (content.includes('|') || content.length >= 13)) {
-                            analyzeQRCode();
-                        }
-                    }, 100);
-                });
-            }
-            
-            // Event listeners para selección de almacén
-            const inventoryTypeSelect = document.getElementById('inventory-type');
-            if (inventoryTypeSelect) {
-                inventoryTypeSelect.addEventListener('change', updateFormSections);
-            }
-            
-            const warehouseSelector = document.getElementById('warehouse-selector');
-            if (warehouseSelector) {
-                warehouseSelector.addEventListener('click', function(e) {
-                    if (e.target.classList.contains('warehouse-btn')) {
-                        this.querySelectorAll('.warehouse-btn').forEach(function(btn) {
-                            btn.classList.remove('selected');
-                        });
-                        e.target.classList.add('selected');
-                        selectedWarehouse = e.target.dataset.warehouse;
-                    }
-                });
-            }
-            
-            const movementSelector = document.getElementById('movement-selector');
-            if (movementSelector) {
-                movementSelector.addEventListener('click', function(e) {
-                    if (e.target.classList.contains('warehouse-btn')) {
-                        this.querySelectorAll('.warehouse-btn').forEach(function(btn) {
-                            btn.classList.remove('selected');
-                        });
-                        e.target.classList.add('selected');
-                        selectedMovement = e.target.dataset.movement;
-                    }
-                });
-            }
-            
-            // Event listeners para retenciones
-            const retencionMotivo = document.getElementById('retencion-motivo');
-            if (retencionMotivo) {
-                retencionMotivo.addEventListener('change', function() {
-                    const otroMotivoDiv = document.getElementById('retencion-otro-motivo');
-                    if (otroMotivoDiv) {
-                        if (this.value === 'OTRO') {
-                            otroMotivoDiv.style.display = 'block';
-                        } else {
-                            otroMotivoDiv.style.display = 'none';
-                        }
-                    }
-                });
-            }
-            
-            // Event listeners para scrap
-            const scrapReasonSelect = document.getElementById('scrap-reason');
-            if (scrapReasonSelect) {
-                scrapReasonSelect.addEventListener('change', function() {
-                    const otherContainer = document.getElementById('other-reason-container');
-                    if (otherContainer) {
-                        if (this.value === 'OTRO') {
-                            otherContainer.style.display = 'block';
-                        } else {
-                            otherContainer.style.display = 'none';
-                            const otherReasonInput = document.getElementById('other-reason');
-                            if (otherReasonInput) {
-                                otherReasonInput.value = '';
-                            }
-                        }
-                    }
-                });
-            }
-            
-            // EVENT LISTENERS PARA EL GENERADOR
-            // Event listener para cambios en el textarea de códigos
-            const codigosTextarea = document.getElementById('gen-codigos');
-            if (codigosTextarea) {
-                codigosTextarea.addEventListener('input', function() {
-                    console.log('Textarea cambió, procesando códigos...'); // DEBUG
-                    
-                    // Obtener líneas del textarea
-                    const lines = this.value.split('\n').filter(line => line.trim().length > 0);
-                    console.log('Líneas encontradas:', lines); // DEBUG
-                    
-                    // Resetear arrays y contadores
-                    const oldGeneratedCodes = [...generatedCodes]; // Backup
-                    generatedCodes = [];
-                    duplicateAttempts = 0;
-                    
-                    // Procesar cada línea
-                    const seenCodes = new Set();
-                    
-                    lines.forEach((line, index) => {
-                        const code = line.trim();
-                        if (code) {
-                            console.log(`Procesando línea ${index + 1}: ${code}`); // DEBUG
-                            
-                            if (seenCodes.has(code)) {
-                                // Es duplicado dentro del mismo textarea
-                                duplicateAttempts++;
-                                console.log(`Duplicado detectado en textarea: ${code}`); // DEBUG
-                            } else {
-                                // Es único, agregar
-                                seenCodes.add(code);
-                                
-                                const isValid = (code.length === 13 || code.length === 17);
-                                const type = code.length === 13 ? 'UPR' : code.length === 17 ? 'LWR' : 'UNKNOWN';
-                                
-                                generatedCodes.push({
-                                    code: code,
-                                    type: type,
-                                    valid: isValid,
-                                    timestamp: new Date()
-                                });
-                            }
-                        }
-                    });
-                    
-                    console.log('Códigos finales:', generatedCodes); // DEBUG
-                    console.log('Duplicados detectados:', duplicateAttempts); // DEBUG
-                    
-                    // Actualizar interfaz
-                    updateCodesValidationList();
-                    updateValidationInfo();
-                    updateGenerateButton();
-                });
-            }
-            
-            // Event listeners para campos del formulario generador
-            const zonaInput = document.getElementById('gen-zona');
-            if (zonaInput) {
-                zonaInput.addEventListener('input', function() {
-                    console.log('Zona cambió a:', this.value); // DEBUG
-                    updateGenerateButton();
-                });
-            }
-            
-            const tipoSelect = document.getElementById('gen-tipo');
-            if (tipoSelect) {
-                tipoSelect.addEventListener('change', function() {
-                    console.log('Tipo cambió a:', this.value); // DEBUG
-                    updateGenerateButton();
-                });
-            }
-            
-            // 5. Verificar disponibilidad de cámara
-            console.log('📷 Verificando cámara...');
-            await checkCameraAvailability();
-            
-            // 6. Inicializar modo del generador
-            showScannerMode();
-            
-            // 7. Cargar datos de muestra si es necesario (solo para desarrollo)
-            if (inventory.length === 0) {
-                console.log('📦 Cargando datos de muestra...');
-                loadSampleData();
-            }
-            
-            // 8. Actualizar todas las visualizaciones
+        // 8. Actualizar todas las visualizaciones
             console.log('🔄 Actualizando displays...');
             updateAllDisplays();
             
@@ -7733,11 +7544,6 @@ function showLoginError(message) {
 
 // Mostrar aplicación principal
 function showMainApp() {
-    // Verificar si ya existe la barra de usuario para evitar duplicados
-    if (document.getElementById('user-bar')) {
-        return; // Ya está cargada la aplicación
-    }
-    
     // Ocultar pantalla de login si existe
     const loginContainer = document.getElementById('login-container');
     if (loginContainer) {
@@ -7772,6 +7578,199 @@ function showMainApp() {
     
     // Aplicar permisos a la aplicación existente
     applyPermissions();
+    // 4. Inicializar sistemas específicos solo si el usuario está logueado
+        if (isLoggedIn && currentUser) {
+            console.log('⚙️ Inicializando sistemas específicos...');
+            
+            // Inicializar sistema de scrap
+            generateNewFolio();
+            setTodayDate();
+            refreshSheetsList();
+            
+            // Inicializar sistema de retenciones
+            initializeRetencionSystem();
+            generateNewRetencionFolio();
+            refreshRetencionList();
+            
+            // EVENT LISTENERS PRINCIPALES
+            // Event listeners para pestañas
+            document.querySelectorAll('.nav-tab').forEach(function(tab) {
+                tab.addEventListener('click', function() {
+                    const tabName = this.getAttribute('data-tab');
+		    console.log('🖱️ Click en pestaña:', tabName); // DEBUG
+                    showTab(tabName);
+                });
+            });
+            
+            // Event listeners para QR
+            const qrInput = document.getElementById('qr-input');
+            if (qrInput) {
+                qrInput.addEventListener('input', analyzeQRCode);
+                qrInput.addEventListener('paste', function(e) {
+                    setTimeout(function() {
+                        const content = e.target.value.trim();
+                        if (content && (content.includes('|') || content.length >= 13)) {
+                            analyzeQRCode();
+                        }
+                    }, 100);
+                });
+            }
+            
+            // Event listeners para selección de almacén
+            const inventoryTypeSelect = document.getElementById('inventory-type');
+            if (inventoryTypeSelect) {
+                inventoryTypeSelect.addEventListener('change', updateFormSections);
+            }
+            
+            const warehouseSelector = document.getElementById('warehouse-selector');
+            if (warehouseSelector) {
+                warehouseSelector.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('warehouse-btn')) {
+                        this.querySelectorAll('.warehouse-btn').forEach(function(btn) {
+                            btn.classList.remove('selected');
+                        });
+                        e.target.classList.add('selected');
+                        selectedWarehouse = e.target.dataset.warehouse;
+                    }
+                });
+            }
+            
+            const movementSelector = document.getElementById('movement-selector');
+            if (movementSelector) {
+                movementSelector.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('warehouse-btn')) {
+                        this.querySelectorAll('.warehouse-btn').forEach(function(btn) {
+                            btn.classList.remove('selected');
+                        });
+                        e.target.classList.add('selected');
+                        selectedMovement = e.target.dataset.movement;
+                    }
+                });
+            }
+            
+            // Event listeners para retenciones
+            const retencionMotivo = document.getElementById('retencion-motivo');
+            if (retencionMotivo) {
+                retencionMotivo.addEventListener('change', function() {
+                    const otroMotivoDiv = document.getElementById('retencion-otro-motivo');
+                    if (otroMotivoDiv) {
+                        if (this.value === 'OTRO') {
+                            otroMotivoDiv.style.display = 'block';
+                        } else {
+                            otroMotivoDiv.style.display = 'none';
+                        }
+                    }
+                });
+            }
+            
+            // Event listeners para scrap
+            const scrapReasonSelect = document.getElementById('scrap-reason');
+            if (scrapReasonSelect) {
+                scrapReasonSelect.addEventListener('change', function() {
+                    const otherContainer = document.getElementById('other-reason-container');
+                    if (otherContainer) {
+                        if (this.value === 'OTRO') {
+                            otherContainer.style.display = 'block';
+                        } else {
+                            otherContainer.style.display = 'none';
+                            const otherReasonInput = document.getElementById('other-reason');
+                            if (otherReasonInput) {
+                                otherReasonInput.value = '';
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // EVENT LISTENERS PARA EL GENERADOR
+            // Event listener para cambios en el textarea de códigos
+            const codigosTextarea = document.getElementById('gen-codigos');
+            if (codigosTextarea) {
+                codigosTextarea.addEventListener('input', function() {
+                    console.log('Textarea cambió, procesando códigos...'); // DEBUG
+                    
+                    // Obtener líneas del textarea
+                    const lines = this.value.split('\n').filter(line => line.trim().length > 0);
+                    console.log('Líneas encontradas:', lines); // DEBUG
+                    
+                    // Resetear arrays y contadores
+                    const oldGeneratedCodes = [...generatedCodes]; // Backup
+                    generatedCodes = [];
+                    duplicateAttempts = 0;
+                    
+                    // Procesar cada línea
+                    const seenCodes = new Set();
+                    
+                    lines.forEach((line, index) => {
+                        const code = line.trim();
+                        if (code) {
+                            console.log(`Procesando línea ${index + 1}: ${code}`); // DEBUG
+                            
+                            if (seenCodes.has(code)) {
+                                // Es duplicado dentro del mismo textarea
+                                duplicateAttempts++;
+                                console.log(`Duplicado detectado en textarea: ${code}`); // DEBUG
+                            } else {
+                                // Es único, agregar
+                                seenCodes.add(code);
+                                
+                                const isValid = (code.length === 13 || code.length === 17);
+                                const type = code.length === 13 ? 'UPR' : code.length === 17 ? 'LWR' : 'UNKNOWN';
+                                
+                                generatedCodes.push({
+                                    code: code,
+                                    type: type,
+                                    valid: isValid,
+                                    timestamp: new Date()
+                                });
+                            }
+                        }
+                    });
+                    
+                    console.log('Códigos finales:', generatedCodes); // DEBUG
+                    console.log('Duplicados detectados:', duplicateAttempts); // DEBUG
+                    
+                    // Actualizar interfaz
+                    updateCodesValidationList();
+                    updateValidationInfo();
+                    updateGenerateButton();
+                });
+            }
+            
+            // Event listeners para campos del formulario generador
+            const zonaInput = document.getElementById('gen-zona');
+            if (zonaInput) {
+                zonaInput.addEventListener('input', function() {
+                    console.log('Zona cambió a:', this.value); // DEBUG
+                    updateGenerateButton();
+                });
+            }
+            
+            const tipoSelect = document.getElementById('gen-tipo');
+            if (tipoSelect) {
+                tipoSelect.addEventListener('change', function() {
+                    console.log('Tipo cambió a:', this.value); // DEBUG
+                    updateGenerateButton();
+                });
+            }
+            
+            // 5. Verificar disponibilidad de cámara
+            console.log('📷 Verificando cámara...');
+            checkCameraAvailability();
+            
+            // 6. Inicializar modo del generador
+            showScannerMode();
+            
+            // 7. Cargar datos de muestra si es necesario (solo para desarrollo)
+            if (inventory.length === 0) {
+                console.log('📦 Cargando datos de muestra...');
+                loadSampleData();
+            }
+            
+            // 8. Actualizar todas las visualizaciones
+            console.log('🔄 Actualizando displays...');
+            updateAllDisplays();
+    }
     
     // Inicializar la aplicación si no se ha hecho
     if (typeof updateAllDisplays === 'function') {
