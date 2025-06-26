@@ -7404,7 +7404,6 @@ async function createDefaultAdmin() {
     
     console.log('👑 Usuario admin creado');
 }
-// 🔄 FUNCIÓN checkActiveSession ACTUALIZADA
 function checkActiveSession() {
     try {
         const savedSession = localStorage.getItem('currentSession');
@@ -7419,8 +7418,12 @@ function checkActiveSession() {
                 return;
             }
         }
+        // ⬅️ AGREGAR ESTA LÍNEA:
+        showLoginScreen();
     } catch (error) {
         console.error('Error verificando sesión:', error);
+        // ⬅️ AGREGAR ESTA LÍNEA TAMBIÉN:
+        showLoginScreen();
     }
 }
 // Mostrar pantalla de login
@@ -7445,7 +7448,7 @@ function showLoginScreen() {
                     <p style="color: #666; margin: 10px 0 0 0;">Sistema de Gestión</p>
                 </div>
                 
-                <form id="login-form" onsubmit="handleHandleLogin(event)">
+                <form id="login-form" onsubmit="handleLogin(event)">
                     <div style="margin-bottom: 20px;">
                         <label style="display: block; margin-bottom: 5px; color: #333; font-weight: bold;">👤 Usuario:</label>
                         <input type="text" id="login-username" required style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box;" placeholder="Ingresa tu usuario">
@@ -8334,55 +8337,6 @@ async function getFromFirebase(key) {
         console.error(`Error obteniendo ${key}:`, error);
         return null;
     }
-}
-// 🔄 FUNCIONES DE COMPATIBILIDAD PARA HTML
-function handleLogin(event) {
-    event.preventDefault();
-    
-    const username = document.getElementById('login-username').value;
-    const password = document.getElementById('login-password').value;
-    
-    console.log('🔍 DEBUG Login - usuarios:', usuarios);
-    console.log('🔍 DEBUG Login - es array?', Array.isArray(usuarios));
-    console.log('🔍 DEBUG Login - longitud:', usuarios?.length);
-    
-    // Asegurar que usuarios sea un array
-    if (!Array.isArray(usuarios)) {
-        console.error('❌ usuarios no es array en login:', usuarios);
-        usuarios = [];
-        loadUsers(); // Intentar recargar
-        return;
-    }
-    
-    // Buscar usuario
-    const user = usuarios.find(u => u.username === username && u.activo);
-    
-    if (!user) {
-        showLoginError('❌ Usuario no encontrado o inactivo');
-        return;
-    }
-    
-    if (user.password !== password) {
-        showLoginError('❌ Contraseña incorrecta');
-        return;
-    }
-    
-    // Login exitoso
-    currentUser = user;
-    sessionToken = 'session-' + Date.now();
-    
-    // Actualizar último acceso
-    user.ultimoAcceso = new Date().toISOString();
-    saveUsers();
-    
-    // Guardar sesión
-    localStorage.setItem('currentUser', JSON.stringify(user));
-    localStorage.setItem('sessionToken', sessionToken);
-    
-    // Mostrar aplicación
-    showApp();
-    
-    console.log('✅ Login exitoso:', user.username);
 }
 </script>
 </body>
