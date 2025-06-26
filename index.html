@@ -1797,31 +1797,44 @@ function initializeFirebase() {
       CONSULTA: ['dashboard', 'inventory', 'theoretical']
   };
   // 🔄 NAVEGACIÓN (sin cambios)
-  function showTab(tabName) {
-      document.querySelectorAll('.tab-content').forEach(tab => {
-          tab.style.display = 'none';
-          tab.classList.remove('active');
-      });
-      
-      document.querySelectorAll('.nav-tab').forEach(btn => {
-          btn.classList.remove('active');
-      });
-      
-      const targetTab = document.getElementById(tabName);
-      if (targetTab) {
-          targetTab.style.display = 'block';
-          targetTab.classList.add('active');
-      }
-      
-      const activeButton = document.querySelector(`.nav-tab[data-tab="${tabName}"]`);
-      if (activeButton) {
-          activeButton.classList.add('active');
-      }
-      
-      if (tabName === 'scrap-retention') {
-          showSubTab('new-scrap');
-      }
-  }
+ function showTab(tabName) {
+    console.log('🔄 Cambiando a pestaña:', tabName); // DEBUG
+    
+    // Ocultar todas las pestañas
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.style.display = 'none';
+        tab.classList.remove('active');
+    });
+    
+    // Remover active de todos los botones
+    document.querySelectorAll('.nav-tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Mostrar la pestaña seleccionada
+    const targetTab = document.getElementById(tabName);
+    if (targetTab) {
+        targetTab.style.display = 'block';
+        targetTab.classList.add('active');
+        console.log('✅ Pestaña mostrada:', tabName); // DEBUG
+    } else {
+        console.error('❌ No se encontró la pestaña:', tabName); // DEBUG
+    }
+    
+    // Activar el botón correspondiente
+    const activeButton = document.querySelector(`.nav-tab[data-tab="${tabName}"]`);
+    if (activeButton) {
+        activeButton.classList.add('active');
+        console.log('✅ Botón activado'); // DEBUG
+    } else {
+        console.error('❌ No se encontró el botón para:', tabName); // DEBUG
+    }
+    
+    // Lógica especial para scrap-retention
+    if (tabName === 'scrap-retention') {
+        showSubTab('new-scrap');
+    }
+}
 // 🔄 FUNCIÓN generateNewFolio ACTUALIZADA
 async function generateNewFolio() {
     const today = new Date();
@@ -4120,6 +4133,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             document.querySelectorAll('.nav-tab').forEach(function(tab) {
                 tab.addEventListener('click', function() {
                     const tabName = this.getAttribute('data-tab');
+		    console.log('🖱️ Click en pestaña:', tabName); // DEBUG
                     showTab(tabName);
                 });
             });
@@ -4328,7 +4342,7 @@ window.handleConfirmResolveRetencion = (folio) => handleAsync(confirmResolveRete
 window.handleProcessQRCode = () => handleAsync(processQRCode);
 window.handleStartNewShiftVerification = () => handleAsync(startNewShiftVerification);
 window.handleClearAllData = () => handleAsync(clearAllData);
-window.handleHandleUserSubmit = (event) => handleAsync(handleUserSubmit, event);
+window.handleUserSubmit = (event) => handleAsync(handleUserSubmit, event);
 window.handleToggleUserStatus = (userId) => handleAsync(toggleUserStatus, userId);
 window.handleHandleLogin = (event) => handleAsync(handleLogin, event);
 window.handleLogout = () => handleAsync(logout);
@@ -7861,7 +7875,7 @@ function loadUsersSection() {
             <!-- Formulario para crear/editar usuario (oculto inicialmente) -->
             <div id="user-form-container" style="display: none;">
                 <h3 id="form-title">➕ Crear Nuevo Usuario</h3>
-                <form id="user-form" onsubmit="handleHandleUserSubmit(event)">
+                <form id="user-form" onsubmit="handleUserSubmit(event)">
                     <input type="hidden" id="user-id">
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
@@ -8084,7 +8098,7 @@ function showUsersModal() {
                 </div>
                 
                 <div style="margin-bottom: 20px;">
-                    <button onclick="showCreateUserForm()" style="background: #4caf50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+                    <button onclick="showCreateUserFormInModal()" style="background: #4caf50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
                         ➕ Crear Nuevo Usuario
                     </button>
                 </div>
@@ -8098,13 +8112,94 @@ function showUsersModal() {
                 
                 <div id="user-form-container" style="display: none; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px;">
                     <h4 id="form-title">➕ Crear Nuevo Usuario</h4>
-                    <!-- Tu formulario existente aquí -->
+                    <form id="user-form" onsubmit="handleUserSubmit(event)">
+                        <input type="hidden" id="user-id">
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div>
+                                <label>👤 Nombre:</label>
+                                <input type="text" id="user-nombre" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label>👤 Apellido:</label>
+                                <input type="text" id="user-apellido" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div>
+                                <label>🔑 Usuario:</label>
+                                <input type="text" id="user-username" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label>📧 Email:</label>
+                                <input type="email" id="user-email" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div>
+                                <label>🔐 Contraseña:</label>
+                                <input type="password" id="user-password" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label>🎭 Rol:</label>
+                                <select id="user-rol" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                    <option value="">Seleccionar rol...</option>
+                                    <option value="ADMIN">👑 Administrador</option>
+                                    <option value="SUPERVISOR">👷 Supervisor</option>
+                                    <option value="OPERADOR">📋 Operador</option>
+                                    <option value="CONSULTA">👁️ Consulta</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <label>
+                                <input type="checkbox" id="user-activo" checked> ✅ Usuario activo
+                            </label>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px;">
+                            <button type="submit" style="background: #4caf50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+                                💾 Guardar Usuario
+                            </button>
+                            <button type="button" onclick="cancelUserFormInModal()" style="background: #f44336; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+                                ❌ Cancelar
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
     `;
     
     document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+function showCreateUserFormInModal() {
+    console.log('📝 Mostrando formulario de usuario'); // DEBUG
+    
+    const formContainer = document.getElementById('user-form-container');
+    const formTitle = document.getElementById('form-title');
+    const form = document.getElementById('user-form');
+    
+    if (formContainer && formTitle && form) {
+        formContainer.style.display = 'block';
+        formTitle.textContent = '➕ Crear Nuevo Usuario';
+        form.reset();
+        document.getElementById('user-id').value = '';
+        document.getElementById('user-activo').checked = true;
+        console.log('✅ Formulario mostrado'); // DEBUG
+    } else {
+        console.error('❌ No se encontraron elementos del formulario'); // DEBUG
+    }
+}
+
+function cancelUserFormInModal() {
+    const formContainer = document.getElementById('user-form-container');
+    if (formContainer) {
+        formContainer.style.display = 'none';
+    }
 }
 
 function closeUsersModal() {
