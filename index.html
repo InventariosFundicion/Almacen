@@ -4100,6 +4100,13 @@ function toggleModelSection(sectionId) {
         }
 // 🔄 DOMCONTENTLOADED PRINCIPAL - VERSIÓN CORREGIDA SIN DUPLICACIONES
 document.addEventListener('DOMContentLoaded', async function() {
+    // ⚠️ AGREGAR ESTA VERIFICACIÓN AL INICIO:
+    if (window.appInitialized) {
+        console.log('⚠️ Aplicación ya inicializada, evitando duplicación');
+        return;
+    }
+    window.appInitialized = true;
+    
     console.log('🚀 Iniciando aplicación...');
     
     try {
@@ -4318,35 +4325,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         alert('❌ Error inicializando la aplicación. Por favor, recarga la página.');
     }
 });
-
-// 🔄 FUNCIÓN HELPER PARA MANEJAR ASYNC EN BOTONES (agregar si no existe)
-window.handleAsync = async function(asyncFunction, ...args) {
-    try {
-        await asyncFunction(...args);
-    } catch (error) {
-        console.error('Error en operación async:', error);
-        alert('❌ Error: ' + error.message);
-    }
-};
-
-// 🔄 FUNCIONES ONCLICK ACTUALIZADAS PARA BOTONES PRINCIPALES
-// Reemplaza las llamadas directas en los botones HTML por estas:
-
-// Para los botones de formularios:
-window.handleSaveScrapSheet = () => handleAsync(saveScrapSheet);
-window.handleSaveProductionReport = (tipo) => handleAsync(saveProductionReport, tipo);
-window.handleSaveMovementReport = () => handleAsync(saveMovementReport);
-window.handleCreateRetencion = () => handleAsync(createRetencion);
-window.handleConfirmStateChange = () => handleAsync(confirmStateChange);
-window.handleConfirmResolveRetencion = (folio) => handleAsync(confirmResolveRetencion, folio);
-window.handleProcessQRCode = () => handleAsync(processQRCode);
-window.handleStartNewShiftVerification = () => handleAsync(startNewShiftVerification);
-window.handleClearAllData = () => handleAsync(clearAllData);
-window.handleUserSubmit = (event) => handleAsync(handleUserSubmit, event);
-window.handleToggleUserStatus = (userId) => handleAsync(toggleUserStatus, userId);
-window.handleHandleLogin = (event) => handleAsync(handleLogin, event);
-window.handleLogout = () => handleAsync(logout);
-
 console.log('🔧 Funciones helper cargadas');
         function updateVerificationSummary() {
     // Actualizar contador de verificaciones en dashboard si existe
@@ -8004,61 +7982,79 @@ function cancelUserForm() {
 }
 
 // 🔄 FUNCIÓN handleUserSubmit ACTUALIZADA
+// 🔄 FUNCIÓN handleUserSubmit DIRECTA (sin wrappers)
 async function handleUserSubmit(event) {
     event.preventDefault();
     
-    const userId = document.getElementById('user-id').value;
-    const isEditing = !!userId;
+    console.log('📝 Enviando formulario de usuario...'); // DEBUG
     
-    const userData = {
-        id: userId || 'user-' + Date.now(),
-        username: document.getElementById('user-username').value,
-        password: document.getElementById('user-password').value,
-        nombre: document.getElementById('user-nombre').value,
-        apellido: document.getElementById('user-apellido').value,
-        email: document.getElementById('user-email').value,
-        rol: document.getElementById('user-rol').value,
-        activo: document.getElementById('user-activo').checked,
-        fechaCreacion: isEditing ? usuarios.find(u => u.id === userId).fechaCreacion : new Date().toISOString(),
-        ultimoAcceso: isEditing ? usuarios.find(u => u.id === userId).ultimoAcceso : null
-    };
-    
-    // Verificar si el username ya existe (excepto si estamos editando el mismo usuario)
-    const existingUser = usuarios.find(u => u.username === userData.username && u.id !== userData.id);
-    if (existingUser) {
-        alert('❌ El nombre de usuario ya existe. Por favor, elige otro.');
-        return;
+    try {
+        const userId = document.getElementById('user-id').value;
+        const isEditing = !!userId;
+        
+        const userData = {
+            id: userId || 'user-' + Date.now(),
+            username: document.getElementById('user-username').value,
+            password: document.getElementById('user-password').value,
+            nombre: document.getElementById('user-nombre').value,
+            apellido: document.getElementById('user-apellido').value,
+            email: document.getElementById('user-email').value,
+            rol: document.getElementById('user-rol').value,
+            activo: document.getElementById('user-activo').checked,
+            fechaCreacion: isEditing ? usuarios.find(u => u.id === userId).fechaCreacion : new Date().toISOString(),
+            ultimoAcceso: isEditing ? usuarios.find(u => u.id === userId).ultimoAcceso : null
+        };
+        
+        console.log('📊 Datos del usuario:', userData); // DEBUG
+        
+        // Verificar si el username ya existe
+        const existingUser = usuarios.find(u => u.username === userData.username && u.id !== userData.id);
+        if (existingUser) {
+            alert('❌ El nombre de usuario ya existe. Por favor, elige otro.');
+            return;
+        }
+        
+        if (isEditing) {
+            // Actualizar usuario existente
+            const index = usuarios.findIndex(u => u.id === userId);
+            usuarios[index] = userData;
+        } else {
+            // Crear nuevo usuario
+            usuarios.push(userData);
+        }
+        
+        console.log('💾 Guardando usuarios...'); // DEBUG
+        
+        // Guardar en Firebase
+        await saveUsers();
+        
+        console.log('✅ Usuario guardado exitosamente'); // DEBUG
+        
+        // Cerrar formulario
+        cancelUserFormInModal();
+        
+        // Actualizar la tabla
+        const usersTable = document.getElementById('users-table');
+        if (usersTable) {
+            usersTable.innerHTML = generateUsersTable();
+        }
+        
+        alert(isEditing ? '✅ Usuario actualizado correctamente' : '✅ Usuario creado correctamente');
+        
+    } catch (error) {
+        console.error('❌ Error en handleUserSubmit:', error);
+        alert('❌ Error guardando usuario: ' + error.message);
     }
-    
-    if (isEditing) {
-        // Actualizar usuario existente
-        const index = usuarios.findIndex(u => u.id === userId);
-        usuarios[index] = userData;
-    } else {
-        // Crear nuevo usuario
-        usuarios.push(userData);
-        // Enviar notificación por email al nuevo usuario
-        sendWelcomeEmail(userData);
-    }
-    
-    // 🔥 GUARDAR EN FIREBASE
-    await saveUsers();
-    
-    cancelUserForm();
-    
-    // Actualizar la tabla
-    document.getElementById('users-table').innerHTML = generateUsersTable();
-    
-    alert(isEditing ? '✅ Usuario actualizado correctamente' : '✅ Usuario creado correctamente');
 }
-
 function editUser(userId) {
+    console.log('✏️ Editando usuario:', userId); // DEBUG
+    
     const user = usuarios.find(u => u.id === userId);
     if (!user) return;
     
-    document.getElementById('user-form-container').style.display = 'block';
-    document.getElementById('form-title').textContent = '✏️ Editar Usuario';
+    showCreateUserFormInModal();
     
+    // Llenar formulario
     document.getElementById('user-id').value = user.id;
     document.getElementById('user-username').value = user.username;
     document.getElementById('user-password').value = user.password;
@@ -8067,24 +8063,35 @@ function editUser(userId) {
     document.getElementById('user-email').value = user.email;
     document.getElementById('user-rol').value = user.rol;
     document.getElementById('user-activo').checked = user.activo;
+    
+    document.getElementById('form-title').textContent = '✏️ Editar Usuario';
 }
 
 // 🔄 FUNCIÓN toggleUserStatus ACTUALIZADA
 async function toggleUserStatus(userId) {
-    const user = usuarios.find(u => u.id === userId);
-    if (!user) return;
+    console.log('🔄 Cambiando estado usuario:', userId); // DEBUG
     
-    const action = user.activo ? 'desactivar' : 'activar';
-    if (confirm(`¿Estás seguro de que quieres ${action} al usuario ${user.nombre} ${user.apellido}?`)) {
-        user.activo = !user.activo;
+    try {
+        const user = usuarios.find(u => u.id === userId);
+        if (!user) return;
         
-        // 🔥 GUARDAR EN FIREBASE
-        await saveUsers();
-        
-        // Actualizar la tabla
-        document.getElementById('users-table').innerHTML = generateUsersTable();
-        
-        alert(`✅ Usuario ${user.activo ? 'activado' : 'desactivado'} correctamente`);
+        const action = user.activo ? 'desactivar' : 'activar';
+        if (confirm(`¿Estás seguro de que quieres ${action} al usuario ${user.nombre} ${user.apellido}?`)) {
+            user.activo = !user.activo;
+            
+            await saveUsers();
+            
+            // Actualizar tabla
+            const usersTable = document.getElementById('users-table');
+            if (usersTable) {
+                usersTable.innerHTML = generateUsersTable();
+            }
+            
+            alert(`✅ Usuario ${user.activo ? 'activado' : 'desactivado'} correctamente`);
+        }
+    } catch (error) {
+        console.error('❌ Error toggle status:', error);
+        alert('❌ Error: ' + error.message);
     }
 }
 // Mostrar modal de gestión de usuarios
