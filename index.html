@@ -7505,41 +7505,73 @@ async function createScrapFromRetencion(retencion, responsable) {
 async function loadUsers() {
     try {
         const usersData = await loadFromFirebase('usuarios');
+        console.log('📥 Datos de usuarios cargados:', usersData); // DEBUG
+        
         if (usersData) {
-            usuarios = firebaseObjectToArray(JSON.parse(usersData));
+            // Si es un string JSON, parsearlo
+            if (typeof usersData === 'string') {
+                usuarios = firebaseObjectToArray(JSON.parse(usersData));
+            } 
+            // Si es un objeto, convertirlo a array
+            else if (typeof usersData === 'object' && usersData !== null) {
+                usuarios = firebaseObjectToArray(usersData);
+            }
+            // Si ya es un array, usarlo directamente
+            else if (Array.isArray(usersData)) {
+                usuarios = usersData;
+            }
+            else {
+                usuarios = [];
+            }
         } else {
             usuarios = [];
         }
-        console.log(`✅ Usuarios cargados: ${usuarios.length}`);
+        
+        console.log(`✅ Usuarios cargados: ${usuarios.length}`, usuarios); // DEBUG
+        
+        // Asegurar que usuarios sea siempre un array
+        if (!Array.isArray(usuarios)) {
+            console.warn('⚠️ usuarios no es array, convirtiendo...');
+            usuarios = [];
+        }
+        
     } catch (error) {
         console.error('❌ Error cargando usuarios:', error);
-        usuarios = [];
+        usuarios = []; // Fallback seguro
     }
 }
 
 // Inicializar con datos de Firebase
 async function initUserSystem() {
-    await loadUsers(); // ← Agregar await
+    console.log('👥 Iniciando sistema de usuarios...');
+    
+    // Inicializar usuarios como array vacío
+    usuarios = [];
+    
+    await loadUsers();
     
     // Crear usuario admin por defecto si no existe
     if (usuarios.length === 0) {
-        await createDefaultAdmin(); // ← Agregar await si createDefaultAdmin usa saveUsers
+        await createDefaultAdmin();
     }
     
     // Verificar si hay sesión activa
-    await checkActiveSession(); // ← Agregar await
+    await checkActiveSession();
     
-    // Escuchar cambios en tiempo real
-    listenToFirebaseChanges('usuarios', (newUsers) => {
-        usuarios = newUsers;
-        // Actualizar UI si es necesario
-    });
+    console.log('✅ Sistema de usuarios inicializado');
 }
 // 🔄 FUNCIÓN saveUsers ACTUALIZADA
 async function saveUsers() {
     try {
-        await saveToFirebase('usuarios', JSON.stringify(arrayToFirebaseObject(usuarios)));
-        console.log('✅ Usuarios guardados en Firebase');
+        // Asegurar que usuarios sea un array antes de guardar
+        if (!Array.isArray(usuarios)) {
+            console.error('❌ usuarios no es un array:', usuarios);
+            usuarios = [];
+        }
+        
+        const dataToSave = arrayToFirebaseObject(usuarios);
+        await saveToFirebase('usuarios', JSON.stringify(dataToSave));
+        console.log('✅ Usuarios guardados en Firebase:', usuarios.length);
     } catch (error) {
         console.error('❌ Error guardando usuarios:', error);
         throw error;
@@ -7547,6 +7579,18 @@ async function saveUsers() {
 }
 // Crear admin por defecto
 async function createDefaultAdmin() {
+    // Asegurar que usuarios sea un array
+    if (!Array.isArray(usuarios)) {
+        usuarios = [];
+    }
+    
+    // Verificar si ya existe el admin
+    const existingAdmin = usuarios.find(u => u.username === 'Edgar.Mejia');
+    if (existingAdmin) {
+        console.log('👑 Admin ya existe');
+        return;
+    }
+    
     const defaultAdmin = {
         id: 'admin-001',
         username: 'Edgar.Mejia',
@@ -7561,11 +7605,10 @@ async function createDefaultAdmin() {
     };
     
     usuarios.push(defaultAdmin);
-    await saveUsers(); // ← Agregar await
+    await saveUsers();
     
-    console.log('Usuario admin creado');
+    console.log('👑 Usuario admin creado');
 }
-
 // 🔄 FUNCIÓN checkActiveSession ACTUALIZADA
 async function checkActiveSession() {
     try {
@@ -7639,13 +7682,23 @@ function showLoginScreen() {
         </div>
     `);
 }
-// 🔄 FUNCIÓN handleLogin ACTUALIZADA
 async function handleLogin(event) {
     event.preventDefault();
     
     const username = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
-    const errorDiv = document.getElementById('login-error');
+    
+    // DEBUG: Verificar estado de usuarios
+    console.log('🔍 DEBUG Login - usuarios:', usuarios);
+    console.log('🔍 DEBUG Login - es array?', Array.isArray(usuarios));
+    console.log('🔍 DEBUG Login - longitud:', usuarios?.length);
+    
+    // Asegurar que usuarios sea un array
+    if (!Array.isArray(usuarios)) {
+        console.error('❌ usuarios no es array en login:', usuarios);
+        usuarios = [];
+        await loadUsers(); // Intentar recargar
+    }
     
     // Buscar usuario
     const user = usuarios.find(u => u.username === username && u.activo);
