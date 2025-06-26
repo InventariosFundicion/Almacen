@@ -8249,29 +8249,6 @@ function resetUserSystem() {
     localStorage.removeItem('currentSession');
     location.reload();
 }
-// 🔄 FUNCIÓN logout PRINCIPAL
-async function logout() {
-    try {
-        console.log('👋 Cerrando sesión...'); // DEBUG
-        
-        // Limpiar datos de sesión
-        currentUser = null;
-        sessionToken = null;
-        
-        // Limpiar localStorage
-        localStorage.removeItem('sessionToken');
-        localStorage.removeItem('currentUser');
-        
-        // Mostrar login
-        showLogin();
-        
-        console.log('✅ Sesión cerrada correctamente'); // DEBUG
-        
-    } catch (error) {
-        console.error('❌ Error cerrando sesión:', error);
-        alert('❌ Error cerrando sesión: ' + error.message);
-    }
-}
 // 🔄 WRAPPER para handleLogout (para mantener compatibilidad con HTML)
 function handleLogout() {
     logout();
@@ -8420,22 +8397,6 @@ function handleLogin(event) {
     
     console.log('✅ Login exitoso:', user.username);
 }
-function showLogin() {
-    const loginModal = document.getElementById('login-modal');
-    const mainApp = document.getElementById('main-app');
-    
-    if (loginModal && mainApp) {
-        loginModal.style.display = 'flex';
-        mainApp.style.display = 'none';
-        
-        // Limpiar campos
-        document.getElementById('login-username').value = '';
-        document.getElementById('login-password').value = '';
-        
-        console.log('🔐 Pantalla de login mostrada');
-    }
-}
-
 </script>
 </body>
 </html>
