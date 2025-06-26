@@ -7571,7 +7571,8 @@ function showMainApp() {
     // Aplicar permisos a la aplicación existente
     applyPermissions();
     // 4. Inicializar sistemas específicos solo si el usuario está logueado
-        if (isLoggedIn && currentUser) {
+        console.log('🔍 DEBUG showMainApp - currentUser:', currentUser, 'isLoggedIn:', isLoggedIn);
+        if (currentUser) {
             console.log('⚙️ Inicializando sistemas específicos...');
             
             // Inicializar sistema de scrap
