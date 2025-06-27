@@ -3887,33 +3887,53 @@ async function clearAllData() {
 function updateDetailedInventory() {
     const detailedDiv = document.getElementById('detailed-inventory');
     
-    // Filtros
+    // Filtros jerárquicos mejorados
     let html = `
-        <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
-            <h4>🔍 Filtros</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                <select id="filter-model" onchange="applyFilters()">
-                    <option value="">Todos los Modelos</option>
-                </select>
-                <select id="filter-lote" onchange="applyFilters()">
-                    <option value="">Todos los Lotes</option>
-                </select>
-                <select id="filter-molde" onchange="applyFilters()">
-                    <option value="">Todos los Moldes</option>
-                </select>
+        <div style="margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 10px; border: 1px solid #e9ecef;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h4>🔍 Filtros de Búsqueda</h4>
+                <button onclick="clearAllFilters()" class="btn" style="background: #6c757d; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer;">
+                    🗑️ Limpiar Filtros
+                </button>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #495057;">1️⃣ Tipo:</label>
+                    <select id="filter-type" onchange="updateDependentFilters()" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                        <option value="">🔍 Todos los Tipos</option>
+                        <option value="UPR">🔺 UPR</option>
+                        <option value="LWR">🔻 LWR</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #495057;">2️⃣ Número de Parte:</label>
+                    <select id="filter-part" onchange="updateDependentFilters()" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                        <option value="">📦 Todos los Números</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #495057;">3️⃣ Molde:</label>
+                    <select id="filter-molde" onchange="updateDependentFilters()" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                        <option value="">🔧 Todos los Moldes</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #495057;">4️⃣ Lote:</label>
+                    <select id="filter-lote" onchange="applyHierarchicalFilters()" style="width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 4px;">
+                        <option value="">📋 Todos los Lotes</option>
+                    </select>
+                </div>
+            </div>
+            <div id="filter-summary" style="margin-top: 10px; padding: 8px; background: #e7f3ff; border-radius: 4px; font-size: 14px; display: none;">
+                <strong>🎯 Filtros activos:</strong> <span id="active-filters-text"></span>
             </div>
         </div>
     `;
     
-    // Filtrar solo inventario disponible (fundidos y acabados)
+    // Filtrar solo inventario disponible
     const availableInventory = inventory.filter(i => 
         i.quantity > 0 && (i.warehouse === 'fundidos' || i.warehouse === 'acabados')
     );
-    
-    // Obtener valores únicos para filtros
-    const modelos = [...new Set(availableInventory.filter(i => i.codeData).map(i => i.codeData.modelo))];
-    const lotes = [...new Set(availableInventory.filter(i => i.codeData).map(i => i.codeData.lote))];
-    const moldes = [...new Set(availableInventory.filter(i => i.codeData).map(i => i.codeData.molde))];
     
     // Agrupar por tipo
     const uprItems = availableInventory.filter(i => i.type === 'UPR');
@@ -3933,10 +3953,155 @@ function updateDetailedInventory() {
     
     detailedDiv.innerHTML = html;
     
-    // Llenar opciones de filtros
-    fillFilterOptions('filter-model', modelos);
-    fillFilterOptions('filter-lote', lotes);
-    fillFilterOptions('filter-molde', moldes);
+    // Inicializar filtros
+    initializeHierarchicalFilters();
+}
+function initializeHierarchicalFilters() {
+    // Obtener inventario disponible
+    const availableInventory = inventory.filter(i => 
+        i.quantity > 0 && (i.warehouse === 'fundidos' || i.warehouse === 'acabados') && i.codeData
+    );
+    
+    // Poblar números de parte únicos
+    const partNumbers = [...new Set(availableInventory.map(i => i.codeData.modelo))];
+    const partSelect = document.getElementById('filter-part');
+    if (partSelect) {
+        partSelect.innerHTML = '<option value="">📦 Todos los Números</option>';
+        partNumbers.sort().forEach(part => {
+            const option = document.createElement('option');
+            option.value = part;
+            option.textContent = `📦 ${part}`;
+            partSelect.appendChild(option);
+        });
+    }
+    
+    // Poblar moldes únicos
+    const moldes = [...new Set(availableInventory.map(i => i.codeData.molde))];
+    const moldeSelect = document.getElementById('filter-molde');
+    if (moldeSelect) {
+        moldeSelect.innerHTML = '<option value="">🔧 Todos los Moldes</option>';
+        moldes.sort((a, b) => {
+            // Ordenar numéricamente
+            const numA = parseFloat(a) || 0;
+            const numB = parseFloat(b) || 0;
+            return numA - numB;
+        }).forEach(molde => {
+            const option = document.createElement('option');
+            option.value = molde;
+            option.textContent = `🔧 ${molde}`;
+            moldeSelect.appendChild(option);
+        });
+    }
+    
+    // Poblar lotes únicos
+    const lotes = [...new Set(availableInventory.map(i => i.codeData.lote))];
+    const loteSelect = document.getElementById('filter-lote');
+    if (loteSelect) {
+        loteSelect.innerHTML = '<option value="">📋 Todos los Lotes</option>';
+        lotes.sort().forEach(lote => {
+            const option = document.createElement('option');
+            option.value = lote;
+            option.textContent = `📋 ${lote}`;
+            loteSelect.appendChild(option);
+        });
+    }
+}
+function updateDependentFilters() {
+    const filterType = document.getElementById('filter-type').value;
+    const filterPart = document.getElementById('filter-part').value;
+    const filterMolde = document.getElementById('filter-molde').value;
+    
+    console.log('🔄 Actualizando filtros dependientes:', { filterType, filterPart, filterMolde });
+    
+    // Obtener inventario base
+    let filteredInventory = inventory.filter(i => 
+        i.quantity > 0 && (i.warehouse === 'fundidos' || i.warehouse === 'acabados') && i.codeData
+    );
+    
+    // Aplicar filtro de tipo si está seleccionado
+    if (filterType) {
+        filteredInventory = filteredInventory.filter(i => i.type === filterType);
+    }
+    
+    // Actualizar números de parte basado en tipo
+    const partNumbers = [...new Set(filteredInventory.map(i => i.codeData.modelo))];
+    const partSelect = document.getElementById('filter-part');
+    if (partSelect) {
+        const currentPart = partSelect.value;
+        partSelect.innerHTML = '<option value="">📦 Todos los Números</option>';
+        
+        partNumbers.sort().forEach(part => {
+            const option = document.createElement('option');
+            option.value = part;
+            option.textContent = `📦 ${part}`;
+            option.selected = part === currentPart && partNumbers.includes(currentPart);
+            partSelect.appendChild(option);
+        });
+        
+        // Si la parte seleccionada ya no está disponible, limpiarla
+        if (currentPart && !partNumbers.includes(currentPart)) {
+            partSelect.value = '';
+        }
+    }
+    
+    // Aplicar filtro de número de parte si está seleccionado
+    if (filterPart) {
+        filteredInventory = filteredInventory.filter(i => i.codeData.modelo === filterPart);
+    }
+    
+    // Actualizar moldes basado en tipo y número de parte
+    const moldes = [...new Set(filteredInventory.map(i => i.codeData.molde))];
+    const moldeSelect = document.getElementById('filter-molde');
+    if (moldeSelect) {
+        const currentMolde = moldeSelect.value;
+        moldeSelect.innerHTML = '<option value="">🔧 Todos los Moldes</option>';
+        
+        moldes.sort((a, b) => {
+            const numA = parseFloat(a) || 0;
+            const numB = parseFloat(b) || 0;
+            return numA - numB;
+        }).forEach(molde => {
+            const option = document.createElement('option');
+            option.value = molde;
+            option.textContent = `🔧 ${molde}`;
+            option.selected = molde === currentMolde && moldes.includes(currentMolde);
+            moldeSelect.appendChild(option);
+        });
+        
+        // Si el molde seleccionado ya no está disponible, limpiarlo
+        if (currentMolde && !moldes.includes(currentMolde)) {
+            moldeSelect.value = '';
+        }
+    }
+    
+    // Aplicar filtro de molde si está seleccionado
+    if (filterMolde) {
+        filteredInventory = filteredInventory.filter(i => i.codeData.molde === filterMolde);
+    }
+    
+    // Actualizar lotes basado en todos los filtros anteriores
+    const lotes = [...new Set(filteredInventory.map(i => i.codeData.lote))];
+    const loteSelect = document.getElementById('filter-lote');
+    if (loteSelect) {
+        const currentLote = loteSelect.value;
+        loteSelect.innerHTML = '<option value="">📋 Todos los Lotes</option>';
+        
+        lotes.sort().forEach(lote => {
+            const option = document.createElement('option');
+            option.value = lote;
+            option.textContent = `📋 ${lote}`;
+            option.selected = lote === currentLote && lotes.includes(currentLote);
+            loteSelect.appendChild(option);
+        });
+        
+        // Si el lote seleccionado ya no está disponible, limpiarlo
+        if (currentLote && !lotes.includes(currentLote)) {
+            loteSelect.value = '';
+        }
+    }
+    
+    // Aplicar filtros finales
+    applyHierarchicalFilters();
 }
 function generateDetailedSection(items, type) {
     if (items.length === 0) return '<p>No hay piezas registradas</p>';
@@ -4024,74 +4189,117 @@ function fillFilterOptions(selectId, options) {
         });
     }
 }
-function applyFilters() {
-    const filterModel = document.getElementById('filter-model').value;
-    const filterLote = document.getElementById('filter-lote').value;
+function applyHierarchicalFilters() {
+    const filterType = document.getElementById('filter-type').value;
+    const filterPart = document.getElementById('filter-part').value;
     const filterMolde = document.getElementById('filter-molde').value;
+    const filterLote = document.getElementById('filter-lote').value;
     
-    console.log('🔍 Aplicando filtros:', { filterModel, filterLote, filterMolde }); // DEBUG
+    console.log('🎯 Aplicando filtros:', { filterType, filterPart, filterMolde, filterLote });
     
-    // Filtrar inventario disponible
+    // Filtrar inventario
     let filteredInventory = inventory.filter(i => 
         i.quantity > 0 && 
         (i.warehouse === 'fundidos' || i.warehouse === 'acabados') &&
         i.codeData
     );
     
-    // Aplicar filtros
-    if (filterModel) {
-        filteredInventory = filteredInventory.filter(i => i.codeData.modelo === filterModel);
+    // Aplicar cada filtro
+    if (filterType) {
+        filteredInventory = filteredInventory.filter(i => i.type === filterType);
     }
-    if (filterLote) {
-        filteredInventory = filteredInventory.filter(i => i.codeData.lote === filterLote);
+    if (filterPart) {
+        filteredInventory = filteredInventory.filter(i => i.codeData.modelo === filterPart);
     }
     if (filterMolde) {
         filteredInventory = filteredInventory.filter(i => i.codeData.molde === filterMolde);
     }
+    if (filterLote) {
+        filteredInventory = filteredInventory.filter(i => i.codeData.lote === filterLote);
+    }
     
-    console.log('📊 Inventario filtrado:', filteredInventory.length, 'items'); // DEBUG
-    
-    // Regenerar TODO el inventario con los datos filtrados
-    const detailedDiv = document.getElementById('detailed-inventory');
+    console.log('📊 Inventario filtrado:', filteredInventory.length, 'items');
     
     // Agrupar por tipo
     const uprItems = filteredInventory.filter(i => i.type === 'UPR');
     const lwrItems = filteredInventory.filter(i => i.type === 'LWR');
     
-    // Regenerar solo las secciones de contenido (mantener filtros)
-    let html = `
-        <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
-            <h4>🔍 Filtros</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                <select id="filter-model" onchange="applyFilters()">
-                    <option value="">Todos los Modelos</option>
-                </select>
-                <select id="filter-lote" onchange="applyFilters()">
-                    <option value="">Todos los Lotes</option>
-                </select>
-                <select id="filter-molde" onchange="applyFilters()">
-                    <option value="">Todos los Moldes</option>
-                </select>
-            </div>
-        </div>
-    `;
+    // Actualizar solo las secciones de contenido
+    updateInventorySections(uprItems, lwrItems);
     
-    // Sección UPR
-    html += '<div class="model-section">';
-    html += `<div class="model-header">🔺 UPR (${uprItems.length} piezas ${filterModel || filterLote || filterMolde ? 'filtradas' : 'disponibles'})</div>`;
-    html += generateDetailedSection(uprItems, 'UPR');
-    html += '</div>';
+    // Actualizar resumen de filtros
+    updateFilterSummary(filterType, filterPart, filterMolde, filterLote);
+}
+function updateInventorySections(uprItems, lwrItems) {
+    // Buscar las secciones existentes y actualizarlas
+    const uprSection = document.querySelector('.model-section:first-of-type');
+    const lwrSection = document.querySelector('.model-section:last-of-type');
     
-    // Sección LWR
-    html += '<div class="model-section">';
-    html += `<div class="model-header">🔻 LWR (${lwrItems.length} piezas ${filterModel || filterLote || filterMolde ? 'filtradas' : 'disponibles'})</div>`;
-    html += generateDetailedSection(lwrItems, 'LWR');
-    html += '</div>';
+    if (uprSection) {
+        const hasFilters = hasActiveFilters();
+        uprSection.innerHTML = `
+            <div class="model-header">🔺 UPR (${uprItems.length} piezas ${hasFilters ? 'filtradas' : 'disponibles'})</div>
+            ${generateDetailedSection(uprItems, 'UPR')}
+        `;
+    }
     
-    detailedDiv.innerHTML = html;
+    if (lwrSection) {
+        const hasFilters = hasActiveFilters();
+        lwrSection.innerHTML = `
+            <div class="model-header">🔻 LWR (${lwrItems.length} piezas ${hasFilters ? 'filtradas' : 'disponibles'})</div>
+            ${generateDetailedSection(lwrItems, 'LWR')}
+        `;
+    }
+}
+
+function updateFilterSummary(filterType, filterPart, filterMolde, filterLote) {
+    const summaryDiv = document.getElementById('filter-summary');
+    const summaryText = document.getElementById('active-filters-text');
     
-    // Repoblar las opciones de filtros con los valores seleccionados
-    fillFilterOptionsWithSelection(filterModel, filterLote, filterMolde);
+    if (!summaryDiv || !summaryText) return;
+    
+    const activeFilters = [];
+    if (filterType) activeFilters.push(`Tipo: ${filterType}`);
+    if (filterPart) activeFilters.push(`Parte: ${filterPart}`);
+    if (filterMolde) activeFilters.push(`Molde: ${filterMolde}`);
+    if (filterLote) activeFilters.push(`Lote: ${filterLote}`);
+    
+    if (activeFilters.length > 0) {
+        summaryText.textContent = activeFilters.join(' | ');
+        summaryDiv.style.display = 'block';
+    } else {
+        summaryDiv.style.display = 'none';
+    }
+}
+
+function hasActiveFilters() {
+    const filterType = document.getElementById('filter-type')?.value;
+    const filterPart = document.getElementById('filter-part')?.value;
+    const filterMolde = document.getElementById('filter-molde')?.value;
+    const filterLote = document.getElementById('filter-lote')?.value;
+    
+    return filterType || filterPart || filterMolde || filterLote;
+}
+
+function clearAllFilters() {
+    // Limpiar todos los selectores
+    const filterType = document.getElementById('filter-type');
+    const filterPart = document.getElementById('filter-part');
+    const filterMolde = document.getElementById('filter-molde');
+    const filterLote = document.getElementById('filter-lote');
+    
+    if (filterType) filterType.value = '';
+    if (filterPart) filterPart.value = '';
+    if (filterMolde) filterMolde.value = '';
+    if (filterLote) filterLote.value = '';
+    
+    // Reinicializar filtros
+    initializeHierarchicalFilters();
+    
+    // Mostrar todo el inventario
+    updateDetailedInventory();
+    
+    console.log('🗑️ Filtros limpiados');
 }
 function fillFilterOptionsWithSelection(selectedModel, selectedLote, selectedMolde) {
     // Obtener valores únicos del inventario original (no filtrado)
