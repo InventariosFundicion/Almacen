@@ -6670,13 +6670,13 @@ function toggleScrapCameraMode() {
 // Actualizar la función addShot() para incluir verificación de duplicados
 function addShot() {
     const shotNumber = document.getElementById('shot-number').value;
-    const moldeNumber = document.getElementById('molde-number').value;
+    const moldeNumber = document.getElementById('molde-producto').value; // ⬅️ CAMBIAR ESTA LÍNEA
     const scrapReason = document.getElementById('scrap-reason').value;
     const otherReason = document.getElementById('other-reason').value;
     
     // Validaciones
     if (!shotNumber || !moldeNumber || !scrapReason) {
-        alert('⚠️ Por favor completa todos los campos requeridos');
+        alert('⚠️ Por favor completa todos los campos requeridos\n\nAsegúrate de haber seleccionado:\n• Número de producto\n• Molde\n• Número de shot\n• Motivo del scrap');
         return;
     }
     
