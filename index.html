@@ -941,7 +941,9 @@
 		<h2>📋 Inventario Detallado</h2>
 
 		<div style="text-align: center; margin-bottom: 20px;">
-			<button class="btn btn-danger" onclick="handleClearAllData()">🗑️ Limpiar Todos los Datos</button>
+			<button onclick="clearAllInventoryData()" class="btn" style="background: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 10px 0;">
+    🗑️ LIMPIAR TODOS LOS DATOS
+</button>
 		</div>
 		<div class="card">
 			<h3>📊 Inventario por Modelo y Estado</h3>
@@ -4231,27 +4233,46 @@ function applyHierarchicalFilters() {
     updateFilterSummary(filterType, filterPart, filterMolde, filterLote);
 }
 function updateInventorySections(uprItems, lwrItems) {
-    // Buscar las secciones existentes y actualizarlas
-    const uprSection = document.querySelector('.model-section:first-of-type');
-    const lwrSection = document.querySelector('.model-section:last-of-type');
+    const hasFilters = hasActiveFilters();
+    const filterType = document.getElementById('filter-type').value;
     
+    // Encontrar el contenedor principal donde están las secciones
+    const detailedDiv = document.getElementById('detailed-inventory');
+    const uprSection = detailedDiv.querySelector('.model-section:nth-child(2)'); // Primera sección después de los filtros
+    const lwrSection = detailedDiv.querySelector('.model-section:nth-child(3)'); // Segunda sección después de los filtros
+    
+    console.log('📊 Actualizando secciones:', { uprItems: uprItems.length, lwrItems: lwrItems.length, filterType });
+    
+    // Actualizar sección UPR
     if (uprSection) {
-        const hasFilters = hasActiveFilters();
-        uprSection.innerHTML = `
-            <div class="model-header">🔺 UPR (${uprItems.length} piezas ${hasFilters ? 'filtradas' : 'disponibles'})</div>
-            ${generateDetailedSection(uprItems, 'UPR')}
-        `;
+        if (filterType === 'LWR') {
+            // Si filtro por LWR, ocultar UPR completamente
+            uprSection.style.display = 'none';
+        } else {
+            // Mostrar UPR (con o sin filtros)
+            uprSection.style.display = 'block';
+            uprSection.innerHTML = `
+                <div class="model-header">🔺 UPR (${uprItems.length} piezas ${hasFilters ? 'filtradas' : 'disponibles'})</div>
+                ${generateDetailedSection(uprItems, 'UPR')}
+            `;
+        }
     }
     
+    // Actualizar sección LWR
     if (lwrSection) {
-        const hasFilters = hasActiveFilters();
-        lwrSection.innerHTML = `
-            <div class="model-header">🔻 LWR (${lwrItems.length} piezas ${hasFilters ? 'filtradas' : 'disponibles'})</div>
-            ${generateDetailedSection(lwrItems, 'LWR')}
-        `;
+        if (filterType === 'UPR') {
+            // Si filtro por UPR, ocultar LWR completamente
+            lwrSection.style.display = 'none';
+        } else {
+            // Mostrar LWR (con o sin filtros)
+            lwrSection.style.display = 'block';
+            lwrSection.innerHTML = `
+                <div class="model-header">🔻 LWR (${lwrItems.length} piezas ${hasFilters ? 'filtradas' : 'disponibles'})</div>
+                ${generateDetailedSection(lwrItems, 'LWR')}
+            `;
+        }
     }
 }
-
 function updateFilterSummary(filterType, filterPart, filterMolde, filterLote) {
     const summaryDiv = document.getElementById('filter-summary');
     const summaryText = document.getElementById('active-filters-text');
@@ -4282,24 +4303,82 @@ function hasActiveFilters() {
 }
 
 function clearAllFilters() {
-    // Limpiar todos los selectores
-    const filterType = document.getElementById('filter-type');
-    const filterPart = document.getElementById('filter-part');
-    const filterMolde = document.getElementById('filter-molde');
-    const filterLote = document.getElementById('filter-lote');
+    try {
+        // Limpiar todos los selectores
+        const filterType = document.getElementById('filter-type');
+        const filterPart = document.getElementById('filter-part');
+        const filterMolde = document.getElementById('filter-molde');
+        const filterLote = document.getElementById('filter-lote');
+        
+        if (filterType) filterType.value = '';
+        if (filterPart) filterPart.value = '';
+        if (filterMolde) filterMolde.value = '';
+        if (filterLote) filterLote.value = '';
+        
+        // Asegurar que ambas secciones sean visibles
+        const detailedDiv = document.getElementById('detailed-inventory');
+        const sections = detailedDiv.querySelectorAll('.model-section');
+        sections.forEach(section => {
+            section.style.display = 'block';
+        });
+        
+        // Reinicializar filtros
+        initializeHierarchicalFilters();
+        
+        // Mostrar todo el inventario sin filtros
+        const availableInventory = inventory.filter(i => 
+            i.quantity > 0 && (i.warehouse === 'fundidos' || i.warehouse === 'acabados')
+        );
+        
+        const uprItems = availableInventory.filter(i => i.type === 'UPR');
+        const lwrItems = availableInventory.filter(i => i.type === 'LWR');
+        
+        updateInventorySections(uprItems, lwrItems);
+        updateFilterSummary('', '', '', '');
+        
+        console.log('🗑️ Filtros limpiados correctamente');
+        
+    } catch (error) {
+        console.error('❌ Error al limpiar filtros:', error);
+        // Fallback: recargar toda la vista
+        updateDetailedInventory();
+    }
+}
+function clearAllInventoryData() {
+    // Mostrar confirmación antes de borrar
+    const confirmClear = confirm('⚠️ ¿Estás seguro de que quieres limpiar TODOS los datos del inventario?\n\nEsta acción no se puede deshacer.');
     
-    if (filterType) filterType.value = '';
-    if (filterPart) filterPart.value = '';
-    if (filterMolde) filterMolde.value = '';
-    if (filterLote) filterLote.value = '';
-    
-    // Reinicializar filtros
-    initializeHierarchicalFilters();
-    
-    // Mostrar todo el inventario
-    updateDetailedInventory();
-    
-    console.log('🗑️ Filtros limpiados');
+    if (confirmClear) {
+        try {
+            // Limpiar el array de inventario
+            inventory.length = 0;
+            
+            // Limpiar localStorage
+            localStorage.removeItem('inventory');
+            
+            // Limpiar la interfaz
+            document.getElementById('detailed-inventory').innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #6c757d;">
+                    <h3>📦 Inventario Vacío</h3>
+                    <p>No hay elementos en el inventario. Escanea códigos QR para agregar productos.</p>
+                </div>
+            `;
+            
+            // Actualizar estadísticas
+            updateInventoryStats();
+            
+            // Mostrar mensaje de éxito
+            alert('✅ Todos los datos del inventario han sido eliminados correctamente.');
+            
+            console.log('🗑️ Inventario completamente limpiado');
+            
+        } catch (error) {
+            console.error('❌ Error al limpiar inventario:', error);
+            alert('❌ Error al limpiar el inventario. Por favor, intenta de nuevo.');
+        }
+    } else {
+        console.log('❌ Limpieza de inventario cancelada por el usuario');
+    }
 }
 function fillFilterOptionsWithSelection(selectedModel, selectedLote, selectedMolde) {
     // Obtener valores únicos del inventario original (no filtrado)
