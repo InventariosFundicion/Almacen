@@ -4345,39 +4345,136 @@ function clearAllFilters() {
     }
 }
 function clearAllInventoryData() {
-    // Mostrar confirmación antes de borrar
-    const confirmClear = confirm('⚠️ ¿Estás seguro de que quieres limpiar TODOS los datos del inventario?\n\nEsta acción no se puede deshacer.');
+    // ⚠️ SOLO ADMINISTRADORES
+    const adminPassword = prompt('🔐 ACCESO RESTRINGIDO\n\nEsta acción eliminará TODOS los datos del inventario.\nSolo administradores pueden realizar esta acción.\n\nIngresa la contraseña de administrador:');
+    
+    // Contraseña de administrador (CAMBIAR POR UNA SEGURA)
+    const correctPassword = 'FUNDICION2025';
+    
+    if (adminPassword !== correctPassword) {
+        alert('❌ Contraseña incorrecta. Acceso denegado.');
+        console.log('🚫 Intento de acceso no autorizado a limpieza de datos');
+        return;
+    }
+    
+    // Confirmación adicional
+    const confirmClear = confirm('⚠️ ÚLTIMA CONFIRMACIÓN\n\n¿Estás COMPLETAMENTE seguro de eliminar TODO el inventario?\n\nEsta acción es IRREVERSIBLE.');
     
     if (confirmClear) {
         try {
-            // Limpiar el array de inventario
+            console.log('🗑️ Iniciando limpieza completa del inventario...');
+            
+            // 1. Limpiar el array de inventario
             inventory.length = 0;
             
-            // Limpiar localStorage
-            localStorage.removeItem('inventory');
+            // 2. Limpiar localStorage completamente
+            localStorage.clear(); // Esto limpia TODO el localStorage
             
-            // Limpiar la interfaz
-            document.getElementById('detailed-inventory').innerHTML = `
-                <div style="text-align: center; padding: 40px; color: #6c757d;">
-                    <h3>📦 Inventario Vacío</h3>
-                    <p>No hay elementos en el inventario. Escanea códigos QR para agregar productos.</p>
-                </div>
-            `;
+            // 3. Limpiar la vista detallada
+            const detailedDiv = document.getElementById('detailed-inventory');
+            if (detailedDiv) {
+                detailedDiv.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #6c757d; background: #f8f9fa; border-radius: 10px; margin: 20px 0;">
+                        <h3>📦 Inventario Completamente Vacío</h3>
+                        <p>Todos los datos han sido eliminados correctamente.</p>
+                        <p>Escanea códigos QR para agregar nuevos productos.</p>
+                        <br>
+                        <button onclick="location.reload()" class="btn" style="background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+                            🔄 Recargar Página
+                        </button>
+                    </div>
+                `;
+            }
             
-            // Actualizar estadísticas
-            updateInventoryStats();
+            // 4. Limpiar estadísticas automáticamente
+            clearAllStatistics();
             
-            // Mostrar mensaje de éxito
-            alert('✅ Todos los datos del inventario han sido eliminados correctamente.');
+            console.log('✅ Inventario completamente limpiado');
+            alert('✅ Todos los datos del inventario han sido eliminados correctamente.\n\nLa página se recargará automáticamente en 3 segundos.');
             
-            console.log('🗑️ Inventario completamente limpiado');
+            // 5. Recargar la página para limpiar todo completamente
+            setTimeout(() => {
+                location.reload();
+            }, 3000);
             
         } catch (error) {
             console.error('❌ Error al limpiar inventario:', error);
-            alert('❌ Error al limpiar el inventario. Por favor, intenta de nuevo.');
+            alert('❌ Hubo un error al limpiar el inventario.\n\nLa página se recargará para completar la limpieza.');
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
         }
     } else {
         console.log('❌ Limpieza de inventario cancelada por el usuario');
+    }
+}
+function clearAllStatistics() {
+    try {
+        // Limpiar tabla de resumen por número de parte
+        const statsTable = document.querySelector('#part-number-stats tbody');
+        if (statsTable) {
+            statsTable.innerHTML = `
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 20px; color: #6c757d;">
+                        📊 No hay datos para mostrar
+                    </td>
+                </tr>
+            `;
+        }
+        
+        // Limpiar estadísticas del dashboard principal
+        const dashboardStats = document.querySelectorAll('.stat-card, .dashboard-stat, .inventory-stat');
+        dashboardStats.forEach(stat => {
+            const countElement = stat.querySelector('.stat-number, .count, .stat-value');
+            if (countElement) {
+                countElement.textContent = '0';
+            }
+        });
+        
+        // Limpiar contadores específicos si existen
+        const counterSelectors = [
+            '#total-fundidos',
+            '#total-acabados',
+            '#total-envios',
+            '#total-devoluciones',
+            '#total-scrap',
+            '#total-pruebas',
+            '#total-items'
+        ];
+        
+        counterSelectors.forEach(selector => {
+            const element = document.querySelector(selector);
+            if (element) {
+                element.textContent = '0';
+            }
+        });
+        
+        console.log('📊 Estadísticas limpiadas');
+        
+    } catch (error) {
+        console.error('❌ Error al limpiar estadísticas:', error);
+    }
+}
+function clearAllCharts() {
+    try {
+        // Si tienes gráficos de Chart.js, los destruimos
+        if (typeof Chart !== 'undefined') {
+            Chart.getChart('inventory-chart')?.destroy();
+            Chart.getChart('warehouse-chart')?.destroy();
+            Chart.getChart('trends-chart')?.destroy();
+        }
+        
+        // Limpiar contenedores de gráficos
+        const chartContainers = document.querySelectorAll('canvas[id*="chart"]');
+        chartContainers.forEach(canvas => {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+        
+        console.log('📈 Gráficos limpiados');
+        
+    } catch (error) {
+        console.error('❌ Error al limpiar gráficos:', error);
     }
 }
 function fillFilterOptionsWithSelection(selectedModel, selectedLote, selectedMolde) {
