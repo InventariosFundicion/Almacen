@@ -1444,12 +1444,58 @@
                     <label>📝 Motivo del Scrap:</label>
                     <select id="scrap-reason">
                         <option value="">Seleccionar...</option>
-                        <option value="DEFECTO_VISUAL">👁️ Defecto Visual</option>
-                        <option value="DIMENSION_FUERA">📏 Dimensión Fuera de Especificación</option>
-                        <option value="POROSIDAD">🕳️ Porosidad</option>
-                        <option value="REBABA">✂️ Rebaba Excesiva</option>
-                        <option value="FALTA_MATERIAL">❌ Falta de Material</option>
-                        <option value="OTRO">📝 Otro (especificar)</option>
+                        <option value="RALLADURA">🪚 Ralladura</option>
+<option value="RALLADURA_PRENSA">🪚 Ralladura por Prensa</option>
+<option value="MANCHA">🟤 Mancha</option>
+<option value="MANCHA_AGUA">💧 Mancha de Agua</option>
+<option value="ARRASTRE">↗️ Arrastre</option>
+                        <option value="PIN_ROTO">🔩 Pin Roto</option>
+<option value="PIN_ALTO">⬆️ Pin Alto</option>
+<option value="PIN_BAJO">⬇️ Pin Bajo</option>
+<option value="PIN_DESVIADO">↗️ Pin Desviado</option>
+<option value="PIN_DOBLADO">〰️ Pin Doblado</option>
+<option value="PIN_BACK">🔄 Pin Back</option>
+			<option value="FRACTURA_CASTING">💥 Fractura en Casting</option>
+<option value="GRIETA">🌋 Grieta</option>
+<option value="GRIETA_RECHUPE">🌋 Grieta por Rechupe</option>
+<option value="RECHUPE_CASTING">🕳️ Rechupe/Casting</option>
+<option value="LAMINACION_CASTING">📄 Laminación/Casting</option>
+<option value="FUGA_CASTING">💨 Fuga/Casting</option>
+			<option value="FALTA_MATERIAL_DESPOSTILLAMIENTO">❌ Falta de Material por Despostillamiento</option>
+<option value="FALTA_MATERIAL_ADHERENCIA">❌ Falta de Material por Adherencia</option>
+<option value="FALTA_MATERIAL_ARRANCAMIENTO">❌ Falta de Material por Arrancamiento</option>
+<option value="FALTA_MATERIAL_ELEVACION">❌ Falta de Material por Elevación</option>
+<option value="FALTA_MATERIAL_OTROS">❌ Falta de Material (Otros)</option>
+<option value="FALTA_MATERIAL_BARRENOS">❌ Falta de Material en Barrenos</option>
+			<option value="MAL_LLENADO">🌊 Mal Llenado</option>
+<option value="ROMPIMIENTO_GALLETA">🍪 Rompimiento de Galleta</option>
+<option value="GALLETA_ANORMAL">🍪 Galleta Anormal (rota o fuera de tamaño)</option>
+<option value="MARCA_GOLPE_CASTING">👊 Marca de Golpe/Casting</option>
+<option value="PUNTO_DURO">🔘 Punto Duro</option>
+<option value="DESPRENDIMIENTOS">🪨 Desprendimientos</option>
+			<option value="GRABADO_BORROSO">🔤 Grabado NG (Borroso)</option>
+<option value="GRABADO_POSICION">🔤 Grabado Posición NG</option>
+<option value="GRABADO_DOBLE">🔤 Grabado NG (Doble)</option>
+<option value="NO_LEER_CODIGO">🔤 No Puede Leer Código</option>
+<option value="OTROS_GRABADO">🔤 Otros Defectos de Grabado</option>
+<option value="PORO_GATE">🕳️ Poro en Gate</option>
+<option value="PORO_OTROS">🕳️ Poro (Otros)</option>
+<option value="PEAK_VACUUM_ERROR">⚙️ Peak Vacuum Pressure Time Error</option>
+<option value="CYCLE_TIME_ERROR">⏱️ Cycle Time Error</option>
+<option value="TEMPERATURA_ANORMAL">🌡️ Temperatura Anormal</option>
+<option value="SQUEEZE_ALTO">⬆️ Squeeze Alto</option>
+<option value="SQUEEZE_BAJO">⬇️ Squeeze Bajo</option>
+<option value="MAL_ACABADO_OPERADOR">👷 Mal Acabado por Operador</option>
+<option value="MAL_ACABADO_OP">👷 Mal Acabado por OP</option>
+<option value="PIEZAS_CAIDAS_ROBOT">🤖 Piezas Caídas por Robot</option>
+<option value="PIEZAS_CAIDAS_OPERADOR">👷 Piezas Caídas por Operador</option>
+<option value="GOLPE_OPERADOR">👷 Golpe en Pieza por Operador</option>
+<option value="MARCA_HERRAMIENTA">🔧 Marca de Herramienta (Robodrill)</option>
+<option value="PIEZAS_DEFORMACION">📏 Piezas con Deformación</option>
+<option value="REBORDE_PLANICIDAD">📏 Reborde o Falta de Material en Zona de Planicidad</option>
+<option value="QW_NG">📊 QW NG</option>
+<option value="OTROS_MOLDE_CASTING">🔧 Otros (Problemas de Molde)/Casting</option>
+<option value="OTRO">📝 Otro (Especificar)</option>
                     </select>
                 </div>
                 <div class="form-group" id="other-reason-container">
@@ -1893,43 +1939,6 @@ function updateProductInfo() {
         moldeSelect.innerHTML = '<option value="">Primero selecciona un producto...</option>';
     }
 }
-
-function addShot() {
-    const shotNumber = document.getElementById('shot-number').value;
-    const scrapReason = document.getElementById('scrap-reason').value;
-    const otherReason = document.getElementById('other-reason').value;
-    
-    // Obtener el molde del encabezado
-    const moldeSelect = document.getElementById('molde-producto');
-    const moldeNumber = moldeSelect.value;
-
-    if (!shotNumber || !moldeNumber || !scrapReason) {
-        alert('⚠️ Por favor completa todos los campos obligatorios\n\nAsegúrate de:\n• Llenar el número de shot\n• Seleccionar el molde en la información general\n• Seleccionar el motivo del scrap');
-        return;
-    }
-
-    if (scrapReason === 'OTRO' && !otherReason) {
-        alert('⚠️ Por favor especifica el motivo cuando selecciones "Otro"');
-        return;
-    }
-
-    const shot = {
-        id: Date.now(),
-        shotNumber: shotNumber,
-        moldeNumber: moldeNumber,
-        scrapReason: scrapReason === 'OTRO' ? otherReason : scrapReason,
-        timestamp: new Date().toLocaleString()
-    };
-
-    if (!scannedShots) scannedShots = [];
-    
-    scannedShots.push(shot);
-    updateShotsDisplay();
-    clearShotForm();
-    
-    alert('✅ Shot agregado correctamente');
-}
-
 function clearShotForm() {
     document.getElementById('shot-number').value = '';
     // Ya no limpiar molde-number porque ya no existe
