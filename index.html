@@ -4348,16 +4348,13 @@ function clearAllInventoryData() {
     // ⚠️ SOLO ADMINISTRADORES
     const adminPassword = prompt('🔐 ACCESO RESTRINGIDO\n\nEsta acción eliminará TODOS los datos del inventario.\nSolo administradores pueden realizar esta acción.\n\nIngresa la contraseña de administrador:');
     
-    // Contraseña de administrador (CAMBIAR POR UNA SEGURA)
     const correctPassword = 'FUNDICION2025';
     
     if (adminPassword !== correctPassword) {
         alert('❌ Contraseña incorrecta. Acceso denegado.');
-        console.log('🚫 Intento de acceso no autorizado a limpieza de datos');
         return;
     }
     
-    // Confirmación adicional
     const confirmClear = confirm('⚠️ ÚLTIMA CONFIRMACIÓN\n\n¿Estás COMPLETAMENTE seguro de eliminar TODO el inventario?\n\nEsta acción es IRREVERSIBLE.');
     
     if (confirmClear) {
@@ -4366,11 +4363,33 @@ function clearAllInventoryData() {
             
             // 1. Limpiar el array de inventario
             inventory.length = 0;
+            console.log('✅ Array inventory limpiado');
             
-            // 2. Limpiar localStorage completamente
-            localStorage.clear(); // Esto limpia TODO el localStorage
+            // 2. Limpiar SOLO las claves del inventario (NO el login)
+            const keysToRemove = [
+                'inventory',
+                'inventoryBackup', 
+                'lastScan',
+                'inventoryData',
+                'scannedCodes',
+                'warehouseData',
+                'productData',
+                'cachedInventory',
+                'tempInventory'
+            ];
             
-            // 3. Limpiar la vista detallada
+            keysToRemove.forEach(key => {
+                if (localStorage.getItem(key)) {
+                    localStorage.removeItem(key);
+                    console.log(`🗑️ Eliminado localStorage: ${key}`);
+                }
+            });
+            
+            // 3. Verificar que el inventario esté realmente vacío
+            console.log('📊 Inventario después de limpieza:', inventory.length);
+            console.log('💾 localStorage inventory:', localStorage.getItem('inventory'));
+            
+            // 4. Limpiar la vista detallada
             const detailedDiv = document.getElementById('detailed-inventory');
             if (detailedDiv) {
                 detailedDiv.innerHTML = `
@@ -4378,34 +4397,30 @@ function clearAllInventoryData() {
                         <h3>📦 Inventario Completamente Vacío</h3>
                         <p>Todos los datos han sido eliminados correctamente.</p>
                         <p>Escanea códigos QR para agregar nuevos productos.</p>
-                        <br>
-                        <button onclick="location.reload()" class="btn" style="background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
-                            🔄 Recargar Página
-                        </button>
                     </div>
                 `;
             }
             
-            // 4. Limpiar estadísticas automáticamente
+            // 5. Limpiar estadísticas
             clearAllStatistics();
             
-            console.log('✅ Inventario completamente limpiado');
-            alert('✅ Todos los datos del inventario han sido eliminados correctamente.\n\nLa página se recargará automáticamente en 3 segundos.');
+            // 6. Forzar actualización de la vista actual SIN recargar (para no cerrar sesión)
+            if (typeof updateDetailedInventory === 'function') {
+                updateDetailedInventory();
+            }
             
-            // 5. Recargar la página para limpiar todo completamente
-            setTimeout(() => {
-                location.reload();
-            }, 3000);
+            // 7. Actualizar dashboard si existe
+            if (typeof updateDashboard === 'function') {
+                updateDashboard();
+            }
+            
+            alert('✅ Todos los datos del inventario han sido eliminados correctamente.\n\n📊 El inventario ahora está vacío.');
+            console.log('✅ Limpieza completa finalizada SIN cerrar sesión');
             
         } catch (error) {
             console.error('❌ Error al limpiar inventario:', error);
-            alert('❌ Hubo un error al limpiar el inventario.\n\nLa página se recargará para completar la limpieza.');
-            setTimeout(() => {
-                location.reload();
-            }, 1000);
+            alert('❌ Error al limpiar el inventario: ' + error.message);
         }
-    } else {
-        console.log('❌ Limpieza de inventario cancelada por el usuario');
     }
 }
 function clearAllStatistics() {
