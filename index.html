@@ -2578,21 +2578,20 @@ function parseQRCode(input) {
 }
 function extractCodeData(code) {
     if (code.length === 13) { // UPR
-        const lote = code.substring(0, 3);
-        const disparo = code.substring(6, 8);
-        const maquinaRaw = parseInt(code.substring(5));
-        const maquina = maquinaRaw + 30;
-        const modelo = code.substring(11, 12);
-        const molde = code.substring(13);
+        const lote = code.substring(0, 3);        // P61 (posiciones 0-2)
+        const maquina = parseInt(code.substring(4, 5)) + 30;  // 2+30=32 (posición 4)
+        const disparo = code.substring(5, 8);     // 448 (posiciones 5-7)
+        const modelo = code.substring(10, 12);    // P5 (posiciones 10-11)
+        const molde = code.substring(12, 13);     // 2 (posición 12)
         
         return {
             type: 'UPR',
-            lote,
-            disparo,
-            maquina,
-            modelo,
-            molde,
-            partNumber: `UPR-${modelo}`
+            lote,           // "P61"
+            disparo,        // "448"  
+            maquina,        // 32
+            modelo,         // "P5"
+            molde,          // "2"
+            partNumber: `UPR-${modelo}`  // "UPR-P5"
         };
     } else if (code.length === 17) { // LWR
         const lote = code.substring(0, 5);
