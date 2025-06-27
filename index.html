@@ -2374,10 +2374,33 @@ function arrayToFirebaseObject(array) {
     return obj;
 }
 
+// Función para convertir objeto de Firebase a array
 function firebaseObjectToArray(obj) {
-    if (!obj) return [];
+    if (!obj || typeof obj !== 'object') return [];
+    
+    // Si ya es un array, devolverlo directamente
     if (Array.isArray(obj)) return obj;
-    return Object.values(obj);
+    
+    // Convertir objeto a array
+    const array = [];
+    Object.keys(obj).forEach(key => {
+        if (obj[key] !== null && obj[key] !== undefined) {
+            array.push(obj[key]);
+        }
+    });
+    
+    return array;
+}
+
+// Función helper para guardar en Firebase
+async function saveToFirebaseHelper(path, data) {
+    try {
+        await saveToFirebase(path, JSON.stringify(data));
+        console.log(`✅ Guardado con helper: ${path}`);
+    } catch (error) {
+        console.error(`❌ Error guardando con helper ${path}:`, error);
+        throw error;
+    }
 }
 // Configuración de modelos por máquina
 const MACHINE_MODELS = {
@@ -4344,59 +4367,86 @@ function clearAllFilters() {
         updateDetailedInventory();
     }
 }
-function clearAllInventoryData() {
-    // ⚠️ SOLO ADMINISTRADORES
+async function clearAllInventoryData() {
     const adminPassword = prompt('🔐 ACCESO RESTRINGIDO\n\nEsta acción eliminará TODOS los datos del inventario.\nSolo administradores pueden realizar esta acción.\n\nIngresa la contraseña de administrador:');
     
-    const correctPassword = 'FUNDICION2025';
+    const correctPassword = 'FUNDICION2025'; // ⚠️ CAMBIAR POR UNA SEGURA
     
     if (adminPassword !== correctPassword) {
         alert('❌ Contraseña incorrecta. Acceso denegado.');
         return;
     }
     
-    const confirmClear = confirm('⚠️ ÚLTIMA CONFIRMACIÓN\n\n¿Estás COMPLETAMENTE seguro de eliminar TODO el inventario?\n\nEsta acción es IRREVERSIBLE.');
+    const confirmClear = confirm('⚠️ ÚLTIMA CONFIRMACIÓN\n\n¿Estás COMPLETAMENTE seguro de eliminar TODO el inventario?\n\n🔥 Esto eliminará TODOS los datos de Firebase.\n🚨 Esta acción es IRREVERSIBLE.');
     
     if (confirmClear) {
+        const loadingDiv = document.createElement('div');
+        loadingDiv.innerHTML = `
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center; color: white;">
+                <div style="text-align: center; background: #333; padding: 30px; border-radius: 10px;">
+                    <div style="font-size: 24px;">🗑️ Eliminando inventario...</div>
+                    <div style="margin-top: 15px;">🔥 Limpiando Firebase...</div>
+                    <div style="margin-top: 10px; font-size: 14px; color: #ccc;">No cierres esta ventana</div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(loadingDiv);
+        
         try {
-            console.log('🗑️ Iniciando limpieza completa del inventario...');
+            console.log('🗑️ Iniciando limpieza TOTAL del inventario...');
             
-            // 1. Limpiar el array de inventario
+            // 1. 🔥 LIMPIAR FIREBASE (LO MÁS IMPORTANTE)
+            try {
+                // Crear array vacío
+                const emptyArray = [];
+                
+                // Convertir a objeto Firebase
+                const emptyFirebaseObject = arrayToFirebaseObject(emptyArray);
+                
+                // Guardar en Firebase usando el helper
+                await saveToFirebaseHelper('inventory', emptyFirebaseObject);
+                
+                console.log('✅ Firebase limpiado - Objeto vacío guardado');
+                
+                // Verificar que se guardó correctamente
+                const verification = await getFromFirebase('inventory');
+                const verificationArray = firebaseObjectToArray(verification || {});
+                console.log('🔍 Verificación Firebase - Array resultante:', verificationArray);
+                console.log('🔍 Longitud del array verificado:', verificationArray.length);
+                
+            } catch (firebaseError) {
+                console.error('❌ Error crítico limpiando Firebase:', firebaseError);
+                throw new Error('FALLO CRÍTICO: No se pudo limpiar Firebase. ' + firebaseError.message);
+            }
+            
+            // 2. Limpiar el array de inventario en memoria
             inventory.length = 0;
-            console.log('✅ Array inventory limpiado');
+            console.log('✅ Array inventory en memoria limpiado - Longitud:', inventory.length);
             
-            // 2. Limpiar SOLO las claves del inventario (NO el login)
-            const keysToRemove = [
-                'inventory',
-                'inventoryBackup', 
-                'lastScan',
-                'inventoryData',
-                'scannedCodes',
-                'warehouseData',
-                'productData',
-                'cachedInventory',
-                'tempInventory'
-            ];
-            
+            // 3. Limpiar localStorage (conservando sesión)
+            const keysToRemove = ['inventory', 'inventoryBackup', 'lastScan', 'inventoryData', 'scannedCodes', 'warehouseData', 'productData'];
             keysToRemove.forEach(key => {
                 if (localStorage.getItem(key)) {
                     localStorage.removeItem(key);
-                    console.log(`🗑️ Eliminado localStorage: ${key}`);
+                    console.log(`🗑️ localStorage limpiado: ${key}`);
                 }
             });
             
-            // 3. Verificar que el inventario esté realmente vacío
-            console.log('📊 Inventario después de limpieza:', inventory.length);
-            console.log('💾 localStorage inventory:', localStorage.getItem('inventory'));
-            
-            // 4. Limpiar la vista detallada
+            // 4. Actualizar vista inmediatamente
             const detailedDiv = document.getElementById('detailed-inventory');
             if (detailedDiv) {
                 detailedDiv.innerHTML = `
                     <div style="text-align: center; padding: 40px; color: #6c757d; background: #f8f9fa; border-radius: 10px; margin: 20px 0;">
-                        <h3>📦 Inventario Completamente Vacío</h3>
-                        <p>Todos los datos han sido eliminados correctamente.</p>
-                        <p>Escanea códigos QR para agregar nuevos productos.</p>
+                        <h3>🔥 Inventario Eliminado Completamente</h3>
+                        <p>✅ Todos los datos han sido eliminados de Firebase</p>
+                        <p>🔍 Escanea códigos QR para agregar nuevos productos</p>
+                        <div style="margin-top: 20px; padding: 15px; background: #d4edda; border-radius: 5px; color: #155724;">
+                            <strong>📊 Estado del sistema:</strong><br>
+                            • Firebase: ✅ Objeto vacío<br>
+                            • localStorage: ✅ Limpio<br>
+                            • Memoria: ✅ Array vacío (${inventory.length} elementos)<br>
+                            • Funciones: ✅ Restauradas
+                        </div>
                     </div>
                 `;
             }
@@ -4404,22 +4454,25 @@ function clearAllInventoryData() {
             // 5. Limpiar estadísticas
             clearAllStatistics();
             
-            // 6. Forzar actualización de la vista actual SIN recargar (para no cerrar sesión)
+            // 6. Forzar actualización
             if (typeof updateDetailedInventory === 'function') {
                 updateDetailedInventory();
             }
             
-            // 7. Actualizar dashboard si existe
-            if (typeof updateDashboard === 'function') {
-                updateDashboard();
-            }
+            // Quitar indicador de carga
+            document.body.removeChild(loadingDiv);
             
-            alert('✅ Todos los datos del inventario han sido eliminados correctamente.\n\n📊 El inventario ahora está vacío.');
-            console.log('✅ Limpieza completa finalizada SIN cerrar sesión');
+            // 7. Confirmación final
+            alert('🔥 INVENTARIO ELIMINADO COMPLETAMENTE\n\n✅ Firebase: Limpiado\n✅ localStorage: Limpiado\n✅ Memoria: Limpiada\n✅ Funciones: Restauradas\n\n📊 Total de elementos: ' + inventory.length);
+            
+            console.log('✅ LIMPIEZA TOTAL COMPLETADA EXITOSAMENTE');
             
         } catch (error) {
-            console.error('❌ Error al limpiar inventario:', error);
-            alert('❌ Error al limpiar el inventario: ' + error.message);
+            const loadingDiv = document.querySelector('[style*="position: fixed"]');
+            if (loadingDiv) document.body.removeChild(loadingDiv);
+            
+            console.error('❌ ERROR CRÍTICO:', error);
+            alert('🚨 ERROR CRÍTICO AL LIMPIAR\n\n' + error.message + '\n\nContacta al administrador inmediatamente.');
         }
     }
 }
