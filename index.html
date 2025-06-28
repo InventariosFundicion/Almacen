@@ -1617,7 +1617,7 @@
             
             <div style="text-align: center; margin-top: 20px;">
                 <button class="btn btn-warning" onclick="validateRetencion()">🔍 Validar Shots</button>
-                <button class="btn btn-success" onclick="handldeCreateRetencion()" id="create-retencion-btn" disabled>⏸️ Crear Retención</button>
+                <button class="btn btn-success" onclick="handleCreateRetencion()" id="create-retencion-btn" disabled>⏸️ Crear Retención</button>
                 <button class="btn btn-info" onclick="clearRetencionForm()">🔄 Limpiar</button>
             </div>
             
@@ -9495,6 +9495,123 @@ async function deleteSheet(folio) {
         refreshSheetsList();
     }
 }
+// 🔄 FUNCIÓN WRAPPER FALTANTE - Agregar antes de la función descontarDelInventario
+async function handleConfirmResolveRetencion(folio) {
+    try {
+        await confirmResolveRetencion(folio);
+    } catch (error) {
+        console.error('❌ Error resolviendo retención:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+// 🔄 FUNCIÓN WRAPPER FALTANTE PARA START NEW SHIFT
+async function handleStartNewShiftVerification() {
+    try {
+        await startNewShiftVerification();
+    } catch (error) {
+        console.error('❌ Error iniciando nuevo turno:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+// 🔄 FUNCIÓN WRAPPER FALTANTE PARA PRODUCTION REPORTS
+async function handleSaveProductionReport(tipo) {
+    try {
+        await saveProductionReport(tipo);
+    } catch (error) {
+        console.error('❌ Error guardando reporte:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+// 🔄 FUNCIÓN WRAPPER FALTANTE PARA MOVEMENT REPORTS
+async function handleSaveMovementReport() {
+    try {
+        await saveMovementReport();
+    } catch (error) {
+        console.error('❌ Error guardando movimiento:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+// 🔄 FUNCIÓN WRAPPER FALTANTE PARA CREATE RETENCION
+async function handldeCreateRetencion() { // ← NOTA: Tienes un typo aquí, debería ser "handleCreateRetencion"
+    try {
+        await createRetencion();
+    } catch (error) {
+        console.error('❌ Error creando retención:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+// 🔄 FUNCIÓN WRAPPER FALTANTE PARA CONFIRM STATE CHANGE  
+async function handleConfirmStateChange() {
+    try {
+        await confirmStateChange();
+    } catch (error) {
+        console.error('❌ Error cambiando estado:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+// 🔄 CORREGIR TYPO EN EL HTML - Cambiar "handldeCreateRetencion" por "handleCreateRetencion"
+// En tu HTML línea donde dice:
+// <button class="btn btn-success" onclick="handldeCreateRetencion()" id="create-retencion-btn" disabled>⏸️ Crear Retención</button>
+// Debería ser:
+// <button class="btn btn-success" onclick="handleCreateRetencion()" id="create-retencion-btn" disabled>⏸️ Crear Retención</button>
+
+// 🔄 FUNCIÓN CORREGIDA handleCreateRetencion (sin typo)
+async function handleCreateRetencion() {
+    try {
+        await createRetencion();
+    } catch (error) {
+        console.error('❌ Error creando retención:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+// 🔄 ASEGURAR QUE LA ÚLTIMA FUNCIÓN ESTÉ CORRECTAMENTE CERRADA
+async function descontarDelInventario(existingItem, shotData) {
+    console.log('🔽 Descontando del inventario:', existingItem.code);
+    
+    // Encontrar el item en el inventario
+    const itemIndex = inventory.findIndex(item => item.code === existingItem.code);
+    
+    if (itemIndex !== -1) {
+        // Reducir cantidad
+        inventory[itemIndex].quantity = Math.max(0, inventory[itemIndex].quantity - 1);
+        
+        // Si cantidad llega a 0, mover a scrap
+        if (inventory[itemIndex].quantity === 0) {
+            inventory[itemIndex].warehouse = 'scrap';
+            inventory[itemIndex].state = 'SCRAP';
+            inventory[itemIndex].lastMovement = new Date();
+        }
+        
+        // Registrar movimiento
+        movements.push({
+            id: Date.now() + Math.random(),
+            code: existingItem.code,
+            partNumber: existingItem.partNumber,
+            type: 'scrap_adicional',
+            warehouse: 'scrap',
+            quantity: 1,
+            date: new Date(),
+            reason: shotData.scrapReason,
+            palletId: null
+        });
+        
+        // 🔥 GUARDAR EN FIREBASE
+        await saveToFirebase('inventory', JSON.stringify(arrayToFirebaseObject(inventory)));
+        await saveToFirebase('movements', JSON.stringify(arrayToFirebaseObject(movements)));
+        
+        // 🔄 ACTUALIZAR DISPLAYS INMEDIATAMENTE
+        updateAllDisplays();
+        
+        console.log(`✅ Item ${existingItem.code} descontado. Nueva cantidad: ${inventory[itemIndex].quantity}`);
+    }
+} // ← ASEGURAR QUE ESTA LLAVE ESTÉ AQUÍ
 async function descontarDelInventario(existingItem, shotData) {
     console.log('🔽 Descontando del inventario:', existingItem.code);
     
