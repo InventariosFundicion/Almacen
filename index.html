@@ -6799,8 +6799,8 @@ async function checkInventoryShots(shotsList) {
 }
 
 
-// 🔄 FUNCIÓN saveScrapSheet ACTUALIZADA
-async function saveScrapSheet() {
+// 🔄 FUNCIÓN saveScrapSheet CORREGIDA
+async function saveScrapSheet() {  // ⬅️ AGREGAR async aquí
     const folio = document.getElementById('folio').value;
     const fechaOperacion = document.getElementById('fecha-operacion').value;
     const sectorTrabajo = document.getElementById('sector-trabajo').value;
@@ -6822,8 +6822,8 @@ async function saveScrapSheet() {
         return;
     }
 
-    // Verificar shots en inventario
-    const { inventoryShots, notInInventory } = checkInventoryShots(scannedShots);
+    // Verificar shots en inventario - AGREGAR await aquí ⬅️
+    const { inventoryShots, notInInventory } = await checkInventoryShots(scannedShots);
 
     // Preparar datos de la hoja
     const scrapSheet = {
@@ -6914,44 +6914,77 @@ function printScrapSheet() {
             <meta charset="UTF-8">
             <title>Hoja de Scrap - ${folio}</title>
             <style>
-                body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.4; }
-                .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
-                .section { margin: 15px 0; }
-                .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 10px 0; }
-                .shots-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-                .shots-table th, .shots-table td { border: 1px solid #333; padding: 8px; text-align: left; }
-                .shots-table th { background: #f0f0f0; }
+                body { font-family: Arial, sans-serif; margin: 15px; line-height: 1.3; font-size: 14px; }
+                .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
+                .department-info { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 10px 0; font-size: 12px; }
+                .signatures { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin: 15px 0; }
+                .signature-box { border: 1px solid #333; padding: 8px; text-align: center; min-height: 50px; }
+                .section { margin: 10px 0; }
+                .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 8px 0; }
+                .info-item { font-size: 12px; }
+                .shots-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12px; }
+                .shots-table th, .shots-table td { border: 1px solid #333; padding: 6px; text-align: left; }
+                .shots-table th { background: #f0f0f0; font-weight: bold; }
+                .folio-box { border: 2px solid #333; padding: 8px; text-align: center; margin-bottom: 10px; }
                 @media print { body { margin: 0; } }
             </style>
         </head>
         <body>
             <div class="header">
-                <h1>REPORTE DIARIO DE SCRAP ADICIONAL</h1>
-                <h2>Folio: ${folio}</h2>
+                <h1 style="margin: 0; font-size: 18px;">REPORTE DIARIO DE SCRAP ADICIONAL</h1>
+                <div class="department-info">
+                    <div><strong>Departamento:</strong> Fundición 1</div>
+                    <div><strong>Sección:</strong> Fundición 1.3</div>
+                </div>
             </div>
             
-            <div class="section">
-                <h3>INFORMACIÓN GENERAL</h3>
-                <div class="grid">
-                    <p><strong>Fecha de Operación:</strong> ${fechaOperacion}</p>
-                    <p><strong>Sector de Trabajo:</strong> ${sectorTrabajo}</p>
-                    <p><strong>Número de Producto:</strong> ${numeroProducto}</p>
-                    <p><strong>Nombre del Producto:</strong> ${nombreProducto}</p>
-                    <p><strong>Molde:</strong> ${moldeProducto}</p>
-                    <p><strong>Creado por:</strong> ${creadoPor}</p>
-                    <p><strong>Almacén Origen:</strong> ${almacenOrigen}</p>
+            <div class="folio-box">
+                <strong>FOLIO: ${folio}</strong>
+            </div>
+            
+            <div class="signatures">
+                <div class="signature-box">
+                    <strong>ELABORACIÓN</strong><br><br>
+                    <div style="border-top: 1px solid #333; margin-top: 20px; padding-top: 5px;">
+                        Nombre y Firma
+                    </div>
+                </div>
+                <div class="signature-box">
+                    <strong>REVISIÓN</strong><br><br>
+                    <div style="border-top: 1px solid #333; margin-top: 20px; padding-top: 5px;">
+                        Nombre y Firma
+                    </div>
+                </div>
+                <div class="signature-box">
+                    <strong>APROBACIÓN</strong><br><br>
+                    <div style="border-top: 1px solid #333; margin-top: 20px; padding-top: 5px;">
+                        Nombre y Firma
+                    </div>
                 </div>
             </div>
             
             <div class="section">
-                <h3>SHOTS REGISTRADOS (${scannedShots.length})</h3>
+                <h3 style="margin: 10px 0 8px 0; font-size: 14px;">INFORMACIÓN GENERAL</h3>
+                <div class="info-grid">
+                    <div class="info-item"><strong>Fecha:</strong> ${fechaOperacion}</div>
+                    <div class="info-item"><strong>Sector:</strong> ${sectorTrabajo}</div>
+                    <div class="info-item"><strong>Creado por:</strong> ${creadoPor}</div>
+                    <div class="info-item"><strong>Producto:</strong> ${numeroProducto}</div>
+                    <div class="info-item"><strong>Molde:</strong> ${moldeProducto}</div>
+                    <div class="info-item"><strong>Almacén:</strong> ${almacenOrigen}</div>
+                </div>
+                <div class="info-item" style="margin-top: 8px;"><strong>Nombre:</strong> ${nombreProducto}</div>
+            </div>
+            
+            <div class="section">
+                <h3 style="margin: 10px 0 8px 0; font-size: 14px;">SHOTS REGISTRADOS (${scannedShots.length})</h3>
                 <table class="shots-table">
                     <thead>
                         <tr>
-                            <th>Shot #</th>
-                            <th>Molde</th>
-                            <th>Motivo del Scrap</th>
-                            <th>Timestamp</th>
+                            <th style="width: 15%;">Shot #</th>
+                            <th style="width: 15%;">Molde</th>
+                            <th style="width: 50%;">Motivo del Scrap</th>
+                            <th style="width: 20%;">Timestamp</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -6968,11 +7001,13 @@ function printScrapSheet() {
             </div>
             
             <div class="section">
-                <h3>OBSERVACIONES</h3>
-                <p>${observaciones}</p>
+                <h3 style="margin: 10px 0 8px 0; font-size: 14px;">OBSERVACIONES</h3>
+                <div style="border: 1px solid #333; padding: 8px; min-height: 40px; font-size: 12px;">
+                    ${observaciones}
+                </div>
             </div>
             
-            <div style="margin-top: 30px; text-align: center; font-size: 12px;">
+            <div style="margin-top: 20px; text-align: center; font-size: 10px; color: #666;">
                 <p>Generado: ${new Date().toLocaleString()}</p>
                 <p>Sistema de Control de Almacén - Fundición v1.3</p>
             </div>
@@ -6987,7 +7022,6 @@ function printScrapSheet() {
     printWindow.focus();
     printWindow.print();
 }
-
 // Función para cerrar hoja (modal)
 function openCloseSheetModal(sheetId) {
     const sheets = getFromLocalStorage('scrapSheets') || [];
