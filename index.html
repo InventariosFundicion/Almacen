@@ -1432,8 +1432,10 @@
             <div id="manual-entry-section">
                 <div class="grid grid-2">
                     <div class="form-group">
-                        <label>🔢 Número de Shot:</label>
-                        <input type="number" id="shot-number" placeholder="Ej: 123456" min="1">
+                        <div class="form-group">
+    <label>📱 Ingresa Código QR:</label>
+    <input type="text" id="shot-number" placeholder="Ej: P5QF4181O1PX2 (UPR) o 25E153003154276P5 (LWR)" maxlength="17">
+</div>
                     </div>
                 </div>
             </div>
@@ -6668,52 +6670,23 @@ function toggleScrapCameraMode() {
 
 // Actualizar la función addShot() para incluir verificación de duplicados
 async function addShot() {
-    const shotNumber = document.getElementById('shot-number').value;
+    // AL INICIO DE LA FUNCIÓN addShot(), CAMBIAR:
+    const shotCode = document.getElementById('shot-number').value.toUpperCase().trim();
     const moldeNumber = document.getElementById('molde-producto').value;
     const scrapReason = document.getElementById('scrap-reason').value;
     const otherReason = document.getElementById('other-reason').value;
     const almacenOrigen = document.getElementById('almacen-origen').value;
     
     // Validaciones básicas
-    if (!shotNumber || !moldeNumber || !scrapReason || !almacenOrigen) {
-        alert('⚠️ Por favor completa todos los campos requeridos\n\nAsegúrate de haber seleccionado:\n• Número de producto\n• Molde\n• Número de shot\n• Motivo del scrap\n• Almacén origen');
-        return;
-    }
+if (!shotCode || !moldeNumber || !scrapReason || !almacenOrigen) {
+    alert('⚠️ Por favor completa todos los campos requeridos\n\nAsegúrate de haber seleccionado:\n• Número de producto\n• Molde\n• Código QR completo\n• Motivo del scrap\n• Almacén origen');
+    return;
+}
     
     if (scrapReason === 'OTRO' && !otherReason) {
         alert('⚠️ Por favor especifica el motivo del scrap');
         return;
-    }
-    
-    // **NUEVA VALIDACIÓN**: Verificar si es código completo o solo shot
-    let fullCode = shotNumber;
-    
-    // Si parece ser solo un número de shot, solicitar código completo
-    if (/^\d+$/.test(shotNumber) && shotNumber.length < 10) {
-        const needFullCode = confirm(`🔍 VALIDACIÓN REQUERIDA\n\nIngresaste solo el número de shot: ${shotNumber}\n\nPara validar contra la base de datos necesitamos el código QR completo.\n\n✅ ¿Tienes el código QR completo?\n❌ Cancelar para escanearlo`);
-        
-        if (needFullCode) {
-            const fullQRCode = prompt(`📱 Ingresa o pega el código QR completo para el shot ${shotNumber}:\n\n(Debe ser un código de 13 o 17 caracteres)`);
-            
-            if (!fullQRCode || fullQRCode.trim().length < 10) {
-                alert('❌ Código QR incompleto o cancelado');
-                return;
-            }
-            
-            fullCode = fullQRCode.trim();
-            
-            // Verificar que el código ingresado corresponda al shot
-            const codeData = extractCodeData(fullCode);
-            if (!codeData || codeData.disparo !== shotNumber) {
-                alert(`❌ El código QR no corresponde al shot ${shotNumber}\n\nShot del código: ${codeData ? codeData.disparo : 'No detectado'}\nShot esperado: ${shotNumber}`);
-                return;
-            }
-        } else {
-            alert('🔍 Por favor escanea el código QR completo o úsalo para validar contra la base de datos');
-            return;
-        }
-    }
-    
+    }  
     // **VALIDACIÓN PRINCIPAL**: Buscar en la base de datos
     console.log('🔍 Buscando en inventario:', fullCode, 'Inventario size:', inventory.length);
     
@@ -6808,6 +6781,84 @@ async function addShot() {
     }, 5000);
     
     console.log('✅ Shot agregado con validación completa:', newShot);
+}
+// Función para detectar tipo de modelo y ajustar límites
+function updateShotInputLimits() {
+    const numeroProducto = document.getElementById('numero-producto').value;
+    const shotInput = document.getElementById('shot-number');
+    
+    if (!shotInput) return;
+    
+    // Determinar si es UPR o LWR basándose en el número de producto
+    let isUPR = false;
+    let isLWR = false;
+    
+    if (numeroProducto) {
+        // Los códigos que contienen "301" son UPR, los que contienen "382" son LWR
+        if (numeroProducto.includes('301')) {
+            isUPR = true;
+        } else if (numeroProducto.includes('382')) {
+            isLWR = true;
+        }
+    }
+    
+    // Actualizar límites y placeholder según el tipo
+    if (isUPR) {
+        shotInput.maxLength = 13;
+        shotInput.placeholder = "Ej: P5QF4181O1PX2 (UPR - máx. 13 caracteres)";
+        shotInput.style.borderColor = "#007bff"; // Azul para UPR
+    } else if (isLWR) {
+        shotInput.maxLength = 17;
+        shotInput.placeholder = "Ej: 25E153003154276P5 (LWR - máx. 17 caracteres)";
+        shotInput.style.borderColor = "#28a745"; // Verde para LWR
+    } else {
+        // Sin modelo seleccionado
+        shotInput.maxLength = 17; // Máximo por defecto
+        shotInput.placeholder = "Primero selecciona un producto - Ej: P5QF4181O1PX2 (UPR) o 25E153003154276P5 (LWR)";
+        shotInput.style.borderColor = "#ced4da"; // Gris por defecto
+    }
+    
+    console.log(`🔧 Límites actualizados: ${isUPR ? 'UPR (13)' : isLWR ? 'LWR (17)' : 'Sin modelo'}`);
+}
+
+// Función para validar en tiempo real mientras el usuario escribe
+function validateShotInput() {
+    const shotInput = document.getElementById('shot-number');
+    const numeroProducto = document.getElementById('numero-producto').value;
+    
+    if (!shotInput || !numeroProducto) return;
+    
+    const currentValue = shotInput.value.toUpperCase(); // Convertir a mayúsculas
+    shotInput.value = currentValue; // Aplicar mayúsculas
+    
+    // Determinar tipo esperado
+    const isUPRProduct = numeroProducto.includes('301');
+    const isLWRProduct = numeroProducto.includes('382');
+    
+    // Validar longitud en tiempo real
+    if (isUPRProduct && currentValue.length > 13) {
+        shotInput.style.borderColor = "#dc3545"; // Rojo si excede
+        shotInput.title = "❌ Demasiados caracteres para UPR (máx. 13)";
+    } else if (isLWRProduct && currentValue.length > 17) {
+        shotInput.style.borderColor = "#dc3545"; // Rojo si excede
+        shotInput.title = "❌ Demasiados caracteres para LWR (máx. 17)";
+    } else if (currentValue.length >= 10) {
+        // Validar formato básico si tiene suficientes caracteres
+        const isValidLength = (isUPRProduct && currentValue.length === 13) || 
+                             (isLWRProduct && currentValue.length === 17);
+        
+        if (isValidLength) {
+            shotInput.style.borderColor = "#28a745"; // Verde si es correcto
+            shotInput.title = "✅ Longitud correcta";
+        } else {
+            shotInput.style.borderColor = "#ffc107"; // Amarillo si está incompleto
+            shotInput.title = `⚠️ Longitud esperada: ${isUPRProduct ? '13' : '17'} caracteres`;
+        }
+    } else {
+        // Restablecer color normal si está escribiendo
+        shotInput.style.borderColor = isUPRProduct ? "#007bff" : "#28a745";
+        shotInput.title = "";
+    }
 }
 // Función para actualizar la visualización de shots
 function updateShotsDisplay() {
@@ -8453,7 +8504,24 @@ function showMainApp() {
                     updateGenerateButton();
                 });
             }
-            
+		// Event listener para cambio de producto (actualizar límites del shot input)
+const numeroProductoSelect = document.getElementById('numero-producto');
+if (numeroProductoSelect) {
+    numeroProductoSelect.addEventListener('change', function() {
+        updateProductInfo(); // Función existente
+        updateShotInputLimits(); // Nueva función
+    });
+}
+
+// Event listener para validar input de shot en tiempo real
+const shotInput = document.getElementById('shot-number');
+if (shotInput) {
+    shotInput.addEventListener('input', validateShotInput);
+    shotInput.addEventListener('paste', function() {
+        // Validar después de pegar
+        setTimeout(validateShotInput, 100);
+    });
+}
             // 5. Verificar disponibilidad de cámara
             console.log('📷 Verificando cámara...');
             checkCameraAvailability();
