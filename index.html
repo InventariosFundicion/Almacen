@@ -1517,7 +1517,7 @@
                 </div>
                 <div id="shots-list"></div>
                 <div style="text-align: center; margin-top: 15px;">
-                    <button class="btn btn-warning" onclick="clearCurrentShots()">🗑️ Limpiar Lista</button>
+                    <button class="btn btn-warning" onclick="clearScannedShots()">🗑️ Limpiar Lista</button>
                 </div>
             </div>
         </div>
@@ -6667,15 +6667,16 @@ function toggleScrapCameraMode() {
 }
 
 // Actualizar la función addShot() para incluir verificación de duplicados
-function addShot() {
+async function addShot() {
     const shotNumber = document.getElementById('shot-number').value;
-    const moldeNumber = document.getElementById('molde-producto').value; // ⬅️ CAMBIAR ESTA LÍNEA
+    const moldeNumber = document.getElementById('molde-producto').value;
     const scrapReason = document.getElementById('scrap-reason').value;
     const otherReason = document.getElementById('other-reason').value;
+    const almacenOrigen = document.getElementById('almacen-origen').value;
     
-    // Validaciones
-    if (!shotNumber || !moldeNumber || !scrapReason) {
-        alert('⚠️ Por favor completa todos los campos requeridos\n\nAsegúrate de haber seleccionado:\n• Número de producto\n• Molde\n• Número de shot\n• Motivo del scrap');
+    // Validaciones básicas
+    if (!shotNumber || !moldeNumber || !scrapReason || !almacenOrigen) {
+        alert('⚠️ Por favor completa todos los campos requeridos\n\nAsegúrate de haber seleccionado:\n• Número de producto\n• Molde\n• Número de shot\n• Motivo del scrap\n• Almacén origen');
         return;
     }
     
@@ -6684,17 +6685,130 @@ function addShot() {
         return;
     }
     
-    // Verificar duplicados
-    if (!scannedShots) scannedShots = [];
+    // **NUEVA VALIDACIÓN**: Verificar si es código completo o solo shot
+    let fullCode = shotNumber;
     
+    // Si parece ser solo un número de shot, solicitar código completo
+    if (/^\d+$/.test(shotNumber) && shotNumber.length < 10) {
+        const needFullCode = confirm(`🔍 VALIDACIÓN REQUERIDA\n\nIngresaste solo el número de shot: ${shotNumber}\n\nPara validar contra la base de datos necesitamos el código QR completo.\n\n✅ ¿Tienes el código QR completo?\n❌ Cancelar para escanearlo`);
+        
+        if (needFullCode) {
+            const fullQRCode = prompt(`📱 Ingresa o pega el código QR completo para el shot ${shotNumber}:\n\n(Debe ser un código de 13 o 17 caracteres)`);
+            
+            if (!fullQRCode || fullQRCode.trim().length < 10) {
+                alert('❌ Código QR incompleto o cancelado');
+                return;
+            }
+            
+            fullCode = fullQRCode.trim();
+            
+            // Verificar que el código ingresado corresponda al shot
+            const codeData = extractCodeData(fullCode);
+            if (!codeData || codeData.disparo !== shotNumber) {
+                alert(`❌ El código QR no corresponde al shot ${shotNumber}\n\nShot del código: ${codeData ? codeData.disparo : 'No detectado'}\nShot esperado: ${shotNumber}`);
+                return;
+            }
+        } else {
+            alert('🔍 Por favor escanea el código QR completo o úsalo para validar contra la base de datos');
+            return;
+        }
+    }
+    
+    // **VALIDACIÓN PRINCIPAL**: Buscar en la base de datos
+    console.log('🔍 Buscando en inventario:', fullCode, 'Inventario size:', inventory.length);
+    
+    const existingItem = inventory.find(item => {
+        // Buscar por código completo o por shot number si tiene codeData
+        return item.code === fullCode || 
+               (item.codeData && item.codeData.disparo === shotNumber && item.codeData.molde === moldeNumber);
+    });
+    
+    if (!existingItem) {
+        alert(`❌ SHOT NO ENCONTRADO EN BASE DE DATOS\n\nEl shot ${shotNumber} con molde ${moldeNumber} no está registrado en el inventario.\n\nVerifica:\n• Número de shot correcto\n• Molde correcto\n• Que la pieza esté registrada en el sistema`);
+        return;
+    }
+    
+    // **VALIDACIÓN DE ALMACÉN**: Verificar que esté en el almacén correcto
+    const expectedWarehouse = almacenOrigen.toLowerCase().replace('almacen_', '');
+    const actualWarehouse = existingItem.warehouse;
+    
+    if (actualWarehouse !== expectedWarehouse) {
+        const warehouseNames = {
+            'fundidos': '🔥 Fundición',
+            'acabados': '✅ Acabado',
+            'scrap': '♻️ Scrap',
+            'retenciones': '⏸️ Retenciones',
+            'envios': '📦 Envíos',
+            'pruebas': '🧪 Pruebas'
+        };
+        
+        alert(`❌ ALMACÉN INCORRECTO\n\nEl shot ${shotNumber} NO está en el almacén seleccionado.\n\n📍 Almacén actual: ${warehouseNames[actualWarehouse] || actualWarehouse}\n🎯 Almacén seleccionado: ${warehouseNames[expectedWarehouse] || almacenOrigen}\n\nPor favor:\n1. Corrije el almacén origen, O\n2. Verifica la ubicación real de la pieza`);
+        return;
+    }
+    
+    // **VALIDACIÓN DE CANTIDAD**: Verificar que tenga cantidad disponible
+    if (existingItem.quantity <= 0) {
+        alert(`❌ SHOT SIN INVENTARIO\n\nEl shot ${shotNumber} está registrado pero con cantidad 0.\n\nNo se puede procesar como scrap porque ya fue descontado del inventario.`);
+        return;
+    }
+    
+    // Verificar duplicados en la lista actual
     const isDuplicate = scannedShots.some(shot => 
         shot.shotNumber === shotNumber && shot.moldeNumber === moldeNumber
     );
     
     if (isDuplicate) {
-        alert('⚠️ Este shot ya fue registrado anteriormente');
+        alert('⚠️ Este shot ya fue registrado en la lista actual');
         return;
     }
+    
+    // ✅ **TODAS LAS VALIDACIONES PASARON** - Agregar shot
+    const newShot = {
+        shotNumber: shotNumber,
+        moldeNumber: moldeNumber,
+        fullCode: fullCode,
+        scrapReason: scrapReason === 'OTRO' ? otherReason : scrapReason,
+        almacenOrigen: almacenOrigen,
+        existingInventory: {
+            id: existingItem.id,
+            currentQuantity: existingItem.quantity,
+            partNumber: existingItem.partNumber,
+            warehouse: existingItem.warehouse
+        },
+        timestamp: new Date().toLocaleString('es-MX'),
+        id: Date.now(),
+        validated: true
+    };
+    
+    scannedShots.push(newShot);
+    
+    // Actualizar la visualización
+    updateShotsDisplay();
+    
+    // Limpiar solo el campo de shot number (mantener molde y razón)
+    document.getElementById('shot-number').value = '';
+    if (scrapReason === 'OTRO') {
+        document.getElementById('other-reason').value = '';
+    }
+    
+    // Mostrar mensaje de éxito con información de validación
+    const display = document.getElementById('current-shots-display');
+    const successMsg = document.createElement('div');
+    successMsg.className = 'alert alert-success';
+    successMsg.innerHTML = `
+        ✅ <strong>Shot validado y agregado</strong><br>
+        📦 Código: ${fullCode}<br>
+        🏪 Almacén confirmado: ${warehouseNames[actualWarehouse] || actualWarehouse}<br>
+        📊 Cantidad disponible: ${existingItem.quantity}
+    `;
+    display.insertBefore(successMsg, display.firstChild);
+    
+    setTimeout(() => {
+        successMsg.remove();
+    }, 5000);
+    
+    console.log('✅ Shot agregado con validación completa:', newShot);
+}
     
     // Agregar shot
     const newShot = {
@@ -8959,6 +9073,18 @@ async function getFromFirebase(key) {
     } catch (error) {
         console.error(`Error obteniendo ${key}:`, error);
         return null;
+    }
+}
+function clearScannedShots() {
+    if (scannedShots.length === 0) {
+        alert('ℹ️ No hay shots para limpiar');
+        return;
+    }
+    
+    if (confirm(`¿Estás seguro de limpiar todos los ${scannedShots.length} shots registrados?`)) {
+        scannedShots = [];
+        updateShotsDisplay();
+        alert('🗑️ Lista limpiada correctamente');
     }
 }
 </script>
