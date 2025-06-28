@@ -2896,22 +2896,40 @@ async function processQRCode() {
                 return;
             }
             targetWarehouse = selectedMovement;
-	// 🔥 INTEGRACIÓN AUTOMÁTICA CON HOJAS DE SCRAP
+	// 🔥 INTEGRACIÓN AUTOMÁTICA CON HOJAS DE SCRAP Y RETENCIONES
 if (selectedMovement === 'scrap') {
-    const confirmScrapSheet = confirm('🔄 SCRAP DETECTADO\n\n¿Quieres crear automáticamente una hoja de scrap con este código?\n\n✅ Sí = Abrir formulario de scrap\n❌ No = Solo mover a scrap');
+   // Para scrap
+const codeInfo = analysis.isValid ? `\n\nCódigo detectado: ${analysis.code}\nTipo: ${analysis.type}` : '';
+const confirmScrapSheet = confirm(`🔄 SCRAP DETECTADO${codeInfo}\n\n¿Quieres crear automáticamente una hoja de scrap con este código?\n\n✅ Sí = Abrir formulario de scrap\n❌ No = Solo mover a scrap`);
     
     if (confirmScrapSheet) {
         // Cambiar a la pestaña de scrap y pre-llenar datos
         showTab('scrap-retention');
         showSubTab('new-scrap');
         
-        // Pre-llenar el código en el formulario de scrap
+        // Pre-llenar formulario de scrap con datos del código
         setTimeout(() => {
-            document.getElementById('shot-number').value = analysis.code;
-            // Aquí puedes pre-llenar más campos si es necesario
+            prefillScrapForm(analysis);
         }, 500);
         
         return; // Salir para que el usuario complete el formulario de scrap
+    }
+}
+if (selectedMovement === 'retenciones') {
+   // Para retención  
+const confirmRetencion = confirm(`⏸️ RETENCIÓN DETECTADA${codeInfo}\n\n¿Quieres crear una nueva retención basada en este código?\n\n✅ Sí = Abrir formulario de retención\n❌ No = Solo mover a retenciones`);
+    
+    if (confirmRetencion) {
+        // Cambiar a la pestaña de retenciones
+        showTab('scrap-retention');
+        showSubTab('retenciones');
+        
+        // Pre-llenar formulario de retención con datos del código
+        setTimeout(() => {
+            prefillRetencionForm(analysis);
+        }, 500);
+        
+        return; // Salir para que el usuario complete el formulario
     }
 }
         } else {
@@ -9613,7 +9631,132 @@ async function descontarDelInventario(existingItem, shotData) {
         console.log(`✅ Item ${existingItem.code} descontado. Nueva cantidad: ${inventory[itemIndex].quantity}`);
     }
 } // ← ASEGURAR QUE ESTA LLAVE ESTÉ AQUÍ
+// 🔄 FUNCIÓN PARA PRE-LLENAR FORMULARIO DE SCRAP
+function prefillScrapForm(analysis) {
+    try {
+        // Pre-llenar código QR
+        document.getElementById('shot-number').value = analysis.code;
+        
+        if (analysis.isValid && !analysis.isPallet) {
+            const codeData = extractCodeData(analysis.code);
+            
+            if (codeData) {
+                // Detectar y seleccionar producto basado en el código
+                const productSelect = document.getElementById('numero-producto');
+                let detectedProduct = '';
+                
+                if (codeData.type === 'UPR') {
+                    // Para códigos UPR, usar el modelo extraído
+                    if (codeData.modelo === 'PX') detectedProduct = 'PX13-10-301';
+                    else if (codeData.modelo === 'PE') detectedProduct = 'PEDD-10-301-A';
+                    else if (codeData.modelo === 'P5') detectedProduct = 'P54G-10-301-A';
+                } else if (codeData.type === 'LWR') {
+                    // Para códigos LWR, usar el modelo extraído
+                    if (codeData.modelo === 'PX') detectedProduct = 'PX13-10-382';
+                    else if (codeData.modelo === 'PE') detectedProduct = 'PEDD-10-382-A';
+                    else if (codeData.modelo === 'P5') detectedProduct = 'P54G-10-382';
+                }
+                
+                if (detectedProduct) {
+                    productSelect.value = detectedProduct;
+                    updateProductInfo(); // Actualizar nombre y moldes
+                    
+                    // Pre-seleccionar molde si está disponible
+                    setTimeout(() => {
+                        const moldeSelect = document.getElementById('molde-producto');
+                        if (moldeSelect && codeData.molde) {
+                            moldeSelect.value = codeData.molde;
+                        }
+                    }, 100);
+                }
+                
+                // Determinar almacén origen basado en el inventario actual
+                const existingItem = inventory.find(item => item.code === analysis.code && item.quantity > 0);
+                if (existingItem) {
+                    const almacenSelect = document.getElementById('almacen-origen');
+                    if (existingItem.warehouse === 'fundidos') {
+                        almacenSelect.value = 'ALMACEN_FUNDICION';
+                    } else if (existingItem.warehouse === 'acabados') {
+                        almacenSelect.value = 'ALMACEN_ACABADO';
+                    }
+                }
+            }
+        }
+        
+        // Pre-llenar fecha de hoy
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('fecha-operacion').value = today;
+        
+        // Pre-seleccionar sector basado en el tipo
+        if (analysis.type === 'UPR') {
+            document.getElementById('sector-trabajo').value = 'FUNDICION';
+        } else if (analysis.type === 'LWR') {
+            document.getElementById('sector-trabajo').value = 'FUNDICION';
+        }
+        
+        alert('✅ Formulario de scrap pre-llenado\n\nCompleta los campos faltantes:\n• Motivo del scrap\n• Creado por\n• Observaciones');
+        
+    } catch (error) {
+        console.error('Error pre-llenando formulario de scrap:', error);
+        // Solo pre-llenar el código en caso de error
+        document.getElementById('shot-number').value = analysis.code;
+    }
+}
 
+// 🔄 FUNCIÓN PARA PRE-LLENAR FORMULARIO DE RETENCIÓN
+function prefillRetencionForm(analysis) {
+    try {
+        if (analysis.isValid && !analysis.isPallet) {
+            const codeData = extractCodeData(analysis.code);
+            
+            if (codeData) {
+                // Pre-llenar fecha de producción (hoy)
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('retencion-fecha-produccion').value = today;
+                
+                // Detectar y seleccionar producto
+                const productSelect = document.getElementById('retencion-producto');
+                let detectedProduct = '';
+                
+                if (codeData.type === 'UPR') {
+                    if (codeData.modelo === 'PX') detectedProduct = 'PX13-10-301';
+                    else if (codeData.modelo === 'PE') detectedProduct = 'PEDD-10-301-A';
+                    else if (codeData.modelo === 'P5') detectedProduct = 'P54G-10-301-A';
+                } else if (codeData.type === 'LWR') {
+                    if (codeData.modelo === 'PX') detectedProduct = 'PX13-10-382';
+                    else if (codeData.modelo === 'PE') detectedProduct = 'PEDD-10-382-A';
+                    else if (codeData.modelo === 'P5') detectedProduct = 'P54G-10-382';
+                }
+                
+                if (detectedProduct) {
+                    productSelect.value = detectedProduct;
+                    updateRetencionProductInfo(); // Actualizar moldes
+                    
+                    // Pre-seleccionar molde
+                    setTimeout(() => {
+                        const moldeSelect = document.getElementById('retencion-molde');
+                        if (moldeSelect && codeData.molde) {
+                            moldeSelect.value = codeData.molde;
+                        }
+                    }, 100);
+                }
+                
+                // Sugerir rango de shots basado en el código escaneado
+                if (codeData.disparo) {
+                    const shotNumber = parseInt(codeData.disparo);
+                    document.getElementById('retencion-shot-inicial').value = Math.max(1, shotNumber - 10);
+                    document.getElementById('retencion-shot-final').value = shotNumber + 10;
+                }
+            }
+        }
+        
+        alert('✅ Formulario de retención pre-llenado\n\nCompleta los campos faltantes:\n• Ajusta el rango de shots\n• Motivo de la retención\n• Responsable\n• Observaciones');
+        
+    } catch (error) {
+        console.error('Error pre-llenando formulario de retención:', error);
+        alert('⚠️ Error al pre-llenar formulario, pero puedes completarlo manualmente');
+    }
+}
 </script>
 </body>
 </html>
