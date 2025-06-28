@@ -2896,6 +2896,24 @@ async function processQRCode() {
                 return;
             }
             targetWarehouse = selectedMovement;
+	// 🔥 INTEGRACIÓN AUTOMÁTICA CON HOJAS DE SCRAP
+if (selectedMovement === 'scrap') {
+    const confirmScrapSheet = confirm('🔄 SCRAP DETECTADO\n\n¿Quieres crear automáticamente una hoja de scrap con este código?\n\n✅ Sí = Abrir formulario de scrap\n❌ No = Solo mover a scrap');
+    
+    if (confirmScrapSheet) {
+        // Cambiar a la pestaña de scrap y pre-llenar datos
+        showTab('scrap-retention');
+        showSubTab('new-scrap');
+        
+        // Pre-llenar el código en el formulario de scrap
+        setTimeout(() => {
+            document.getElementById('shot-number').value = analysis.code;
+            // Aquí puedes pre-llenar más campos si es necesario
+        }, 500);
+        
+        return; // Salir para que el usuario complete el formulario de scrap
+    }
+}
         } else {
             if (analysis.detectedState) {
                 targetWarehouse = analysis.detectedState;
@@ -3193,22 +3211,51 @@ function movePallet(palletId) {
         return;
     }
     
-    // Crear modal con selector
+    // Definir opciones permitidas según estado actual
+    const allowedMoves = {
+        'fundidos': ['acabados', 'scrap', 'retenciones', 'pruebas'], // Fundidos NO puede ir a envíos ni mantenerse en fundidos
+        'acabados': ['envios', 'scrap', 'retenciones', 'pruebas'], // Acabados NO puede ir a fundidos ni mantenerse en acabados
+        'scrap': [], // Scrap no se puede mover a ningún lado
+        'retenciones': ['fundidos', 'acabados', 'scrap'], // Retenciones puede liberarse o scrapearse
+        'envios': [], // Envíos no se pueden mover
+        'pruebas': ['fundidos', 'acabados', 'scrap'] // Pruebas puede regresar según resultado
+    };
+    
+    const currentState = pallet.warehouse || pallet.state;
+    const availableMoves = allowedMoves[currentState] || [];
+    
+    if (availableMoves.length === 0) {
+        alert(`❌ MOVIMIENTO NO PERMITIDO\n\nLas tarimas en estado "${getWarehouseName(currentState)}" no pueden moverse a otros almacenes.`);
+        return;
+    }
+    
+    // Generar opciones de almacén filtradas
+    const warehouseOptions = {
+        'fundidos': '<div class="warehouse-btn" data-warehouse="fundidos">🔥 FUNDIDOS</div>',
+        'acabados': '<div class="warehouse-btn" data-warehouse="acabados">✅ ACABADOS</div>',
+        'scrap': '<div class="warehouse-btn" data-warehouse="scrap">♻️ SCRAP</div>',
+        'retenciones': '<div class="warehouse-btn" data-warehouse="retenciones">⏸️ RETENCIONES</div>',
+        'envios': '<div class="warehouse-btn" data-warehouse="envios">📦 ENVÍOS</div>',
+        'pruebas': '<div class="warehouse-btn" data-warehouse="pruebas">🧪 PRUEBAS</div>'
+    };
+    
+    let optionsHTML = '';
+    availableMoves.forEach(move => {
+        optionsHTML += warehouseOptions[move];
+    });
+    
+    // Crear modal con opciones filtradas
     const modalHtml = `
         <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;" id="moveModal">
             <div style="background: white; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%;">
                 <h3>📦 Mover Tarima ${palletId}</h3>
-                <p style="margin: 15px 0; color: #666;">Estado actual: ${getWarehouseName(pallet.warehouse)}</p>
+                <p style="margin: 15px 0; color: #666;">Estado actual: ${getWarehouseName(currentState)}</p>
+                <p style="margin: 15px 0; color: #333; font-size: 14px;">💡 Solo se muestran destinos permitidos</p>
                 
                 <div style="margin: 20px 0;">
                     <label style="display: block; margin-bottom: 10px; font-weight: bold;">Selecciona el almacén destino:</label>
                     <div class="warehouse-selector" id="move-warehouse-selector">
-                        <div class="warehouse-btn" data-warehouse="fundidos">🔥 FUNDIDOS</div>
-                        <div class="warehouse-btn" data-warehouse="acabados">✅ ACABADOS</div>
-                        <div class="warehouse-btn" data-warehouse="scrap">♻️ SCRAP</div>
-                        <div class="warehouse-btn" data-warehouse="retenciones">⏸️ RETENCIONES</div>
-                        <div class="warehouse-btn" data-warehouse="envios">📦 ENVÍOS</div>
-                        <div class="warehouse-btn" data-warehouse="pruebas">🧪 PRUEBAS</div>
+                        ${optionsHTML}
                     </div>
                 </div>
                 
@@ -7036,6 +7083,12 @@ const expectedWarehouse = almacenMapping[almacenOrigen] || almacenOrigen.toLower
     }, 5000);
     
     console.log('✅ Shot agregado con validación completa:', newShot);
+// 🔥 DESCONTAR AUTOMÁTICAMENTE DEL INVENTARIO
+try {
+    await descontarDelInventario(existingItem, newShot);
+    console.log('✅ Inventario actualizado después del scrap');
+} catch (error) {
+    console.error('❌ Error actualizando inventario:', error);
 }
 // Función para detectar tipo de modelo y ajustar límites
 function updateShotInputLimits() {
@@ -7250,6 +7303,8 @@ async function saveScrapSheet() {  // ⬅️ AGREGAR async aquí
     await saveToFirebase('folioCounter', folioCounter.toString());
 
     alert(`✅ Hoja de scrap guardada correctamente\n\n` +
+	  // 🔄 ACTUALIZAR INVENTARIO DESPUÉS DE GUARDAR
+          updateAllDisplays();
           `📋 Folio: ${folio}\n` +
           `📦 Shots del inventario: ${inventoryShots.length}\n` +
           `🆕 Shots nuevos: ${notInInventory.length}\n` +
@@ -9439,6 +9494,46 @@ async function deleteSheet(folio) {
         
         alert(`✅ Hoja ${folio} eliminada correctamente.\n📊 Folio restaurado.`);
         refreshSheetsList();
+    }
+}
+async function descontarDelInventario(existingItem, shotData) {
+    console.log('🔽 Descontando del inventario:', existingItem.code);
+    
+    // Encontrar el item en el inventario
+    const itemIndex = inventory.findIndex(item => item.code === existingItem.code);
+    
+    if (itemIndex !== -1) {
+        // Reducir cantidad
+        inventory[itemIndex].quantity = Math.max(0, inventory[itemIndex].quantity - 1);
+        
+        // Si cantidad llega a 0, mover a scrap
+        if (inventory[itemIndex].quantity === 0) {
+            inventory[itemIndex].warehouse = 'scrap';
+            inventory[itemIndex].state = 'SCRAP';
+            inventory[itemIndex].lastMovement = new Date();
+        }
+        
+        // Registrar movimiento
+        movements.push({
+            id: Date.now() + Math.random(),
+            code: existingItem.code,
+            partNumber: existingItem.partNumber,
+            type: 'scrap_adicional',
+            warehouse: 'scrap',
+            quantity: 1,
+            date: new Date(),
+            reason: shotData.scrapReason,
+            palletId: null
+        });
+        
+        // 🔥 GUARDAR EN FIREBASE
+        await saveToFirebase('inventory', JSON.stringify(arrayToFirebaseObject(inventory)));
+        await saveToFirebase('movements', JSON.stringify(arrayToFirebaseObject(movements)));
+        
+        // 🔄 ACTUALIZAR DISPLAYS INMEDIATAMENTE
+        updateAllDisplays();
+        
+        console.log(`✅ Item ${existingItem.code} descontado. Nueva cantidad: ${inventory[itemIndex].quantity}`);
     }
 }
 </script>
