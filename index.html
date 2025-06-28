@@ -6809,39 +6809,6 @@ async function addShot() {
     
     console.log('✅ Shot agregado con validación completa:', newShot);
 }
-    
-    // Agregar shot
-    const newShot = {
-        shotNumber: shotNumber,
-        moldeNumber: moldeNumber,
-        scrapReason: scrapReason === 'OTRO' ? otherReason : scrapReason,
-        timestamp: new Date().toLocaleString('es-MX'),
-        id: Date.now()
-    };
-    
-    scannedShots.push(newShot);
-    
-    // Actualizar la visualización
-    updateShotsDisplay();
-    
-    // Limpiar campos
-    document.getElementById('shot-number').value = '';
-    document.getElementById('molde-number').value = '';
-    document.getElementById('scrap-reason').value = '';
-    document.getElementById('other-reason').value = '';
-    
-    // Mostrar mensaje de éxito
-    const display = document.getElementById('current-shots-display');
-    const successMsg = document.createElement('div');
-    successMsg.className = 'alert alert-success';
-    successMsg.textContent = '✅ Shot agregado correctamente';
-    display.insertBefore(successMsg, display.firstChild);
-    
-    setTimeout(() => {
-        successMsg.remove();
-    }, 3000);
-}
-
 // Función para actualizar la visualización de shots
 function updateShotsDisplay() {
     const display = document.getElementById('current-shots-display');
