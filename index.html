@@ -6571,10 +6571,12 @@ function showSubTab(subTabName) {
         event.target.classList.add('active');
     }
 }
-// Inicializar cámara para escanear shots
+// REEMPLAZAR la función startScrapCamera() completa:
 async function startScrapCamera() {
+    console.log('🔍 Verificando QrScanner...', typeof QrScanner); // DEBUG
+    
     if (typeof QrScanner === 'undefined') {
-        alert('❌ La librería QR Scanner no se cargó correctamente');
+        alert('❌ La librería QR Scanner no se cargó correctamente.\n\nPor favor recarga la página.');
         return;
     }
     
@@ -6583,9 +6585,32 @@ async function startScrapCamera() {
         const containerElement = document.getElementById('scrap-camera-container');
         const statusElement = document.getElementById('scrap-camera-status');
         
-        containerElement.style.display = 'block';
-        statusElement.textContent = '📷 Iniciando cámara...';
+        if (!videoElement || !containerElement || !statusElement) {
+            alert('❌ Error: Elementos de cámara no encontrados');
+            return;
+        }
         
+        // Verificar si ya hay una cámara activa
+        if (scrapScanner) {
+            console.log('⚠️ Cámara ya activa, deteniéndola primero...');
+            stopScrapCamera();
+            await new Promise(resolve => setTimeout(resolve, 500)); // Esperar un poco
+        }
+        
+        // Verificar permisos y disponibilidad de cámara
+        const hasCamera = await QrScanner.hasCamera();
+        if (!hasCamera) {
+            alert('❌ No se detectó ninguna cámara en tu dispositivo.\n\nPuedes:\n1. Conectar una cámara\n2. Usar entrada manual\n3. Verificar permisos de cámara');
+            return;
+        }
+        
+        // Mostrar contenedor y estado de carga
+        containerElement.style.display = 'block';
+        statusElement.textContent = '📷 Solicitando permisos de cámara...';
+        statusElement.style.background = '#fff3cd';
+        statusElement.style.color = '#856404';
+        
+        // Crear scanner con configuración mejorada
         scrapScanner = new QrScanner(
             videoElement,
             result => handleScrapQRScan(result.data),
@@ -6593,23 +6618,70 @@ async function startScrapCamera() {
                 returnDetailedScanResult: true,
                 highlightScanRegion: true,
                 highlightCodeOutline: true,
-                preferredCamera: 'environment'
+                preferredCamera: 'environment', // Cámara trasera por defecto
+                maxScansPerSecond: 2, // Límite para mejor rendimiento
+                calculateScanRegion: (video) => {
+                    // Región de escaneo centrada
+                    const smallerDimension = Math.min(video.videoWidth, video.videoHeight);
+                    const scanRegionSize = Math.round(0.6 * smallerDimension);
+                    return {
+                        x: Math.round((video.videoWidth - scanRegionSize) / 2),
+                        y: Math.round((video.videoHeight - scanRegionSize) / 2),
+                        width: scanRegionSize,
+                        height: scanRegionSize
+                    };
+                }
             }
         );
         
+        // Iniciar scanner con manejo de errores detallado
+        statusElement.textContent = '📷 Iniciando cámara...';
         await scrapScanner.start();
         
+        // Éxito - actualizar interfaz
         document.getElementById('scrap-start-camera-btn').style.display = 'none';
         document.getElementById('scrap-stop-camera-btn').style.display = 'inline-block';
-        statusElement.textContent = '📷 Cámara activa - Escanea el código del shot';
+        
+        statusElement.textContent = '📷 Cámara activa - Posiciona el código QR del shot';
+        statusElement.style.background = '#d4edda';
+        statusElement.style.color = '#155724';
+        
+        console.log('✅ Cámara de scrap iniciada correctamente');
         
     } catch (error) {
-        console.error('Error al iniciar cámara:', error);
-        alert('❌ Error al acceder a la cámara');
+        console.error('❌ Error detallado de cámara:', error);
+        
+        // Limpiar en caso de error
+        if (scrapScanner) {
+            try {
+                scrapScanner.destroy();
+            } catch (e) {
+                console.error('Error al limpiar scanner:', e);
+            }
+            scrapScanner = null;
+        }
+        
+        // Mostrar error específico según el tipo
+        let errorMessage = '❌ Error al acceder a la cámara.\n\n';
+        
+        if (error.name === 'NotAllowedError' || error.message.includes('Permission')) {
+            errorMessage += 'PERMISOS DENEGADOS:\n• Haz clic en el icono de cámara en la barra del navegador\n• Selecciona "Permitir" para el acceso a la cámara\n• Recarga la página si es necesario';
+        } else if (error.name === 'NotFoundError') {
+            errorMessage += 'CÁMARA NO ENCONTRADA:\n• Verifica que tu dispositivo tenga cámara\n• Asegúrate de que no esté siendo usada por otra aplicación';
+        } else if (error.name === 'NotSupportedError') {
+            errorMessage += 'NO COMPATIBLE:\n• Usa un navegador más reciente\n• Asegúrate de estar en HTTPS (no HTTP)';
+        } else {
+            errorMessage += `ERROR TÉCNICO:\n• ${error.message}\n• Intenta recargar la página\n• Verifica tu conexión`;
+        }
+        
+        errorMessage += '\n\n💡 ALTERNATIVA: Puedes usar entrada manual escribiendo el código QR.';
+        
+        alert(errorMessage);
+        
+        // Ocultar cámara en caso de error
         document.getElementById('scrap-camera-container').style.display = 'none';
     }
 }
-
 // Detener cámara de scrap
 function stopScrapCamera() {
     if (scrapScanner) {
@@ -6670,7 +6742,6 @@ function toggleScrapCameraMode() {
 
 // Actualizar la función addShot() para incluir verificación de duplicados
 async function addShot() {
-    // AL INICIO DE LA FUNCIÓN addShot(), CAMBIAR:
     const shotCode = document.getElementById('shot-number').value.toUpperCase().trim();
     const moldeNumber = document.getElementById('molde-producto').value;
     const scrapReason = document.getElementById('scrap-reason').value;
@@ -6678,26 +6749,92 @@ async function addShot() {
     const almacenOrigen = document.getElementById('almacen-origen').value;
     
     // Validaciones básicas
-if (!shotCode || !moldeNumber || !scrapReason || !almacenOrigen) {
-    alert('⚠️ Por favor completa todos los campos requeridos\n\nAsegúrate de haber seleccionado:\n• Número de producto\n• Molde\n• Código QR completo\n• Motivo del scrap\n• Almacén origen');
-    return;
-}
+    if (!shotCode || !moldeNumber || !scrapReason || !almacenOrigen) {
+        alert('⚠️ Por favor completa todos los campos requeridos\n\nAsegúrate de haber seleccionado:\n• Número de producto\n• Molde\n• Código QR completo\n• Motivo del scrap\n• Almacén origen');
+        return;
+    }
     
     if (scrapReason === 'OTRO' && !otherReason) {
         alert('⚠️ Por favor especifica el motivo del scrap');
         return;
-    }  
+    }
+    
+    // ⬅️ **LÍNEA FALTANTE**: Definir fullCode
+    let fullCode = shotCode;
+    
+    // Extraer datos del código para validación
+    const codeData = extractCodeData(fullCode);
+    if (codeData) {
+    // **VALIDACIÓN DE MODELO**: Verificar que coincida con el seleccionado
+    const selectedProduct = document.getElementById('numero-producto').value;
+    const selectedMold = document.getElementById('molde-producto').value;
+    
+    // Extraer el modelo base del producto seleccionado (ej: "PX13-10-382" -> "P5" o similar)
+    let expectedModelCode = '';
+    if (selectedProduct.includes('PX13-10-382')) expectedModelCode = 'PX'; 
+    else if (selectedProduct.includes('PEDD-10-382-A')) expectedModelCode = 'PE';
+    else if (selectedProduct.includes('P54G-10-382')) expectedModelCode = 'P5';
+    else if (selectedProduct.includes('PX13-10-301')) expectedModelCode = 'PX';
+    else if (selectedProduct.includes('PEDD-10-301-A')) expectedModelCode = 'PE';
+    else if (selectedProduct.includes('P54G-10-301-A')) expectedModelCode = 'P5';
+    
+    // **VALIDACIÓN DE TIPO**: UPR vs LWR
+    const isSelectedUPR = selectedProduct.includes('301');
+    const isSelectedLWR = selectedProduct.includes('382');
+    const isCodeUPR = codeData.type === 'UPR';
+    const isCodeLWR = codeData.type === 'LWR';
+    
+    if ((isSelectedUPR && !isCodeUPR) || (isSelectedLWR && !isCodeLWR)) {
+        alert(`❌ TIPO DE PRODUCTO INCORRECTO\n\nEl código ingresado es ${codeData.type} pero el producto seleccionado es ${isSelectedUPR ? 'UPR' : 'LWR'}.\n\nCódigo: ${fullCode}\nProducto seleccionado: ${selectedProduct}\n\nPor favor:\n1. Verifica el código QR, O\n2. Cambia el producto seleccionado`);
+        return;
+    }
+    
+    // **VALIDACIÓN DE MOLDE**: Verificar que coincida exactamente
+    if (codeData.molde !== selectedMold) {
+        alert(`❌ MOLDE INCORRECTO\n\nEl código QR pertenece al molde "${codeData.molde}" pero tienes seleccionado el molde "${selectedMold}".\n\nCódigo: ${fullCode}\nMolde del código: ${codeData.molde}\nMolde seleccionado: ${selectedMold}\n\nPor favor:\n1. Verifica el código QR, O\n2. Cambia el molde seleccionado`);
+        return;
+    }
+    
+    // **VALIDACIÓN DE MÁQUINA** (opcional, pero útil)
+    const expectedMachines = {
+        'PX13-10-382': [30, 31],     // LWR
+        'PEDD-10-382-A': [30, 31],   // LWR  
+        'P54G-10-382': [30, 31],     // LWR
+        'PX13-10-301': [32, 33, 34], // UPR
+        'PEDD-10-301-A': [32, 33, 34], // UPR
+        'P54G-10-301-A': [32, 33, 34]  // UPR
+    };
+    
+    const allowedMachines = expectedMachines[selectedProduct];
+    if (allowedMachines && !allowedMachines.includes(codeData.maquina)) {
+        const confirmProceed = confirm(`⚠️ MÁQUINA INUSUAL\n\nEl código QR es de la máquina ${codeData.maquina}, pero para ${selectedProduct} normalmente se usan las máquinas: ${allowedMachines.join(', ')}.\n\nCódigo: ${fullCode}\nMáquina del código: ${codeData.maquina}\nMáquinas esperadas: ${allowedMachines.join(', ')}\n\n¿Continuar de todos modos?`);
+        
+        if (!confirmProceed) {
+            return;
+        }
+    }
+    
+    console.log('✅ Validaciones de encabezado pasadas:', {
+        codigo: fullCode,
+        tipo: codeData.type,
+        molde: codeData.molde,
+        maquina: codeData.maquina,
+        productoSeleccionado: selectedProduct,
+        moldeSeleccionado: selectedMold
+    });
+}
     // **VALIDACIÓN PRINCIPAL**: Buscar en la base de datos
     console.log('🔍 Buscando en inventario:', fullCode, 'Inventario size:', inventory.length);
     
     const existingItem = inventory.find(item => {
         // Buscar por código completo o por shot number si tiene codeData
         return item.code === fullCode || 
-               (item.codeData && item.codeData.disparo === shotNumber && item.codeData.molde === moldeNumber);
+               (item.codeData && codeData && item.codeData.disparo === codeData.disparo && item.codeData.molde === moldeNumber);
     });
     
     if (!existingItem) {
-        alert(`❌ SHOT NO ENCONTRADO EN BASE DE DATOS\n\nEl shot ${shotNumber} con molde ${moldeNumber} no está registrado en el inventario.\n\nVerifica:\n• Número de shot correcto\n• Molde correcto\n• Que la pieza esté registrada en el sistema`);
+        const shotDisplay = codeData ? codeData.disparo : shotCode;
+        alert(`❌ SHOT NO ENCONTRADO EN BASE DE DATOS\n\nEl código ${shotDisplay} con molde ${moldeNumber} no está registrado en el inventario.\n\nVerifica:\n• Código QR correcto\n• Molde correcto\n• Que la pieza esté registrada en el sistema`);
         return;
     }
     
@@ -6705,27 +6842,31 @@ if (!shotCode || !moldeNumber || !scrapReason || !almacenOrigen) {
     const expectedWarehouse = almacenOrigen.toLowerCase().replace('almacen_', '');
     const actualWarehouse = existingItem.warehouse;
     
+    // ⬅️ **DEFINIR warehouseNames AQUÍ**
+    const warehouseNames = {
+        'fundidos': '🔥 Fundición',
+        'acabados': '✅ Acabado',
+        'scrap': '♻️ Scrap',
+        'retenciones': '⏸️ Retenciones',
+        'envios': '📦 Envíos',
+        'pruebas': '🧪 Pruebas'
+    };
+    
     if (actualWarehouse !== expectedWarehouse) {
-        const warehouseNames = {
-            'fundidos': '🔥 Fundición',
-            'acabados': '✅ Acabado',
-            'scrap': '♻️ Scrap',
-            'retenciones': '⏸️ Retenciones',
-            'envios': '📦 Envíos',
-            'pruebas': '🧪 Pruebas'
-        };
-        
-        alert(`❌ ALMACÉN INCORRECTO\n\nEl shot ${shotNumber} NO está en el almacén seleccionado.\n\n📍 Almacén actual: ${warehouseNames[actualWarehouse] || actualWarehouse}\n🎯 Almacén seleccionado: ${warehouseNames[expectedWarehouse] || almacenOrigen}\n\nPor favor:\n1. Corrije el almacén origen, O\n2. Verifica la ubicación real de la pieza`);
+        const shotDisplay = codeData ? codeData.disparo : shotCode;
+        alert(`❌ ALMACÉN INCORRECTO\n\nEl código ${shotDisplay} NO está en el almacén seleccionado.\n\n📍 Almacén actual: ${warehouseNames[actualWarehouse] || actualWarehouse}\n🎯 Almacén seleccionado: ${warehouseNames[expectedWarehouse] || almacenOrigen}\n\nPor favor:\n1. Corrije el almacén origen, O\n2. Verifica la ubicación real de la pieza`);
         return;
     }
     
     // **VALIDACIÓN DE CANTIDAD**: Verificar que tenga cantidad disponible
     if (existingItem.quantity <= 0) {
-        alert(`❌ SHOT SIN INVENTARIO\n\nEl shot ${shotNumber} está registrado pero con cantidad 0.\n\nNo se puede procesar como scrap porque ya fue descontado del inventario.`);
+        const shotDisplay = codeData ? codeData.disparo : shotCode;
+        alert(`❌ SHOT SIN INVENTARIO\n\nEl código ${shotDisplay} está registrado pero con cantidad 0.\n\nNo se puede procesar como scrap porque ya fue descontado del inventario.`);
         return;
     }
     
     // Verificar duplicados en la lista actual
+    const shotNumber = codeData ? codeData.disparo : shotCode; // ⬅️ **DEFINIR shotNumber AQUÍ**
     const isDuplicate = scannedShots.some(shot => 
         shot.shotNumber === shotNumber && shot.moldeNumber === moldeNumber
     );
