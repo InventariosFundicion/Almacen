@@ -2086,16 +2086,23 @@ function getEstadoBadge(estado) {
 }
 
 function getAccionesButtons(sheet) {
-    let buttons = buttons += ` <button class="btn btn-info btn-sm" onclick="viewSheet('${sheet.folio}')">👁️ Ver</button>`;
+    let buttons = ''; // ← Declarar la variable al inicio
     
+    // Botón Ver
+    buttons += `<button class="btn btn-info btn-sm" onclick="viewSheet('${sheet.folio}')">👁️ Ver</button>`;
+    
+    // Botón Gestionar (solo si no está cerrada)
     if (sheet.estado !== 'CERRADA') {
         buttons += ` <button class="btn btn-warning btn-sm" onclick="openManageStateModal('${sheet.folio}')">⚙️ Gestionar</button>`;
     }
     
+    // Botón PDF
     buttons += ` <button class="btn btn-success btn-sm" onclick="generateSheetPDF('${sheet.folio}')">📄 PDF</button>`;
-if (currentUser && currentUser.rol === 'ADMIN') {
-    buttons += ` <button class="btn btn-danger btn-sm" onclick="deleteSheet('${sheet.folio}')" style="margin-left: 5px;">🗑️ Eliminar</button>`;
-}
+    
+    // Botón de eliminar solo para administradores
+    if (currentUser && currentUser.rol === 'ADMIN') {
+        buttons += ` <button class="btn btn-danger btn-sm" onclick="deleteSheet('${sheet.folio}')" style="margin-left: 5px;">🗑️ Eliminar</button>`;
+    }
     
     return buttons;
 }
