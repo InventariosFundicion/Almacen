@@ -1531,7 +1531,6 @@
         <div style="text-align: center; margin-top: 30px;">
             <button class="btn btn-success" onclick="handleAsyncCall(() => saveScrapSheet())">💾 Guardar Hoja</button>
             <button class="btn btn-info" onclick="printScrapSheet()">🖨️ Imprimir Hoja</button>
-            <button class="btn btn-warning" onclick="clearScrapForm()">🔄 Limpiar</button>
         </div>
     </div>
     
@@ -2028,16 +2027,25 @@ function clearShotForm() {
         // Refrescar lista de hojas
 // 🔄 FUNCIÓN refreshSheetsList ACTUALIZADA
 async function refreshSheetsList() {
+    console.log('🔄 Refrescando lista de hojas...'); // DEBUG
+    
     // Cargar datos más recientes desde Firebase
     const sheetsData = await loadFromFirebase('scrapSheets');
     if (sheetsData) {
         scrapSheets = firebaseObjectToArray(JSON.parse(sheetsData));
     }
     
+    console.log('📊 Hojas cargadas:', scrapSheets.length); // DEBUG
+    
     const tbody = document.getElementById('sheets-table-body');
     
+    if (!tbody) {
+        console.error('❌ No se encontró sheets-table-body');
+        return;
+    }
+    
     if (scrapSheets.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center;">📝 No hay hojas registradas</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px;">📝 No hay hojas registradas</td></tr>';
         return;
     }
 
@@ -2056,7 +2064,7 @@ async function refreshSheetsList() {
                 <td>${sheet.numeroProducto}</td>
                 <td>${sheet.moldeProducto || 'N/A'}</td>
                 <td>${sheet.sectorTrabajo}</td>
-                <td style="text-align: center;">${sheet.shots.length}</td>
+                <td style="text-align: center;">${sheet.shots ? sheet.shots.length : 0}</td>
                 <td>${sheet.creadoPor}</td>
                 <td>${estadoBadge}</td>
                 <td style="text-align: center;">${evidenciaIcon}</td>
@@ -2064,6 +2072,8 @@ async function refreshSheetsList() {
             </tr>
         `;
     }).join('');
+    
+    console.log('✅ Lista de hojas actualizada'); // DEBUG
 }
 function getEstadoBadge(estado) {
     const badges = {
@@ -6641,7 +6651,12 @@ function showSubTab(subTabName) {
         targetTab.style.display = 'block';
         targetTab.classList.add('active'); // Agregar clase active
     }
-    
+// Refrescar lista cuando se muestra gestionar hojas
+if (subTabName === 'manage-sheets') {
+    setTimeout(() => {
+        refreshSheetsList();
+    }, 100);
+}
     // Activar el botón correspondiente
     if (event && event.target) {
         event.target.classList.add('active');
