@@ -7303,14 +7303,13 @@ async function saveScrapSheet() {  // ⬅️ AGREGAR async aquí
     await saveToFirebase('folioCounter', folioCounter.toString());
 
     alert(`✅ Hoja de scrap guardada correctamente\n\n` +
-	  // 🔄 ACTUALIZAR INVENTARIO DESPUÉS DE GUARDAR
-          updateAllDisplays();
           `📋 Folio: ${folio}\n` +
           `📦 Shots del inventario: ${inventoryShots.length}\n` +
           `🆕 Shots nuevos: ${notInInventory.length}\n` +
           `📊 Total shots: ${scannedShots.length}\n\n` +
           `Puedes gestionarla desde la pestaña "Gestionar Hojas"`);
-
+	
+updateAllDisplays();
 clearScrapForm();
 generateNewFolio();
 refreshSheetsList();
