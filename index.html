@@ -6573,7 +6573,7 @@ function showSubTab(subTabName) {
 }
 // REEMPLAZAR la función startScrapCamera() completa:
 async function startScrapCamera() {
-    console.log('🔍 Verificando QrScanner...', typeof QrScanner); // DEBUG
+    console.log('🔍 Verificando QrScanner...', typeof QrScanner);
     
     if (typeof QrScanner === 'undefined') {
         alert('❌ La librería QR Scanner no se cargó correctamente.\n\nPor favor recarga la página.');
@@ -6585,8 +6585,20 @@ async function startScrapCamera() {
         const containerElement = document.getElementById('scrap-camera-container');
         const statusElement = document.getElementById('scrap-camera-status');
         
-        if (!videoElement || !containerElement || !statusElement) {
-            alert('❌ Error: Elementos de cámara no encontrados');
+        // ✅ VERIFICACIÓN MEJORADA de elementos
+        if (!videoElement) {
+            console.error('❌ Elemento scrap-camera-video no encontrado');
+            alert('❌ Error: Elemento de video no encontrado');
+            return;
+        }
+        if (!containerElement) {
+            console.error('❌ Elemento scrap-camera-container no encontrado');
+            alert('❌ Error: Contenedor de cámara no encontrado');
+            return;
+        }
+        if (!statusElement) {
+            console.error('❌ Elemento scrap-camera-status no encontrado');
+            alert('❌ Error: Elemento de estado no encontrado');
             return;
         }
         
@@ -6594,23 +6606,22 @@ async function startScrapCamera() {
         if (scrapScanner) {
             console.log('⚠️ Cámara ya activa, deteniéndola primero...');
             stopScrapCamera();
-            await new Promise(resolve => setTimeout(resolve, 500)); // Esperar un poco
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
         
-        // Verificar permisos y disponibilidad de cámara
+        // Verificar disponibilidad de cámara
         const hasCamera = await QrScanner.hasCamera();
         if (!hasCamera) {
-            alert('❌ No se detectó ninguna cámara en tu dispositivo.\n\nPuedes:\n1. Conectar una cámara\n2. Usar entrada manual\n3. Verificar permisos de cámara');
+            alert('❌ No se detectó ninguna cámara en tu dispositivo.\n\nPuedes usar entrada manual escribiendo el código QR.');
             return;
         }
         
-        // Mostrar contenedor y estado de carga
-        containerElement.style.display = 'block';
+        // Mostrar estado de carga
         statusElement.textContent = '📷 Solicitando permisos de cámara...';
         statusElement.style.background = '#fff3cd';
         statusElement.style.color = '#856404';
         
-        // Crear scanner con configuración mejorada
+        // Crear scanner
         scrapScanner = new QrScanner(
             videoElement,
             result => handleScrapQRScan(result.data),
@@ -6618,31 +6629,17 @@ async function startScrapCamera() {
                 returnDetailedScanResult: true,
                 highlightScanRegion: true,
                 highlightCodeOutline: true,
-                preferredCamera: 'environment', // Cámara trasera por defecto
-                maxScansPerSecond: 2, // Límite para mejor rendimiento
-                calculateScanRegion: (video) => {
-                    // Región de escaneo centrada
-                    const smallerDimension = Math.min(video.videoWidth, video.videoHeight);
-                    const scanRegionSize = Math.round(0.6 * smallerDimension);
-                    return {
-                        x: Math.round((video.videoWidth - scanRegionSize) / 2),
-                        y: Math.round((video.videoHeight - scanRegionSize) / 2),
-                        width: scanRegionSize,
-                        height: scanRegionSize
-                    };
-                }
+                preferredCamera: 'environment',
+                maxScansPerSecond: 2
             }
         );
         
-        // Iniciar scanner con manejo de errores detallado
+        // Iniciar scanner
         statusElement.textContent = '📷 Iniciando cámara...';
         await scrapScanner.start();
         
-        // Éxito - actualizar interfaz
-        document.getElementById('scrap-start-camera-btn').style.display = 'none';
-        document.getElementById('scrap-stop-camera-btn').style.display = 'inline-block';
-        
-        statusElement.textContent = '📷 Cámara activa - Posiciona el código QR del shot';
+        // ✅ ÉXITO - Actualizar elementos que SÍ existen
+        statusElement.textContent = '📷 Cámara activa - Escanea el código QR del shot';
         statusElement.style.background = '#d4edda';
         statusElement.style.color = '#155724';
         
@@ -6651,7 +6648,7 @@ async function startScrapCamera() {
     } catch (error) {
         console.error('❌ Error detallado de cámara:', error);
         
-        // Limpiar en caso de error
+        // Limpiar scanner en caso de error
         if (scrapScanner) {
             try {
                 scrapScanner.destroy();
@@ -6661,7 +6658,7 @@ async function startScrapCamera() {
             scrapScanner = null;
         }
         
-        // Mostrar error específico según el tipo
+        // Mostrar error específico
         let errorMessage = '❌ Error al acceder a la cámara.\n\n';
         
         if (error.name === 'NotAllowedError' || error.message.includes('Permission')) {
@@ -6669,30 +6666,43 @@ async function startScrapCamera() {
         } else if (error.name === 'NotFoundError') {
             errorMessage += 'CÁMARA NO ENCONTRADA:\n• Verifica que tu dispositivo tenga cámara\n• Asegúrate de que no esté siendo usada por otra aplicación';
         } else if (error.name === 'NotSupportedError') {
-            errorMessage += 'NO COMPATIBLE:\n• Usa un navegador más reciente\n• Asegúrate de estar en HTTPS (no HTTP)';
+            errorMessage += 'NO COMPATIBLE:\n• Usa un navegador más reciente\n• Asegúrate de estar en HTTPS';
         } else {
-            errorMessage += `ERROR TÉCNICO:\n• ${error.message}\n• Intenta recargar la página\n• Verifica tu conexión`;
+            errorMessage += `ERROR TÉCNICO:\n• ${error.message}\n• Intenta recargar la página`;
         }
         
-        errorMessage += '\n\n💡 ALTERNATIVA: Puedes usar entrada manual escribiendo el código QR.';
-        
+        errorMessage += '\n\n💡 ALTERNATIVA: Usa entrada manual escribiendo el código QR.';
         alert(errorMessage);
         
-        // Ocultar cámara en caso de error
-        document.getElementById('scrap-camera-container').style.display = 'none';
+        // Resetear estado visual si hay error
+        const statusElement = document.getElementById('scrap-camera-status');
+        if (statusElement) {
+            statusElement.textContent = '❌ Error al iniciar cámara';
+            statusElement.style.background = '#f8d7da';
+            statusElement.style.color = '#721c24';
+        }
     }
 }
 // Detener cámara de scrap
 function stopScrapCamera() {
     if (scrapScanner) {
-        scrapScanner.stop();
-        scrapScanner.destroy();
-        scrapScanner = null;
+        try {
+            scrapScanner.stop();
+            scrapScanner.destroy();
+            scrapScanner = null;
+            console.log('✅ Cámara de scrap detenida');
+        } catch (error) {
+            console.error('Error al detener cámara:', error);
+        }
     }
     
-    document.getElementById('scrap-camera-container').style.display = 'none';
-    document.getElementById('scrap-start-camera-btn').style.display = 'inline-block';
-    document.getElementById('scrap-stop-camera-btn').style.display = 'none';
+    // Resetear estado visual
+    const statusElement = document.getElementById('scrap-camera-status');
+    if (statusElement) {
+        statusElement.textContent = '📷 Cámara detenida';
+        statusElement.style.background = '#e2e3e5';
+        statusElement.style.color = '#495057';
+    }
 }
 
 function handleScrapQRScan(qrData) {
