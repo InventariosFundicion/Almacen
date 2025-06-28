@@ -3408,16 +3408,32 @@ function exportData() {
     };
     pallets.push(samplePallet);
 }
-        function formatLastMovement(date) {
+function formatLastMovement(date) {
     if (!date) return 'N/A';
+    
+    // Convertir a objeto Date si es un string
+    let dateObj;
+    if (typeof date === 'string') {
+        dateObj = new Date(date);
+    } else if (date instanceof Date) {
+        dateObj = date;
+    } else {
+        return 'N/A';
+    }
+    
+    // Verificar que la fecha sea válida
+    if (isNaN(dateObj.getTime())) {
+        return 'Fecha inválida';
+    }
+    
     const now = new Date();
-    const diff = now - date;
+    const diff = now - dateObj;
     const minutes = Math.floor(diff / 60000);
     
     if (minutes < 1) return 'Ahora mismo';
     if (minutes < 60) return `Hace ${minutes} min`;
     if (minutes < 1440) return `Hace ${Math.floor(minutes / 60)} hrs`;
-    return date.toLocaleDateString();
+    return dateObj.toLocaleDateString();
 }
        function calculateTheoreticalInventory() {
     const theoretical = {};
