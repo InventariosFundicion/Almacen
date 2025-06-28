@@ -3057,6 +3057,36 @@ const palletRecord = {
             }
             
             targetWarehouse = selectedMovement;
+		        // 🔥 INTEGRACIÓN AUTOMÁTICA CON HOJAS DE SCRAP Y RETENCIONES PARA CÓDIGOS INDIVIDUALES
+        if (selectedMovement === 'scrap') {
+            const confirmScrapSheet = confirm('🔄 SCRAP DETECTADO\n\n¿Quieres crear automáticamente una hoja de scrap con este código?\n\n✅ Sí = Abrir formulario de scrap\n❌ No = Solo mover a scrap');
+            
+            if (confirmScrapSheet) {
+                showTab('scrap-retention');
+                showSubTab('new-scrap');
+                
+                setTimeout(() => {
+                    prefillScrapForm(analysis);
+                }, 500);
+                
+                return;
+            }
+        }
+        
+        if (selectedMovement === 'retenciones') {
+            const confirmRetencion = confirm('⏸️ RETENCIÓN DETECTADA\n\n¿Quieres crear una nueva retención basada en este código?\n\n✅ Sí = Abrir formulario de retención\n❌ No = Solo mover a retenciones');
+            
+            if (confirmRetencion) {
+                showTab('scrap-retention');
+                showSubTab('retenciones');
+                
+                setTimeout(() => {
+                    prefillRetencionForm(analysis);
+                }, 500);
+                
+                return;
+            }
+        }
             processIndividualCode(analysis.code, analysis.type, inventoryType, shift, targetWarehouse);
             
             resultDiv.innerHTML = `
@@ -3195,28 +3225,65 @@ async function processIndividualCode(code, type, movementType, shift, warehouse,
     // Manejar transferencia de fundidos a acabados
     if (movementType === 'movimiento' || (item.warehouse !== warehouse && item.quantity > 0)) {
         item.warehouse = warehouse;
-        item.state = warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
+        // Actualizar estado según el warehouse destino
+if (warehouse === 'fundidos') {
+    item.state = 'FUNDIDOS';
+} else if (warehouse === 'acabados') {
+    item.state = 'ACABADOS';
+} else if (warehouse === 'scrap') {
+    item.state = 'SCRAP';
+} else if (warehouse === 'retenciones') {
+    item.state = 'RETENIDO';
+} else if (warehouse === 'envios') {
+    item.state = 'ENVIADO';
+} else if (warehouse === 'pruebas') {
+    item.state = 'EN_PRUEBAS';
+} else {
+    // Mantener estado actual si no es un warehouse reconocido
+    item.state = item.state || 'DESCONOCIDO';
+}
         item.lastMovement = new Date();
         item.palletId = palletId;
+} else {
+    item.quantity += 1;
+    item.warehouse = warehouse;
+    
+    // Actualizar estado según el warehouse destino
+    if (warehouse === 'fundidos') {
+        item.state = 'FUNDIDOS';
+    } else if (warehouse === 'acabados') {
+        item.state = 'ACABADOS';
+    } else if (warehouse === 'scrap') {
+        item.state = 'SCRAP';
+    } else if (warehouse === 'retenciones') {
+        item.state = 'RETENIDO';
+    } else if (warehouse === 'envios') {
+        item.state = 'ENVIADO';
+    } else if (warehouse === 'pruebas') {
+        item.state = 'EN_PRUEBAS';
     } else {
-        item.quantity += 1;
-        item.warehouse = warehouse;
-        item.state = warehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
-        item.lastMovement = new Date();
-        item.palletId = palletId;
+        // Mantener estado actual si no es un warehouse reconocido
+        item.state = item.state || 'DESCONOCIDO';
     }
     
-    movements.push({
-        id: Date.now() + Math.random(),
-        code: code,
-        partNumber: partNumber,
-        type: movementType,
-        warehouse: warehouse,
-        quantity: 1,
-        date: new Date(),
-        shift: shift,
-        palletId: palletId
-    });
+    item.lastMovement = new Date();
+    item.palletId = palletId;
+}
+    
+movements.push({
+    id: Date.now() + Math.random(),
+    code: code,
+    partNumber: partNumber,
+    type: specificMovementType,
+    warehouse: warehouse,
+    quantity: 1,
+    date: new Date(),
+    shift: shift,
+    palletId: palletId,
+    // Agregar información adicional del estado anterior
+    previousWarehouse: item.warehouse !== warehouse ? item.warehouse : null,
+    previousState: item.state !== (warehouse === 'fundidos' ? 'FUNDIDOS' : warehouse === 'acabados' ? 'ACABADOS' : 'SCRAP') ? item.state : null
+});
     
     // 🔥 GUARDAR EN FIREBASE
     await saveToFirebase('inventory', JSON.stringify(arrayToFirebaseObject(inventory)));
