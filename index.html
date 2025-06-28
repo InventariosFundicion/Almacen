@@ -2973,19 +2973,19 @@ async function processQRCode() {
             return;
         }
         
-        const palletRecord = {
-            systemId: palletSystemId,
-            originalId: analysis.palletId,
-            state: targetWarehouse,
-            type: analysis.type,
-            codesCount: codeCheck.newCodes.length,
-            warehouse: targetWarehouse,
-            codes: codeCheck.newCodes,
-            createdDate: new Date(),
-            inventoryType: inventoryType,
-            shift: shift,
-            duplicatesFound: codeCheck.existingCodes.length
-        };
+const palletRecord = {
+    systemId: palletSystemId,
+    originalId: analysis.palletId,
+    state: targetWarehouse,
+    type: analysis.type,
+    codesCount: codeCheck.newCodes.length,
+    warehouse: targetWarehouse,
+    codes: codeCheck.newCodes,
+    createdDate: new Date().toISOString(), // ← CORREGIDO
+    inventoryType: inventoryType,
+    shift: shift,
+    duplicatesFound: codeCheck.existingCodes.length
+};
         
         pallets.push(palletRecord);
         
@@ -3339,7 +3339,7 @@ function exportData() {
         codesCount: 3,
         warehouse: 'acabados',
         codes: ['P6102448O2P52', 'P6205362O3P54', 'P6308476O4P56'],
-        createdDate: new Date()
+        createdDate: new Date().toISOString(),
     };
     pallets.push(samplePallet);
 }
@@ -4692,7 +4692,7 @@ function toggleModelSection(sectionId) {
                     '<td><span class="code-badge" style="background: #17a2b8;">' + pallet.type + '</span></td>' +
                     '<td style="text-align: center;">' + pallet.codesCount + '</td>' +
                     '<td>' + getWarehouseName(pallet.warehouse) + '</td>' +
-                    '<td>' + pallet.createdDate.toLocaleDateString() + '</td>' +
+                    '<td>' + (pallet.createdDate ? new Date(pallet.createdDate).toLocaleDateString() : 'N/A') + '</td>' +
                     '<td>' +
                     '<button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;" onclick="movePallet(\'' + pallet.systemId + '\')">📦 Mover</button>' +
                     '<button class="btn btn-info" style="padding: 5px 10px; font-size: 12px;" onclick="viewPalletDetails(\'' + pallet.systemId + '\')">👁️ Ver</button>' +
@@ -8353,6 +8353,7 @@ async function initUserSystem() {
     // Inicializar usuarios como array vacío
     usuarios = [];
     
+    // Cargar usuarios ANTES de verificar sesión
     await loadUsers();
     
     // Crear usuario admin por defecto si no existe
@@ -8360,7 +8361,7 @@ async function initUserSystem() {
         await createDefaultAdmin();
     }
     
-    // Verificar si hay sesión activa
+    // AHORA verificar si hay sesión activa
     checkActiveSession();
     
     console.log('✅ Sistema de usuarios inicializado');
@@ -8419,20 +8420,32 @@ function checkActiveSession() {
         const savedSession = localStorage.getItem('currentSession');
         if (savedSession) {
             const session = JSON.parse(savedSession);
+            
+            // Asegurar que usuarios sea un array antes de buscar
+            if (!Array.isArray(usuarios)) {
+                console.log('👥 Usuarios no es array, cargando...');
+                showLoginScreen();
+                return;
+            }
+            
             const user = usuarios.find(u => u.id === session.userId);
             
             if (user && user.activo) {
                 currentUser = user;
                 isLoggedIn = true;
+                console.log('✅ Sesión restaurada para:', user.nombre);
                 showMainApp();
                 return;
+            } else {
+                console.log('⚠️ Usuario no encontrado o inactivo');
             }
+        } else {
+            console.log('📝 No hay sesión guardada');
         }
-        // ⬅️ AGREGAR ESTA LÍNEA:
+        
         showLoginScreen();
     } catch (error) {
-        console.error('Error verificando sesión:', error);
-        // ⬅️ AGREGAR ESTA LÍNEA TAMBIÉN:
+        console.error('❌ Error verificando sesión:', error);
         showLoginScreen();
     }
 }
