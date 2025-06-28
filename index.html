@@ -9612,46 +9612,6 @@ async function descontarDelInventario(existingItem, shotData) {
         console.log(`✅ Item ${existingItem.code} descontado. Nueva cantidad: ${inventory[itemIndex].quantity}`);
     }
 } // ← ASEGURAR QUE ESTA LLAVE ESTÉ AQUÍ
-async function descontarDelInventario(existingItem, shotData) {
-    console.log('🔽 Descontando del inventario:', existingItem.code);
-    
-    // Encontrar el item en el inventario
-    const itemIndex = inventory.findIndex(item => item.code === existingItem.code);
-    
-    if (itemIndex !== -1) {
-        // Reducir cantidad
-        inventory[itemIndex].quantity = Math.max(0, inventory[itemIndex].quantity - 1);
-        
-        // Si cantidad llega a 0, mover a scrap
-        if (inventory[itemIndex].quantity === 0) {
-            inventory[itemIndex].warehouse = 'scrap';
-            inventory[itemIndex].state = 'SCRAP';
-            inventory[itemIndex].lastMovement = new Date();
-        }
-        
-        // Registrar movimiento
-        movements.push({
-            id: Date.now() + Math.random(),
-            code: existingItem.code,
-            partNumber: existingItem.partNumber,
-            type: 'scrap_adicional',
-            warehouse: 'scrap',
-            quantity: 1,
-            date: new Date(),
-            reason: shotData.scrapReason,
-            palletId: null
-        });
-        
-        // 🔥 GUARDAR EN FIREBASE
-        await saveToFirebase('inventory', JSON.stringify(arrayToFirebaseObject(inventory)));
-        await saveToFirebase('movements', JSON.stringify(arrayToFirebaseObject(movements)));
-        
-        // 🔄 ACTUALIZAR DISPLAYS INMEDIATAMENTE
-        updateAllDisplays();
-        
-        console.log(`✅ Item ${existingItem.code} descontado. Nueva cantidad: ${inventory[itemIndex].quantity}`);
-    }
-}
 
 </script>
 </body>
