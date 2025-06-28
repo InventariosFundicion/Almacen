@@ -1531,7 +1531,7 @@
         <div style="text-align: center; margin-top: 30px;">
             <button class="btn btn-success" onclick="handleAsyncCall(() => saveScrapSheet())">💾 Guardar Hoja</button>
             <button class="btn btn-info" onclick="printScrapSheet()">🖨️ Imprimir Hoja</button>
-            <button class="btn btn-warning" onclick="clearForm()">🔄 Limpiar</button>
+            <button class="btn btn-warning" onclick="clearScrapForm()">🔄 Limpiar</button>
         </div>
     </div>
     
@@ -2076,13 +2076,16 @@ function getEstadoBadge(estado) {
 }
 
 function getAccionesButtons(sheet) {
-    let buttons = `<button class="btn btn-info btn-sm" onclick="viewSheetDetails('${sheet.folio}')">👁️ Ver</button>`;
+    let buttons = buttons += ` <button class="btn btn-info btn-sm" onclick="viewSheet('${sheet.folio}')">👁️ Ver</button>`;
     
     if (sheet.estado !== 'CERRADA') {
         buttons += ` <button class="btn btn-warning btn-sm" onclick="openManageStateModal('${sheet.folio}')">⚙️ Gestionar</button>`;
     }
     
     buttons += ` <button class="btn btn-success btn-sm" onclick="generateSheetPDF('${sheet.folio}')">📄 PDF</button>`;
+if (currentUser && currentUser.rol === 'ADMIN') {
+    buttons += ` <button class="btn btn-danger btn-sm" onclick="deleteSheet('${sheet.folio}')" style="margin-left: 5px;">🗑️ Eliminar</button>`;
+}
     
     return buttons;
 }
@@ -2093,46 +2096,133 @@ function getAccionesButtons(sheet) {
         }
 
         // Generar PDF de hoja específica
-        function generateSheetPDF(folio) {
-            const sheet = scrapSheets.find(s => s.folio === folio);
-            if (!sheet) return;
+function generateSheetPDF(folio) {
+    const sheet = scrapSheets.find(s => s.folio === folio);
+    if (!sheet) return;
 
-            // Crear contenido del PDF
-            const pdfContent = `
-                REPORTE DIARIO DE SCRAP ADICIONAL
-                
-                Folio: ${sheet.folio}
-                Fecha de Operación: ${sheet.fechaOperacion}
-                Sector de Trabajo: ${sheet.sectorTrabajo}
-                
-                Número de Producto: ${sheet.numeroProducto}
-                Nombre: ${sheet.nombreProducto}
-                
-                SHOTS REGISTRADOS:
-                ${sheet.shots.map((shot, index) => 
-                    `${index + 1}. Shot #${shot.number} - Molde: ${shot.molde} - Motivo: ${shot.reason}`
-                ).join('\n')}
-                
-                Firma Captura: ${sheet.firmaCaptura}
-                Firma Director: ${sheet.firmaDirector}
-                Observaciones: ${sheet.observaciones}
-                
-                Estado: ${sheet.estado}
-                Fecha de Creación: ${sheet.fechaCreacion}
-            `;
+    // Crear contenido HTML igual al de impresión
+    const printContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Hoja de Scrap - ${sheet.folio}</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 15px; line-height: 1.3; font-size: 14px; }
+                .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
+                .department-info { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 10px 0; font-size: 12px; }
+                .signatures { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin: 15px 0; }
+                .signature-box { border: 1px solid #333; padding: 8px; text-align: center; min-height: 50px; }
+                .section { margin: 10px 0; }
+                .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin: 8px 0; }
+                .info-item { font-size: 12px; }
+                .shots-table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12px; }
+                .shots-table th, .shots-table td { border: 1px solid #333; padding: 6px; text-align: left; }
+                .shots-table th { background: #f0f0f0; font-weight: bold; }
+                .folio-box { border: 2px solid #333; padding: 8px; text-align: center; margin-bottom: 10px; }
+                @media print { body { margin: 0; } }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1 style="margin: 0; font-size: 18px;">REPORTE DIARIO DE SCRAP ADICIONAL</h1>
+                <div class="department-info">
+                    <div><strong>Departamento:</strong> Fundición 1</div>
+                    <div><strong>Sección:</strong> Fundición 1.3</div>
+                </div>
+            </div>
+            
+            <div class="folio-box">
+                <strong>FOLIO: ${sheet.folio}</strong>
+            </div>
+            
+            <div class="signatures">
+                <div class="signature-box">
+                    <strong>ELABORACIÓN</strong><br><br>
+                    <div style="border-top: 1px solid #333; margin-top: 20px; padding-top: 5px;">
+                        Nombre y Firma
+                    </div>
+                </div>
+                <div class="signature-box">
+                    <strong>REVISIÓN</strong><br><br>
+                    <div style="border-top: 1px solid #333; margin-top: 20px; padding-top: 5px;">
+                        Nombre y Firma
+                    </div>
+                </div>
+                <div class="signature-box">
+                    <strong>APROBACIÓN</strong><br><br>
+                    <div style="border-top: 1px solid #333; margin-top: 20px; padding-top: 5px;">
+                        Nombre y Firma
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h3 style="margin: 10px 0 8px 0; font-size: 14px;">INFORMACIÓN GENERAL</h3>
+                <div class="info-grid">
+                    <div class="info-item"><strong>Fecha:</strong> ${sheet.fechaOperacion}</div>
+                    <div class="info-item"><strong>Sector:</strong> ${sheet.sectorTrabajo}</div>
+                    <div class="info-item"><strong>Creado por:</strong> ${sheet.creadoPor}</div>
+                    <div class="info-item"><strong>Producto:</strong> ${sheet.numeroProducto}</div>
+                    <div class="info-item"><strong>Molde:</strong> ${sheet.moldeProducto}</div>
+                    <div class="info-item"><strong>Almacén:</strong> ${sheet.almacenOrigen}</div>
+                </div>
+                <div class="info-item" style="margin-top: 8px;"><strong>Nombre:</strong> ${sheet.nombreProducto}</div>
+            </div>
+            
+            <div class="section">
+                <h3 style="margin: 10px 0 8px 0; font-size: 14px;">SHOTS REGISTRADOS (${sheet.shots.length})</h3>
+                <table class="shots-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 15%;">Shot #</th>
+                            <th style="width: 15%;">Molde</th>
+                            <th style="width: 50%;">Motivo del Scrap</th>
+                            <th style="width: 20%;">Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${sheet.shots.map(shot => `
+                            <tr>
+                                <td>${shot.shotNumber}</td>
+                                <td>${shot.moldeNumber}</td>
+                                <td>${shot.scrapReason}</td>
+                                <td>${shot.timestamp}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h3 style="margin: 10px 0 8px 0; font-size: 14px;">OBSERVACIONES</h3>
+                <div style="border: 1px solid #333; padding: 8px; min-height: 40px; font-size: 12px;">
+                    ${sheet.observaciones}
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; text-align: center; font-size: 10px; color: #666;">
+                <p>Estado: ${getEstadoText(sheet.estado)}</p>
+                <p>Generado: ${new Date().toLocaleString()}</p>
+                <p>Sistema de Control de Almacén - Fundición v1.3</p>
+            </div>
+        </body>
+        </html>
+    `;
 
-            // Crear blob y descargar
-            const blob = new Blob([pdfContent], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Scrap_${sheet.folio}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-
+    // Crear blob y descargar como HTML
+    const blob = new Blob([printContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Scrap_${sheet.folio}_${new Date().toISOString().split('T')[0]}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert('📄 Archivo HTML descargado.\n\n💡 Instrucciones:\n1. Abre el archivo en tu navegador\n2. Presiona Ctrl+P (Cmd+P en Mac)\n3. Selecciona "Guardar como PDF"');
+}
         // Ver detalles de hoja
         function viewSheet(folio) {
             const sheet = scrapSheets.find(s => s.folio === folio);
@@ -7144,9 +7234,9 @@ async function saveScrapSheet() {  // ⬅️ AGREGAR async aquí
           `📊 Total shots: ${scannedShots.length}\n\n` +
           `Puedes gestionarla desde la pestaña "Gestionar Hojas"`);
 
-    clearForm();
-    generateNewFolio();
-    refreshSheetsList();
+clearScrapForm();
+generateNewFolio();
+refreshSheetsList();
 }
 // 🔄 FUNCIÓN updateInventoryForScrap ACTUALIZADA (versión completa)
 async function updateInventoryForScrap(inventoryShots) {
@@ -9263,6 +9353,57 @@ function clearScannedShots() {
         scannedShots = [];
         updateShotsDisplay();
         alert('🗑️ Lista limpiada correctamente');
+    }
+}
+function clearScrapForm() {
+    document.getElementById('fecha-operacion').value = '';
+    document.getElementById('sector-trabajo').value = '';
+    document.getElementById('numero-producto').value = '';
+    document.getElementById('nombre-producto').value = '';
+    document.getElementById('molde-producto').innerHTML = '<option value="">Primero selecciona un producto...</option>';
+    document.getElementById('creado-por').value = '';
+    document.getElementById('almacen-origen').value = '';
+    document.getElementById('shot-number').value = '';
+    document.getElementById('scrap-reason').value = '';
+    document.getElementById('other-reason').value = '';
+    document.getElementById('observaciones').value = '';
+    document.getElementById('other-reason-container').style.display = 'none';
+    
+    scannedShots = [];
+    updateShotsDisplay();
+    setTodayDate();
+    generateNewFolio();
+}
+async function deleteSheet(folio) {
+    if (currentUser.rol !== 'ADMIN') {
+        alert('❌ Solo los administradores pueden eliminar hojas');
+        return;
+    }
+    
+    const sheet = scrapSheets.find(s => s.folio === folio);
+    if (!sheet) return;
+    
+    const confirmDelete = confirm(`🗑️ ELIMINAR HOJA DE SCRAP\n\n¿Estás SEGURO de eliminar la hoja ${folio}?\n\n⚠️ Esta acción NO se puede deshacer.\n⚠️ El folio será restaurado automáticamente.\n\n✅ Aceptar = Eliminar\n❌ Cancelar = Mantener`);
+    
+    if (confirmDelete) {
+        // Eliminar hoja del array
+        const index = scrapSheets.findIndex(s => s.folio === folio);
+        scrapSheets.splice(index, 1);
+        
+        // Restaurar contador de folio si es la última hoja creada
+        const allFolios = scrapSheets.map(s => s.folio).sort();
+        const lastFolio = allFolios[allFolios.length - 1];
+        
+        if (!lastFolio || folio > lastFolio) {
+            folioCounter--;
+            await saveToFirebase('folioCounter', folioCounter.toString());
+        }
+        
+        // Guardar cambios
+        await saveToFirebase('scrapSheets', JSON.stringify(arrayToFirebaseObject(scrapSheets)));
+        
+        alert(`✅ Hoja ${folio} eliminada correctamente.\n📊 Folio restaurado.`);
+        refreshSheetsList();
     }
 }
 </script>
