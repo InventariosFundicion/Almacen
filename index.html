@@ -6835,7 +6835,13 @@ async function addShot() {
     }
     
     // **VALIDACIÓN DE ALMACÉN**: Verificar que esté en el almacén correcto
-    const expectedWarehouse = almacenOrigen.toLowerCase().replace('almacen_', '');
+    // Mapear correctamente los nombres de almacenes
+const almacenMapping = {
+    'ALMACEN_FUNDICION': 'fundidos',
+    'ALMACEN_ACABADO': 'acabados', 
+    'ALMACEN_RETENCION': 'retenciones'
+};
+const expectedWarehouse = almacenMapping[almacenOrigen] || almacenOrigen.toLowerCase().replace('almacen_', '');
     const actualWarehouse = existingItem.warehouse;
     
     // ⬅️ **DEFINIR warehouseNames AQUÍ**
