@@ -848,8 +848,7 @@
 				<div class="warehouse-btn" data-warehouse="acabados">✅ ACABADOS</div>
 			</div>
 		</div>
-
-		<button class="btn btn-success" onclick="handleProcessQRCode()">✅ Procesar Código QR</button>
+		<button class="btn btn-success" onclick="ProcessQRCode()">✅ Procesar Código QR</button>
 		<button class="btn btn-info" onclick="clearForm()">🔄 Limpiar</button>
 		<button class="btn btn-warning" onclick="handleStartNewShiftVerification()">🆕 Nuevo Turno</button>
 		<div id="process-result" style="margin-top: 20px;"></div>
@@ -2648,7 +2647,7 @@ function extractCodeData(code) {
     
     return null;
 }
-function processQRCode() {
+async function processQRCode() {
     const input = document.getElementById('qr-input').value.trim();
     const inventoryType = document.getElementById('inventory-type').value;
     const shift = document.getElementById('shift').value;
@@ -2992,12 +2991,24 @@ function processQRCode() {
             `;
         }
     }
+	    try {
+        // Guardar datos actualizados
+        await saveToFirebase('inventory', JSON.stringify(arrayToFirebaseObject(inventory)));
+        await saveToFirebase('movements', JSON.stringify(arrayToFirebaseObject(movements)));
+        if (analysis.isPallet) {
+            await saveToFirebase('pallets', JSON.stringify(arrayToFirebaseObject(pallets)));
+        }
+        if (inventoryType === 'turno') {
+            await saveToFirebase('physicalVerification', JSON.stringify(physicalVerification));
+        }
+    } catch (error) {
+        console.error('Error guardando datos:', error);
+    }
     
     clearForm();
     updateAllDisplays();
     setTimeout(() => resultDiv.innerHTML = '', 6000);
 }
-
         function clearForm() {
             document.getElementById('qr-input').value = '';
             document.getElementById('qr-analysis').innerHTML = '';
@@ -3067,31 +3078,6 @@ async function processIndividualCode(code, type, movementType, shift, warehouse,
     // 🔥 GUARDAR EN FIREBASE
     await saveToFirebase('inventory', JSON.stringify(arrayToFirebaseObject(inventory)));
     await saveToFirebase('movements', JSON.stringify(arrayToFirebaseObject(movements)));
-}
-
-// 🔄 FUNCIÓN processQRCode ACTUALIZADA (solo agregar guardado al final)
-// En la función processQRCode, al final antes de clearForm(), agregar:
-async function processQRCode() {
-    // ... todo el código existente ...
-    
-    // Al final, antes de clearForm(), agregar:
-    try {
-        // Guardar datos actualizados
-        await saveToFirebase('inventory', JSON.stringify(arrayToFirebaseObject(inventory)));
-        await saveToFirebase('movements', JSON.stringify(arrayToFirebaseObject(movements)));
-        if (analysis.isPallet) {
-            await saveToFirebase('pallets', JSON.stringify(arrayToFirebaseObject(pallets)));
-        }
-        if (inventoryType === 'turno') {
-            await saveToFirebase('physicalVerification', JSON.stringify(physicalVerification));
-        }
-    } catch (error) {
-        console.error('Error guardando datos:', error);
-    }
-    
-    clearForm();
-    updateAllDisplays();
-    setTimeout(() => resultDiv.innerHTML = '', 6000);
 }
 function movePallet(palletId) {
     const pallet = pallets.find(p => p.systemId === palletId);
