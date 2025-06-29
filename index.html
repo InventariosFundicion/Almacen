@@ -1330,16 +1330,16 @@
     <h2>♻️ Retención y Scrap Adicional</h2>
     
     <div class="sub-nav-tabs">
-        <button class="sub-nav-tab active" onclick="showSubTab('new-scrap')">📝 Nueva Hoja</button>
-        <button class="sub-nav-tab" onclick="showSubTab('retenciones')">⏸️ Retenciones</button>
-        <button class="sub-nav-tab" onclick="showSubTab('manage-sheets')">📋 Gestionar Hojas</button>
-        <button class="sub-nav-tab" onclick="showSubTab('reports')">📊 Reportes</button>
+        <button class="sub-nav-tab active" onclick="showSubTab('new-scrap')">📝 Crear Nueva Hoja de Reporte de Scrap Adicional</button>
+        <button class="sub-nav-tab" onclick="showSubTab('retenciones')">⏸️ Crear Retención de material</button>
+        <button class="sub-nav-tab" onclick="showSubTab('manage-sheets')">📋 Gestionar Hojas de Scrap Adicional</button>
+        <button class="sub-nav-tab" onclick="showSubTab('reports')">📊 Reporte general de estado de hojas creadas</button>
     </div>
     
     <!-- Aquí iría todo el contenido del artifact que creé -->
     <!-- Nueva Hoja de Scrap -->
     <div id="new-scrap" class="sub-tab-content active">
-        <h2>📝 Nueva Hoja de Retención y Scrap Adicional</h2>
+        <h2>📝 Nueva Hoja de Scrap Adicional</h2>
         
         <div class="card">
             <h3>📋 Información General</h3>
@@ -1578,29 +1578,108 @@
                 </div>
             </div>
             
-            <div class="card">
-                <h4>📊 Alcance de la Retención</h4>
-                <div class="grid grid-2">
-                    <div class="form-group">
-                        <label>🎯 Shot Inicial:</label>
-                        <input type="number" id="retencion-shot-inicial" placeholder="Ej: 1" min="1" required>
-                    </div>
-                    <div class="form-group">
-                        <label>🎯 Shot Final:</label>
-                        <input type="number" id="retencion-shot-final" placeholder="Ej: 50" min="1" required>
-                    </div>
-                </div>
+<div class="card">
+    <h4>📊 Códigos QR a Retener</h4>
+    
+    <!-- Escáner integrado -->
+    <div style="text-align: center; margin-bottom: 20px;">
+        <button class="btn btn-info" onclick="toggleRetencionCameraMode()">
+            <span id="retencion-camera-mode-text">📷 Activar Cámara</span>
+        </button>
+    </div>
+
+    <!-- Contenedor de la cámara -->
+    <div id="retencion-camera-section" style="display: none;">
+        <div class="camera-controls" style="text-align: center; margin-bottom: 15px;">
+            <button class="btn btn-danger" onclick="stopRetencionCamera()">⏹️ Detener Cámara</button>
+        </div>
+        <div id="retencion-camera-container" class="camera-container">
+            <video id="retencion-camera-video" class="camera-video" autoplay muted playsinline></video>
+            <div class="camera-overlay"></div>
+            <div id="retencion-camera-status" class="camera-status">📷 Posiciona el código QR</div>
+        </div>
+    </div>
+    
+    <!-- Entrada manual -->
+    <div id="retencion-manual-entry-section">
+        <div class="form-group">
+            <label>📱 Código QR Individual:</label>
+            <input type="text" id="retencion-shot-code" placeholder="Ej: P5QF4181O1PX2 (UPR) o 25E153003154276P5 (LWR)" maxlength="17">
+        </div>
+    </div>
+    
+    <div style="text-align: center; margin: 20px 0;">
+        <button class="btn btn-success" onclick="addCodeToRetencion()">➕ Agregar Código</button>
+        <button class="btn btn-warning" onclick="clearRetencionCodes()">🗑️ Limpiar Lista</button>
+    </div>
+
+    <!-- Lista de códigos agregados -->
+    <div style="margin-top: 20px;">
+        <h5>📋 Códigos Agregados (<span id="retencion-total-codes">0</span>)</h5>
+        <div id="retencion-codes-display">
+            <div class="alert alert-info">
+                🔍 Los códigos validados aparecerán aquí
+            </div>
+        </div>
+    </div>
+</div>
                 
                 <div class="form-group">
                     <label>📝 Motivo de la Retención:</label>
                     <select id="retencion-motivo">
                         <option value="">Seleccionar motivo...</option>
-                        <option value="INSPECCION_CALIDAD">🔍 Inspección de Calidad</option>
-                        <option value="DEFECTO_SOSPECHOSO">⚠️ Defecto Sospechoso</option>
-                        <option value="REVISION_PROCESO">🔧 Revisión de Proceso</option>
-                        <option value="AUDITORIA_INTERNA">📋 Auditoría Interna</option>
-                        <option value="RECLAMO_CLIENTE">📞 Reclamo de Cliente</option>
-                        <option value="OTRO">📝 Otro (especificar)</option>
+                        <option value="RALLADURA">🪚 Ralladura</option>
+<option value="RALLADURA_PRENSA">🪚 Ralladura por Prensa</option>
+<option value="MANCHA">🟤 Mancha</option>
+<option value="MANCHA_AGUA">💧 Mancha de Agua</option>
+<option value="ARRASTRE">↗️ Arrastre</option>
+                        <option value="PIN_ROTO">🔩 Pin Roto</option>
+<option value="PIN_ALTO">⬆️ Pin Alto</option>
+<option value="PIN_BAJO">⬇️ Pin Bajo</option>
+<option value="PIN_DESVIADO">↗️ Pin Desviado</option>
+<option value="PIN_DOBLADO">〰️ Pin Doblado</option>
+<option value="PIN_BACK">🔄 Pin Back</option>
+			<option value="FRACTURA_CASTING">💥 Fractura en Casting</option>
+<option value="GRIETA">🌋 Grieta</option>
+<option value="GRIETA_RECHUPE">🌋 Grieta por Rechupe</option>
+<option value="RECHUPE_CASTING">🕳️ Rechupe/Casting</option>
+<option value="LAMINACION_CASTING">📄 Laminación/Casting</option>
+<option value="FUGA_CASTING">💨 Fuga/Casting</option>
+			<option value="FALTA_MATERIAL_DESPOSTILLAMIENTO">❌ Falta de Material por Despostillamiento</option>
+<option value="FALTA_MATERIAL_ADHERENCIA">❌ Falta de Material por Adherencia</option>
+<option value="FALTA_MATERIAL_ARRANCAMIENTO">❌ Falta de Material por Arrancamiento</option>
+<option value="FALTA_MATERIAL_ELEVACION">❌ Falta de Material por Elevación</option>
+<option value="FALTA_MATERIAL_OTROS">❌ Falta de Material (Otros)</option>
+<option value="FALTA_MATERIAL_BARRENOS">❌ Falta de Material en Barrenos</option>
+			<option value="MAL_LLENADO">🌊 Mal Llenado</option>
+<option value="ROMPIMIENTO_GALLETA">🍪 Rompimiento de Galleta</option>
+<option value="GALLETA_ANORMAL">🍪 Galleta Anormal (rota o fuera de tamaño)</option>
+<option value="MARCA_GOLPE_CASTING">👊 Marca de Golpe/Casting</option>
+<option value="PUNTO_DURO">🔘 Punto Duro</option>
+<option value="DESPRENDIMIENTOS">🪨 Desprendimientos</option>
+			<option value="GRABADO_BORROSO">🔤 Grabado NG (Borroso)</option>
+<option value="GRABADO_POSICION">🔤 Grabado Posición NG</option>
+<option value="GRABADO_DOBLE">🔤 Grabado NG (Doble)</option>
+<option value="NO_LEER_CODIGO">🔤 No Puede Leer Código</option>
+<option value="OTROS_GRABADO">🔤 Otros Defectos de Grabado</option>
+<option value="PORO_GATE">🕳️ Poro en Gate</option>
+<option value="PORO_OTROS">🕳️ Poro (Otros)</option>
+<option value="PEAK_VACUUM_ERROR">⚙️ Peak Vacuum Pressure Time Error</option>
+<option value="CYCLE_TIME_ERROR">⏱️ Cycle Time Error</option>
+<option value="TEMPERATURA_ANORMAL">🌡️ Temperatura Anormal</option>
+<option value="SQUEEZE_ALTO">⬆️ Squeeze Alto</option>
+<option value="SQUEEZE_BAJO">⬇️ Squeeze Bajo</option>
+<option value="MAL_ACABADO_OPERADOR">👷 Mal Acabado por Operador</option>
+<option value="MAL_ACABADO_OP">👷 Mal Acabado por OP</option>
+<option value="PIEZAS_CAIDAS_ROBOT">🤖 Piezas Caídas por Robot</option>
+<option value="PIEZAS_CAIDAS_OPERADOR">👷 Piezas Caídas por Operador</option>
+<option value="GOLPE_OPERADOR">👷 Golpe en Pieza por Operador</option>
+<option value="MARCA_HERRAMIENTA">🔧 Marca de Herramienta (Robodrill)</option>
+<option value="PIEZAS_DEFORMACION">📏 Piezas con Deformación</option>
+<option value="REBORDE_PLANICIDAD">📏 Reborde o Falta de Material en Zona de Planicidad</option>
+<option value="QW_NG">📊 QW NG</option>
+<option value="OTROS_MOLDE_CASTING">🔧 Otros (Problemas de Molde)/Casting</option>
+<option value="OTRO">📝 Otro (Especificar)</option>
                     </select>
                 </div>
                 
@@ -1821,6 +1900,10 @@ function initializeFirebase() {
   let usuarios = [];
   let currentUser = null;
   let isLoggedIn = false;
+// Variables para retenciones con códigos individuales
+  let retencionScanner = null;
+  let retencionCameraMode = false;
+  let retencionValidatedCodes = [];
 
   // 🔐 ROLES Y PERMISOS (sin cambios)
   const ROLES = {
@@ -7854,112 +7937,27 @@ async function validateRetencion() {
     const fechaProduccion = document.getElementById('retencion-fecha-produccion').value;
     const producto = document.getElementById('retencion-producto').value;
     const molde = document.getElementById('retencion-molde').value;
-    const shotInicial = parseInt(document.getElementById('retencion-shot-inicial').value);
-    const shotFinal = parseInt(document.getElementById('retencion-shot-final').value);
     
-    // Validaciones básicas
-    if (!fechaProduccion || !producto || !molde || !shotInicial || !shotFinal) {
+    if (!fechaProduccion || !producto || !molde) {
         alert('⚠️ Por favor completa todos los campos obligatorios');
         return;
     }
     
-    if (shotInicial > shotFinal) {
-        alert('⚠️ El shot inicial no puede ser mayor al shot final');
+    if (retencionValidatedCodes.length === 0) {
+        alert('⚠️ Debes agregar al menos un código QR válido');
         return;
     }
     
-    if (shotFinal - shotInicial > 500) {
-        alert('⚠️ El rango no puede exceder 500 shots por retención');
-        return;
-    }
+    document.getElementById('create-retencion-btn').disabled = false;
     
-    // Mostrar loading
     const resultDiv = document.getElementById('retencion-validation-result');
-    resultDiv.innerHTML = '<div style="text-align: center; padding: 20px;"><div class="loading-spinner"></div><p>🔍 Validando shots en la base de datos...</p></div>';
-    
-    // Simular validación con la base de datos
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Simular resultados de validación
-    const totalShots = shotFinal - shotInicial + 1;
-    const validShots = Math.floor(totalShots * 0.85); // 85% de shots válidos
-    const invalidShots = totalShots - validShots;
-    
-    // Generar shots válidos e inválidos para simulación
-    validatedShots = [];
-    const invalidShotsList = [];
-    
-    for (let i = shotInicial; i <= shotFinal; i++) {
-        if (Math.random() > 0.15) { // 85% probabilidad de ser válido
-            validatedShots.push({
-                shot: i,
-                codigo: `${producto}-${molde}-${String(i).padStart(6, '0')}`,
-                almacen: getRandomAlmacen(),
-                estado: 'DISPONIBLE'
-            });
-        } else {
-            invalidShotsList.push(i);
-        }
-    }
-    
-    // Mostrar resultado
-    let resultHTML = '<div class="validation-result">';
-    
-    if (validShots === totalShots) {
-        resultHTML += `
-            <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
-                <h4 style="color: #155724; margin: 0;">✅ Validación Exitosa</h4>
-                <p style="margin: 5px 0 0 0;">Todos los ${totalShots} shots están disponibles en la base de datos</p>
-            </div>
-        `;
-        document.getElementById('create-retencion-btn').disabled = false;
-    } else {
-        resultHTML += `
-            <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
-                <h4 style="color: #856404; margin: 0;">⚠️ Validación Parcial</h4>
-                <p style="margin: 5px 0;"><strong>Shots válidos:</strong> ${validShots} de ${totalShots}</p>
-                <p style="margin: 5px 0;"><strong>Shots no encontrados:</strong> ${invalidShots}</p>
-            </div>
-        `;
-        
-        if (invalidShotsList.length > 0) {
-            resultHTML += `
-                <div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
-                    <h5 style="color: #721c24; margin: 0 0 10px 0;">❌ Shots No Encontrados:</h5>
-                    <p style="font-family: monospace; font-size: 12px; margin: 0; word-break: break-all;">${invalidShotsList.join(', ')}</p>
-                </div>
-            `;
-        }
-        
-        document.getElementById('create-retencion-btn').disabled = validShots === 0;
-    }
-    
-    // Mostrar desglose por almacén
-    const almacenBreakdown = {};
-    validatedShots.forEach(shot => {
-        if (!almacenBreakdown[shot.almacen]) {
-            almacenBreakdown[shot.almacen] = 0;
-        }
-        almacenBreakdown[shot.almacen]++;
-    });
-    
-    if (Object.keys(almacenBreakdown).length > 0) {
-        resultHTML += `
-            <div style="background: #e2e3e5; border: 1px solid #d6d8db; padding: 15px; border-radius: 5px;">
-                <h5 style="margin: 0 0 10px 0;">📦 Distribución por Almacén:</h5>
-        `;
-        
-        Object.entries(almacenBreakdown).forEach(([almacen, cantidad]) => {
-            resultHTML += `<p style="margin: 2px 0;">• ${almacen}: ${cantidad} piezas</p>`;
-        });
-        
-        resultHTML += '</div>';
-    }
-    
-    resultHTML += '</div>';
-    resultDiv.innerHTML = resultHTML;
+    resultDiv.innerHTML = `
+        <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px;">
+            <h4 style="color: #155724; margin: 0;">✅ Validación Exitosa</h4>
+            <p style="margin: 5px 0 0 0;">${retencionValidatedCodes.length} códigos QR validados y listos para retención</p>
+        </div>
+    `;
 }
-
 function getRandomAlmacen() {
     const almacenes = ['Almacén Fundición', 'Almacén Producto Terminado', 'Almacén Cuarentena'];
     return almacenes[Math.floor(Math.random() * almacenes.length)];
@@ -7997,6 +7995,10 @@ async function createRetencion() {
         alert('⚠️ Primero debes validar los shots');
         return;
     }
+if (retencionValidatedCodes.length === 0) {
+        alert('⚠️ Primero debes agregar y validar códigos QR');
+        return;
+    }
     
     // Crear objeto de retención
     const retencion = {
@@ -8005,19 +8007,17 @@ async function createRetencion() {
         fechaProduccion: fechaProduccion,
         producto: producto,
         molde: molde,
-        shotInicial: shotInicial,
-        shotFinal: shotFinal,
-        totalShots: validatedShots.length,
+        totalShots: retencionValidatedCodes.length,
         motivo: motivo === 'OTRO' ? motivoOtro : motivo,
         observaciones: observaciones,
         creadoPor: creadoPor,
         estado: 'ACTIVA',
-        shots: [...validatedShots],
+        codigosQR: [...retencionValidatedCodes], // ← CAMBIO PRINCIPAL
         historial: [{
             fecha: new Date().toISOString(),
             accion: 'CREACION',
             responsable: creadoPor,
-            comentario: 'Retención creada'
+            comentario: 'Retención creada con códigos QR individuales'
         }]
     };
     
@@ -8037,6 +8037,8 @@ async function createRetencion() {
     clearRetencionForm();
     generateNewRetencionFolio();
     refreshRetencionList();
+    retencionValidatedCodes = [];
+    updateRetencionCodesDisplay();
 }
 // 🔄 FUNCIÓN refreshRetencionList ACTUALIZADA
 async function refreshRetencionList() {
@@ -8111,6 +8113,8 @@ function clearRetencionForm() {
     document.getElementById('retencion-validation-result').innerHTML = '';
     document.getElementById('create-retencion-btn').disabled = true;
     validatedShots = [];
+    retencionValidatedCodes = [];
+    updateRetencionCodesDisplay();
 }
 function viewRetencionDetails(folio) {
     const retencion = retenciones.find(r => r.folio === folio);
@@ -9838,6 +9842,241 @@ function prefillRetencionForm(analysis) {
     } catch (error) {
         console.error('Error pre-llenando formulario de retención:', error);
         alert('⚠️ Error al pre-llenar formulario, pero puedes completarlo manualmente');
+    }
+}
+// ============ FUNCIONES PARA RETENCIONES CON CÓDIGOS QR ============
+
+// Toggle cámara para retenciones
+function toggleRetencionCameraMode() {
+    retencionCameraMode = !retencionCameraMode;
+    
+    if (retencionCameraMode) {
+        document.getElementById('retencion-camera-mode-text').textContent = '✏️ Entrada Manual';
+        document.getElementById('retencion-camera-section').style.display = 'block';
+        document.getElementById('retencion-manual-entry-section').style.display = 'none';
+        startRetencionCamera();
+    } else {
+        document.getElementById('retencion-camera-mode-text').textContent = '📷 Activar Cámara';
+        document.getElementById('retencion-camera-section').style.display = 'none';
+        document.getElementById('retencion-manual-entry-section').style.display = 'block';
+        stopRetencionCamera();
+    }
+}
+
+// Iniciar cámara para retenciones
+async function startRetencionCamera() {
+    if (typeof QrScanner === 'undefined') {
+        alert('❌ La librería QR Scanner no se cargó correctamente');
+        return;
+    }
+    
+    try {
+        const videoElement = document.getElementById('retencion-camera-video');
+        const statusElement = document.getElementById('retencion-camera-status');
+        
+        if (retencionScanner) {
+            stopRetencionCamera();
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        statusElement.textContent = '📷 Iniciando cámara...';
+        
+        retencionScanner = new QrScanner(
+            videoElement,
+            result => handleRetencionQRScan(result.data),
+            {
+                returnDetailedScanResult: true,
+                highlightScanRegion: true,
+                highlightCodeOutline: true,
+                preferredCamera: 'environment',
+                maxScansPerSecond: 2
+            }
+        );
+        
+        await retencionScanner.start();
+        statusElement.textContent = '📷 Cámara activa - Escanea códigos QR';
+        statusElement.style.background = '#d4edda';
+        statusElement.style.color = '#155724';
+        
+    } catch (error) {
+        console.error('Error cámara retención:', error);
+        alert('❌ Error al acceder a la cámara');
+    }
+}
+
+// Detener cámara para retenciones
+function stopRetencionCamera() {
+    if (retencionScanner) {
+        try {
+            retencionScanner.stop();
+            retencionScanner.destroy();
+            retencionScanner = null;
+        } catch (error) {
+            console.error('Error deteniendo cámara:', error);
+        }
+    }
+}
+
+// Manejar QR escaneado en retenciones
+function handleRetencionQRScan(qrData) {
+    if (qrData && qrData.trim().length > 0) {
+        const code = qrData.trim();
+        document.getElementById('retencion-shot-code').value = code;
+        
+        // Feedback visual
+        const statusElement = document.getElementById('retencion-camera-status');
+        statusElement.style.background = '#d4edda';
+        statusElement.style.color = '#155724';
+        statusElement.textContent = '✅ Código detectado: ' + code.substring(0, 10) + '...';
+        
+        setTimeout(() => {
+            if (retencionScanner) {
+                statusElement.style.background = '#e3f2fd';
+                statusElement.style.color = '#0c5460';
+                statusElement.textContent = '📷 Cámara activa - Escanea códigos QR';
+            }
+        }, 2000);
+    }
+}
+
+// Agregar código a retención (adaptado de addShot)
+async function addCodeToRetencion() {
+    const codeInput = document.getElementById('retencion-shot-code');
+    const code = codeInput.value.toUpperCase().trim();
+    const producto = document.getElementById('retencion-producto').value;
+    const molde = document.getElementById('retencion-molde').value;
+    
+    // Validaciones básicas
+    if (!code) {
+        alert('⚠️ Ingresa un código QR');
+        return;
+    }
+    
+    if (!producto || !molde) {
+        alert('⚠️ Primero selecciona producto y molde');
+        return;
+    }
+    
+    // Validar formato del código
+    const codeData = extractCodeData(code);
+    if (!codeData) {
+        alert('❌ Código QR no válido');
+        return;
+    }
+    
+    // VALIDACIÓN DE MODELO (igual que en scrap)
+    const selectedProduct = producto;
+    const selectedMold = molde;
+    
+    const isSelectedUPR = selectedProduct.includes('301');
+    const isSelectedLWR = selectedProduct.includes('382');
+    const isCodeUPR = codeData.type === 'UPR';
+    const isCodeLWR = codeData.type === 'LWR';
+    
+    if ((isSelectedUPR && !isCodeUPR) || (isSelectedLWR && !isCodeLWR)) {
+        alert(`❌ TIPO INCORRECTO\n\nCódigo: ${codeData.type}\nProducto: ${isSelectedUPR ? 'UPR' : 'LWR'}\n\nVerifica el código o cambia el producto.`);
+        return;
+    }
+    
+    // VALIDACIÓN DE MOLDE
+    if (codeData.molde !== selectedMold) {
+        alert(`❌ MOLDE INCORRECTO\n\nCódigo molde: ${codeData.molde}\nMolde seleccionado: ${selectedMold}`);
+        return;
+    }
+    
+    // VALIDACIÓN EN INVENTARIO (igual que en scrap)
+    const existingItem = inventory.find(item => 
+        item.code === code || 
+        (item.codeData && codeData && item.codeData.disparo === codeData.disparo && item.codeData.molde === molde)
+    );
+    
+    if (!existingItem) {
+        alert(`❌ CÓDIGO NO ENCONTRADO\n\nEl código ${code} no está registrado en el inventario.`);
+        return;
+    }
+    
+    if (existingItem.quantity <= 0) {
+        alert(`❌ SIN INVENTARIO\n\nEl código ${code} tiene cantidad 0.`);
+        return;
+    }
+    
+    // Verificar duplicados
+    const isDuplicate = retencionValidatedCodes.some(item => item.code === code);
+    if (isDuplicate) {
+        alert('⚠️ Este código ya está en la lista');
+        return;
+    }
+    
+    // Agregar código validado
+    const validatedCode = {
+        code: code,
+        codeData: codeData,
+        existingInventory: {
+            id: existingItem.id,
+            currentQuantity: existingItem.quantity,
+            partNumber: existingItem.partNumber,
+            warehouse: existingItem.warehouse
+        },
+        timestamp: new Date().toLocaleString('es-MX'),
+        id: Date.now()
+    };
+    
+    retencionValidatedCodes.push(validatedCode);
+    updateRetencionCodesDisplay();
+    
+    // Limpiar input
+    codeInput.value = '';
+    
+    // Mostrar éxito
+    alert(`✅ Código validado: ${code}\nAlmacén: ${existingItem.warehouse}\nCantidad: ${existingItem.quantity}`);
+}
+
+// Actualizar visualización de códigos de retención
+function updateRetencionCodesDisplay() {
+    const display = document.getElementById('retencion-codes-display');
+    const totalElement = document.getElementById('retencion-total-codes');
+    
+    if (retencionValidatedCodes.length === 0) {
+        display.innerHTML = '<div class="alert alert-info">🔍 Los códigos validados aparecerán aquí</div>';
+        totalElement.textContent = '0';
+        return;
+    }
+    
+    totalElement.textContent = retencionValidatedCodes.length;
+    
+    let html = '<div class="codes-list">';
+    retencionValidatedCodes.forEach(item => {
+        html += `
+            <div class="code-item code-valid">
+                <span>✅ [${item.codeData.type}] ${item.code} - Almacén: ${item.existingInventory.warehouse}</span>
+                <button onclick="removeRetencionCode(${item.id})" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 16px;">🗑️</button>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    display.innerHTML = html;
+}
+
+// Remover código de retención
+function removeRetencionCode(codeId) {
+    if (confirm('¿Eliminar este código de la lista?')) {
+        retencionValidatedCodes = retencionValidatedCodes.filter(item => item.id !== codeId);
+        updateRetencionCodesDisplay();
+    }
+}
+
+// Limpiar códigos de retención
+function clearRetencionCodes() {
+    if (retencionValidatedCodes.length === 0) {
+        alert('ℹ️ No hay códigos para limpiar');
+        return;
+    }
+    
+    if (confirm(`¿Eliminar todos los ${retencionValidatedCodes.length} códigos validados?`)) {
+        retencionValidatedCodes = [];
+        updateRetencionCodesDisplay();
+        alert('🗑️ Lista limpiada');
     }
 }
 </script>
