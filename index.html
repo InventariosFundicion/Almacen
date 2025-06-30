@@ -4709,7 +4709,7 @@ async function clearAllInventoryData() {
         return;
     }
     
-    const confirmClear = confirm('⚠️ ¿Estás COMPLETAMENTE seguro de eliminar TODO el inventario?\n\n🔥 Esta acción es IRREVERSIBLE.');
+    const confirmClear = confirm('⚠️ ¿Estás COMPLETAMENTE seguro de eliminar TODO el inventario Y tarimas?\n\n🔥 Esta acción es IRREVERSIBLE.\n\n📦 Se eliminarán:\n• Todo el inventario\n• Todas las tarimas registradas');
     
     if (confirmClear) {
         const loadingDiv = document.createElement('div');
@@ -4731,6 +4731,7 @@ async function clearAllInventoryData() {
                 const emptyArray = [];
                 const emptyFirebaseObject = arrayToFirebaseObject(emptyArray);
                 await saveToFirebaseHelper('inventory', emptyFirebaseObject);
+		await saveToFirebaseHelper('pallets', emptyFirebaseObject);
                 console.log('✅ Firebase limpiado');
                 
                 const verification = await getFromFirebase('inventory');
@@ -4744,6 +4745,7 @@ async function clearAllInventoryData() {
             
             // 2. Limpiar memoria
             inventory.length = 0;
+	    pallets.length = 0;
             console.log('✅ Array inventory limpiado - Longitud:', inventory.length);
             
             // 🔥 ACTUALIZAR TABLAS INMEDIATAMENTE
@@ -4756,6 +4758,10 @@ async function clearAllInventoryData() {
                 updateDetailedInventory();
                 console.log('✅ Vista detallada actualizada');
             }
+	    if (typeof updatePalletsTable === 'function') {
+                updatePalletsTable();
+                console.log('✅ Tabla de tarimas actualizada');
+            }
             
             // 3. Limpiar localStorage
             ['inventory', 'inventoryBackup', 'lastScan', 'inventoryData'].forEach(key => {
@@ -4767,7 +4773,8 @@ async function clearAllInventoryData() {
             
             document.body.removeChild(loadingDiv);
             
-            alert('🔥 INVENTARIO ELIMINADO COMPLETAMENTE\n\n✅ Firebase: Limpiado\n✅ Memoria: Limpiada\n✅ Tablas: Actualizadas\n\n📊 Total elementos: ' + inventory.length);
+            alert('🔥 INVENTARIO Y TARIMAS ELIMINADOS COMPLETAMENTE\n\n✅ Firebase: Limpiado\n✅ Memoria: Limpiada\n✅ Tablas: Actualizadas\n\n📊 Inventario: ' + inventory.length + ' elementos\n📦 Tarimas: ' + pallets.length + ' elementos');
+
             
             console.log('✅ LIMPIEZA TOTAL COMPLETADA');
             
