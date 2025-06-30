@@ -6766,14 +6766,28 @@ function clearFormFiles(formId) {
         }
     });
 }
-function showEvidenceInfo(reportId) {
+async function showEvidenceInfo(reportId) {
     const reporte = productionReports.find(r => r.id == reportId) || 
                    movementReports.find(m => m.id == reportId);
     
     if (reporte && reporte.evidencia) {
-        const evidencia = reporte.evidencia;
-        const sizeInMB = (evidencia.tamaño / 1024 / 1024).toFixed(2);
-        const fecha = new Date(evidencia.fechaSubida).toLocaleString();
+    let evidencia = reporte.evidencia;
+    
+    // Cargar evidencia por separado si es necesario
+    if (evidencia.hasEvidence && evidencia.evidenceId) {
+        try {
+            const evidenciaData = await loadFromFirebase(`evidencia_${evidencia.evidenceId}`);
+            if (evidenciaData) {
+                evidencia = JSON.parse(evidenciaData);
+            }
+        } catch (error) {
+            console.error('Error cargando evidencia:', error);
+            alert('❌ Error cargando evidencia');
+            return;
+        }
+    }
+    
+    if (evidencia.contenido) {
         
         if (confirm(`📄 Evidencia Adjunta:\n\n• Archivo: ${evidencia.nombre}\n• Tamaño: ${sizeInMB}MB\n• Subido: ${fecha}\n• Versión: v${evidencia.version || 1}\n\n¿Deseas descargar el archivo?`)) {
             const link = document.createElement('a');
