@@ -5808,6 +5808,13 @@ function updateProductionSummary() {
     const summaryDiv = document.getElementById('production-summary');
     const currentShift = document.getElementById('shift').value;
     const today = new Date().toISOString().split('T')[0];
+	// 🔍 DEBUG - Agregar estas líneas temporalmente:
+console.log('🔍 DEBUG updateProductionSummary:');
+console.log('- today calculado:', today);
+console.log('- reportes totales:', productionReports.length);
+productionReports.forEach((r, i) => {
+    console.log(`- reporte ${i}: fecha="${r.fecha}", turno="${r.turno}"`);
+});
     
     // Filtrar reportes del turno actual
     const currentReports = productionReports.filter(r => 
@@ -11428,7 +11435,7 @@ function updateProductionReportsTable() {
         
         return `
             <tr>
-                <td>${new Date(report.fecha).toLocaleDateString()}</td>
+                <td>${report.fecha} (${new Date(report.fecha).toLocaleDateString()})</td>
                 <td><span class="code-badge" style="background: ${report.tipo === 'fundicion' ? '#e74c3c' : '#27ae60'};">${report.tipo.toUpperCase()}</span></td>
                 <td>${report.maquina || 'N/A'}</td>
                 <td style="font-size: 0.8em;">${report.modelo}</td>
