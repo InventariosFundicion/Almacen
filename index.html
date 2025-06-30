@@ -11367,7 +11367,7 @@ async function refreshProductionReports() {
     }
 }
 
-// Filtrar reportes de producción
+// Filtrar reportes de producción (Versión 1.1)
 function filterProductionReports() {
     const dateFrom = document.getElementById('filter-date-from').value;
     const dateTo = document.getElementById('filter-date-to').value;
@@ -11375,11 +11375,14 @@ function filterProductionReports() {
     const machine = document.getElementById('filter-machine').value;
     
     filteredProductionReports = productionReports.filter(report => {
-        // Filtro por fecha desde
-        if (dateFrom && report.fecha < dateFrom) return false;
+        // Normalizar fechas para comparación precisa
+        const reportDate = new Date(report.fecha).toISOString().split('T')[0];
         
-        // Filtro por fecha hasta
-        if (dateTo && report.fecha > dateTo) return false;
+        // Filtro por fecha desde (inclusive)
+        if (dateFrom && reportDate < dateFrom) return false;
+        
+        // Filtro por fecha hasta (inclusive)
+        if (dateTo && reportDate > dateTo) return false;
         
         // Filtro por proceso
         if (process && report.tipo !== process) return false;
