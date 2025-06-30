@@ -1777,13 +1777,137 @@
     </div>
 
     <!-- Resumen de Reportes -->
-    <div class="card">
-        <h3>📊 Reportes del Turno Actual</h3>
-        <div id="production-summary"></div>
-        <div style="text-align: center; margin-top: 20px;">
-            <button class="btn btn-primary" onclick="generateTheoreticalBalance()">🧮 Calcular Balance Teórico</button>
-            <button class="btn btn-info" onclick="showProductionReport()">📋 Ver Reporte Completo</button>
+<div class="card">
+    <h3>📊 Reportes del Turno Actual</h3>
+    <div id="production-summary"></div>
+    <div style="text-align: center; margin-top: 20px;">
+        <button class="btn btn-primary" onclick="generateTheoreticalBalance()">🧮 Calcular Balance Teórico</button>
+        <button class="btn btn-info" onclick="showProductionReport()">📋 Ver Reporte Completo</button>
+    </div>
+</div>
+
+<!-- Nueva sección: Gestión de Reportes -->
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3>📋 Gestión de Reportes de Producción</h3>
+        <button class="btn btn-primary" onclick="refreshProductionReports()">🔄 Actualizar</button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="production-filters" style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+            <div class="form-group">
+                <label>📅 Fecha Desde:</label>
+                <input type="date" id="filter-date-from" onchange="filterProductionReports()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+            </div>
+            <div class="form-group">
+                <label>📅 Fecha Hasta:</label>
+                <input type="date" id="filter-date-to" onchange="filterProductionReports()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+            </div>
+            <div class="form-group">
+                <label>🏭 Proceso:</label>
+                <select id="filter-process" onchange="filterProductionReports()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                    <option value="">Todos los procesos</option>
+                    <option value="fundicion">🔥 Fundición</option>
+                    <option value="acabado">✅ Acabado</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>🔧 Máquina:</label>
+                <select id="filter-machine" onchange="filterProductionReports()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                    <option value="">Todas las máquinas</option>
+                    <option value="30">Máquina #30</option>
+                    <option value="31">Máquina #31</option>
+                    <option value="32">Máquina #32</option>
+                    <option value="33">Máquina #33</option>
+                    <option value="34">Máquina #34</option>
+                </select>
+            </div>
         </div>
+        <div style="text-align: center; margin-top: 15px;">
+            <button class="btn btn-info" onclick="clearProductionFilters()">🗑️ Limpiar Filtros</button>
+            <span id="reports-count" style="margin-left: 20px; font-weight: bold;">0 reportes encontrados</span>
+        </div>
+    </div>
+
+    <!-- Tabla de reportes -->
+    <div style="overflow-x: auto;">
+        <table class="inventory-table">
+            <thead>
+                <tr>
+                    <th>📅 Fecha</th>
+                    <th>🏭 Proceso</th>
+                    <th>🔧 Máquina</th>
+                    <th>📦 Modelo</th>
+                    <th>🔧 Molde</th>
+                    <th>📊 Total</th>
+                    <th>❌ NG</th>
+                    <th>✅ Buenas</th>
+                    <th>🎯 Eficiencia</th>
+                    <th>📄 Evidencia</th>
+                    <th>⚙️ Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="production-reports-tbody">
+                <!-- Se llenará dinámicamente -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal para editar reporte -->
+<div id="edit-report-modal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 600px;">
+        <h3>✏️ Editar Reporte de Producción</h3>
+        
+        <form id="edit-report-form">
+            <input type="hidden" id="edit-report-id">
+            
+            <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group">
+                    <label>📅 Fecha:</label>
+                    <input type="date" id="edit-fecha" required>
+                </div>
+                <div class="form-group">
+                    <label>🔄 Turno:</label>
+                    <select id="edit-turno" required>
+                        <option value="1">Primer Turno (07:00-19:00)</option>
+                        <option value="2">Segundo Turno (19:00-07:00)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group">
+                    <label>🔧 Máquina:</label>
+                    <input type="text" id="edit-maquina" readonly style="background: #e9ecef;">
+                </div>
+                <div class="form-group">
+                    <label>📦 Modelo:</label>
+                    <input type="text" id="edit-modelo" readonly style="background: #e9ecef;">
+                </div>
+            </div>
+            
+            <div class="grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                <div class="form-group">
+                    <label>📊 Total Producido:</label>
+                    <input type="number" id="edit-total" min="0" oninput="calculateEditGoodParts()" required>
+                </div>
+                <div class="form-group">
+                    <label>❌ Cantidad NG:</label>
+                    <input type="number" id="edit-ng" min="0" oninput="calculateEditGoodParts()" required>
+                </div>
+                <div class="form-group">
+                    <label>✅ Piezas Buenas:</label>
+                    <input type="number" id="edit-buenas" readonly style="background: #e9ecef;">
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <button type="button" class="btn btn-success" onclick="saveEditedReport()">💾 Guardar Cambios</button>
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">❌ Cancelar</button>
+            </div>
+        </form>
     </div>
 </div>
 <!-- Theoretical vs Physical Tab -->
@@ -5596,7 +5720,8 @@ async function saveProductionReport(tipo) {
         cantidadNG: parseInt(document.getElementById(prefix + '-ng').value),
         piezasBuenas: parseInt(document.getElementById(prefix + '-buenas').value),
         evidencia: evidencia,
-        timestamp: new Date()
+        timestamp: new Date().toISOString(),
+        createdBy: currentUser.nombre
     };
     
     // Para fundición agregar máquina y molde
@@ -5609,8 +5734,8 @@ async function saveProductionReport(tipo) {
     
     productionReports.push(reporte);
     
-    // 🔥 GUARDAR EN FIREBASE
-    await saveToFirebase('productionReports', JSON.stringify(arrayToFirebaseObject(productionReports)));
+    // 🔥 GUARDAR CON MÉTODO OPTIMIZADO
+    await saveProductionReportsOptimized();
     
     let alertMessage = `✅ Reporte de ${tipo} guardado exitosamente!\n\n📊 Resumen:\n• Modelo: ${reporte.modelo}\n• Máquina: ${reporte.maquina}\n• Piezas buenas: ${reporte.piezasBuenas}\n• Fecha: ${reporte.fecha}\n• Turno: ${reporte.turno}`;
     
@@ -5623,6 +5748,7 @@ async function saveProductionReport(tipo) {
     form.reset();
     clearFormFiles('production-' + tipo + '-form');
     updateProductionSummary();
+    filterProductionReports(); // Actualizar tabla
 }
 
 // 🔄 FUNCIÓN saveMovementReport ACTUALIZADA
@@ -9333,15 +9459,49 @@ function showMainApp() {
             generateNewRetencionFolio();
             refreshRetencionList();
             
-            // EVENT LISTENERS PRINCIPALES
-            // Event listeners para pestañas
-            document.querySelectorAll('.nav-tab').forEach(function(tab) {
-                tab.addEventListener('click', function() {
-                    const tabName = this.getAttribute('data-tab');
-		    console.log('🖱️ Click en pestaña:', tabName); // DEBUG
-                    showTab(tabName);
-                });
-            });
+// EVENT LISTENERS PRINCIPALES
+// Event listeners para pestañas
+document.querySelectorAll('.nav-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+        const tabName = this.getAttribute('data-tab');
+        console.log('🖱️ Click en pestaña:', tabName); // DEBUG
+        showTab(tabName);
+        
+        // 🔥 INICIALIZAR DATOS ESPECÍFICOS POR PESTAÑA
+        if (tabName === 'production') {
+            // Cargar y mostrar tabla de reportes cuando se accede a producción
+            setTimeout(() => {
+                console.log('📊 Inicializando tabla de reportes de producción...');
+                refreshProductionReports();
+            }, 500);
+        } else if (tabName === 'dashboard') {
+            // Actualizar gráficos del dashboard
+            setTimeout(() => {
+                console.log('📈 Actualizando gráficos del dashboard...');
+                initializeDashboardCharts();
+            }, 300);
+        } else if (tabName === 'scrap-retention') {
+            // Asegurar que se muestre la primera sub-pestaña
+            setTimeout(() => {
+                showSubTab('new-scrap');
+                refreshSheetsList();
+            }, 100);
+        } else if (tabName === 'pallets') {
+            // Actualizar tabla de gestión de inventario
+            setTimeout(() => {
+                updatePalletsTable();
+                if (document.getElementById('individual-management')?.classList.contains('active')) {
+                    filterIndividualItems();
+                }
+            }, 100);
+        } else if (tabName === 'inventory') {
+            // Actualizar inventario detallado
+            setTimeout(() => {
+                updateDetailedInventory();
+            }, 100);
+        }
+    });
+});
             
             // Event listeners para QR
             const qrInput = document.getElementById('qr-input');
@@ -10023,7 +10183,7 @@ async function initializeAppData() {
         const physicalVerificationData = await loadFromFirebase('physicalVerification');
         physicalVerification = physicalVerificationData ? JSON.parse(physicalVerificationData) : {};
         
-        const productionReportsData = await loadFromFirebase('productionReports');
+        const productionReportsData = await loadProductionReportsOptimized();('productionReports');
         productionReports = productionReportsData ? firebaseObjectToArray(JSON.parse(productionReportsData)) : [];
         
         const movementReportsData = await loadFromFirebase('movementReports');
@@ -11183,6 +11343,316 @@ function updateDashboard() {
     // Inicializar gráficos si no existen
     if (!statusChart) {
         initializeDashboardCharts();
+    }
+}
+// Variables para gestión de reportes
+let filteredProductionReports = [];
+
+// Refrescar lista de reportes
+async function refreshProductionReports() {
+    try {
+        // Cargar datos más recientes desde Firebase
+        const reportsData = await loadFromFirebase('productionReports');
+        if (reportsData) {
+            productionReports = firebaseObjectToArray(JSON.parse(reportsData));
+        }
+        
+        // Aplicar filtros actuales
+        filterProductionReports();
+        
+        console.log(`✅ ${productionReports.length} reportes cargados`);
+    } catch (error) {
+        console.error('❌ Error cargando reportes:', error);
+        alert('❌ Error cargando reportes: ' + error.message);
+    }
+}
+
+// Filtrar reportes de producción
+function filterProductionReports() {
+    const dateFrom = document.getElementById('filter-date-from').value;
+    const dateTo = document.getElementById('filter-date-to').value;
+    const process = document.getElementById('filter-process').value;
+    const machine = document.getElementById('filter-machine').value;
+    
+    filteredProductionReports = productionReports.filter(report => {
+        // Filtro por fecha desde
+        if (dateFrom && report.fecha < dateFrom) return false;
+        
+        // Filtro por fecha hasta
+        if (dateTo && report.fecha > dateTo) return false;
+        
+        // Filtro por proceso
+        if (process && report.tipo !== process) return false;
+        
+        // Filtro por máquina
+        if (machine && report.maquina && report.maquina.toString() !== machine) return false;
+        
+        return true;
+    });
+    
+    // Ordenar por fecha descendente
+    filteredProductionReports.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    
+    // Actualizar tabla
+    updateProductionReportsTable();
+    
+    // Actualizar contador
+    document.getElementById('reports-count').textContent = `${filteredProductionReports.length} reportes encontrados`;
+}
+
+// Actualizar tabla de reportes
+function updateProductionReportsTable() {
+    const tbody = document.getElementById('production-reports-tbody');
+    
+    if (filteredProductionReports.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; padding: 20px;">📋 No hay reportes que coincidan con los filtros</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = filteredProductionReports.map(report => {
+        const efficiency = report.cantidadTotal > 0 ? Math.round((report.piezasBuenas / report.cantidadTotal) * 100) : 0;
+        const efficiencyColor = efficiency >= 95 ? '#27ae60' : efficiency >= 85 ? '#f39c12' : '#e74c3c';
+        
+        const evidenceIcon = report.evidencia ? 
+            `<button onclick="viewReportEvidence(${report.id})" class="btn btn-sm" style="background: #28a745; color: white;">📄</button>` : 
+            '<span style="color: #6c757d;">Sin evidencia</span>';
+        
+        const canManage = currentUser && (currentUser.rol === 'ADMIN' || currentUser.rol === 'SUPERVISOR');
+        const actionsHTML = canManage ? `
+            <button onclick="editProductionReport(${report.id})" class="btn btn-warning btn-sm">✏️ Editar</button>
+            <button onclick="deleteProductionReport(${report.id})" class="btn btn-danger btn-sm" style="margin-left: 5px;">🗑️ Eliminar</button>
+        ` : '<span style="color: #6c757d;">Sin permisos</span>';
+        
+        return `
+            <tr>
+                <td>${new Date(report.fecha).toLocaleDateString()}</td>
+                <td><span class="code-badge" style="background: ${report.tipo === 'fundicion' ? '#e74c3c' : '#27ae60'};">${report.tipo.toUpperCase()}</span></td>
+                <td>${report.maquina || 'N/A'}</td>
+                <td style="font-size: 0.8em;">${report.modelo}</td>
+                <td>${report.molde || 'N/A'}</td>
+                <td style="text-align: center;">${report.cantidadTotal}</td>
+                <td style="text-align: center; color: #e74c3c;">${report.cantidadNG}</td>
+                <td style="text-align: center; color: #27ae60; font-weight: bold;">${report.piezasBuenas}</td>
+                <td style="text-align: center; color: ${efficiencyColor}; font-weight: bold;">${efficiency}%</td>
+                <td style="text-align: center;">${evidenceIcon}</td>
+                <td>${actionsHTML}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Limpiar filtros
+function clearProductionFilters() {
+    document.getElementById('filter-date-from').value = '';
+    document.getElementById('filter-date-to').value = '';
+    document.getElementById('filter-process').value = '';
+    document.getElementById('filter-machine').value = '';
+    filterProductionReports();
+}
+
+// Editar reporte de producción
+function editProductionReport(reportId) {
+    const report = productionReports.find(r => r.id === reportId);
+    if (!report) return;
+    
+    // Llenar formulario de edición
+    document.getElementById('edit-report-id').value = report.id;
+    document.getElementById('edit-fecha').value = report.fecha;
+    document.getElementById('edit-turno').value = report.turno;
+    document.getElementById('edit-maquina').value = report.maquina || 'N/A';
+    document.getElementById('edit-modelo').value = report.modelo;
+    document.getElementById('edit-total').value = report.cantidadTotal;
+    document.getElementById('edit-ng').value = report.cantidadNG;
+    document.getElementById('edit-buenas').value = report.piezasBuenas;
+    
+    // Mostrar modal
+    document.getElementById('edit-report-modal').style.display = 'flex';
+}
+
+// Calcular piezas buenas en edición
+function calculateEditGoodParts() {
+    const total = parseInt(document.getElementById('edit-total').value) || 0;
+    const ng = parseInt(document.getElementById('edit-ng').value) || 0;
+    const buenas = Math.max(0, total - ng);
+    
+    document.getElementById('edit-buenas').value = buenas;
+}
+
+// Guardar reporte editado
+async function saveEditedReport() {
+    try {
+        const reportId = parseInt(document.getElementById('edit-report-id').value);
+        const reportIndex = productionReports.findIndex(r => r.id === reportId);
+        
+        if (reportIndex === -1) {
+            alert('❌ Reporte no encontrado');
+            return;
+        }
+        
+        // Actualizar datos
+        productionReports[reportIndex].fecha = document.getElementById('edit-fecha').value;
+        productionReports[reportIndex].turno = document.getElementById('edit-turno').value;
+        productionReports[reportIndex].cantidadTotal = parseInt(document.getElementById('edit-total').value);
+        productionReports[reportIndex].cantidadNG = parseInt(document.getElementById('edit-ng').value);
+        productionReports[reportIndex].piezasBuenas = parseInt(document.getElementById('edit-buenas').value);
+        productionReports[reportIndex].lastModified = new Date().toISOString();
+        productionReports[reportIndex].modifiedBy = currentUser.nombre;
+        
+        // Guardar en Firebase de manera optimizada
+        await saveProductionReportsOptimized();
+        
+        alert('✅ Reporte actualizado correctamente');
+        closeEditModal();
+        filterProductionReports();
+        updateProductionSummary();
+        
+    } catch (error) {
+        console.error('❌ Error guardando reporte:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+// Eliminar reporte
+async function deleteProductionReport(reportId) {
+    if (!confirm('⚠️ ¿Estás seguro de eliminar este reporte?\n\nEsta acción no se puede deshacer.')) {
+        return;
+    }
+    
+    try {
+        const reportIndex = productionReports.findIndex(r => r.id === reportId);
+        if (reportIndex === -1) {
+            alert('❌ Reporte no encontrado');
+            return;
+        }
+        
+        // Eliminar del array
+        productionReports.splice(reportIndex, 1);
+        
+        // Guardar en Firebase de manera optimizada
+        await saveProductionReportsOptimized();
+        
+        alert('✅ Reporte eliminado correctamente');
+        filterProductionReports();
+        updateProductionSummary();
+        
+    } catch (error) {
+        console.error('❌ Error eliminando reporte:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+// Ver evidencia de reporte
+function viewReportEvidence(reportId) {
+    const report = productionReports.find(r => r.id === reportId);
+    if (!report || !report.evidencia) {
+        alert('❌ No hay evidencia disponible para este reporte');
+        return;
+    }
+    
+    const evidencia = report.evidencia;
+    const sizeInMB = (evidencia.tamaño / 1024 / 1024).toFixed(2);
+    const fecha = new Date(evidencia.fecha).toLocaleString();
+    
+    if (confirm(`📄 Evidencia del Reporte:\n\n• Archivo: ${evidencia.nombre}\n• Tamaño: ${sizeInMB}MB\n• Subido: ${fecha}\n\n¿Deseas descargar el archivo?`)) {
+        const link = document.createElement('a');
+        link.href = evidencia.contenido;
+        link.download = evidencia.nombre;
+        link.style.display = 'none';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
+
+// Cerrar modal de edición
+function closeEditModal() {
+    document.getElementById('edit-report-modal').style.display = 'none';
+}
+
+// ============ SOLUCIÓN AL ERROR DE FIREBASE ============
+
+// Función optimizada para guardar reportes de producción
+async function saveProductionReportsOptimized() {
+    try {
+        // Dividir reportes en chunks más pequeños si hay muchos
+        const chunkSize = 50; // 50 reportes por chunk
+        const chunks = [];
+        
+        for (let i = 0; i < productionReports.length; i += chunkSize) {
+            chunks.push(productionReports.slice(i, i + chunkSize));
+        }
+        
+        // Guardar chunks por separado
+        for (let i = 0; i < chunks.length; i++) {
+            const chunkData = arrayToFirebaseObject(chunks[i]);
+            await saveToFirebase(`productionReports_chunk_${i}`, JSON.stringify(chunkData));
+        }
+        
+        // Guardar metadata sobre los chunks
+        await saveToFirebase('productionReports_meta', JSON.stringify({
+            totalChunks: chunks.length,
+            totalReports: productionReports.length,
+            lastUpdate: new Date().toISOString()
+        }));
+        
+        console.log(`✅ Reportes guardados en ${chunks.length} chunks`);
+        
+    } catch (error) {
+        console.error('❌ Error guardando reportes optimizado:', error);
+        // Fallback: intentar guardar solo los últimos 20 reportes
+        try {
+            const recentReports = productionReports.slice(-20);
+            await saveToFirebase('productionReports_recent', JSON.stringify(arrayToFirebaseObject(recentReports)));
+            console.log('⚠️ Guardados solo los últimos 20 reportes como respaldo');
+        } catch (fallbackError) {
+            console.error('❌ Error en respaldo:', fallbackError);
+            throw new Error('No se pudieron guardar los reportes. Datos demasiado grandes.');
+        }
+    }
+}
+
+// Función optimizada para cargar reportes de producción
+async function loadProductionReportsOptimized() {
+    try {
+        console.log('📊 Cargando reportes de producción...');
+        
+        // Intentar cargar metadata
+        const metaData = await loadFromFirebase('productionReports_meta');
+        
+        if (metaData) {
+            const meta = JSON.parse(metaData);
+            console.log(`📋 Encontrados ${meta.totalChunks} chunks con ${meta.totalReports} reportes`);
+            
+            // Cargar todos los chunks
+            const allReports = [];
+            for (let i = 0; i < meta.totalChunks; i++) {
+                const chunkData = await loadFromFirebase(`productionReports_chunk_${i}`);
+                if (chunkData) {
+                    const chunk = firebaseObjectToArray(JSON.parse(chunkData));
+                    allReports.push(...chunk);
+                }
+            }
+            
+            productionReports = allReports;
+            console.log(`✅ ${productionReports.length} reportes cargados desde chunks`);
+            
+        } else {
+            // Fallback: cargar de la forma antigua
+            console.log('⚠️ No se encontró metadata, intentando carga tradicional...');
+            const reportsData = await loadFromFirebase('productionReports');
+            if (reportsData) {
+                productionReports = firebaseObjectToArray(JSON.parse(reportsData));
+                console.log(`✅ ${productionReports.length} reportes cargados (modo compatibilidad)`);
+            } else {
+                productionReports = [];
+                console.log('📭 No hay reportes de producción');
+            }
+        }
+        
+    } catch (error) {
+        console.error('❌ Error cargando reportes:', error);
+        productionReports = [];
     }
 }
 </script>
