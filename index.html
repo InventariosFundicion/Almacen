@@ -5734,8 +5734,14 @@ async function saveProductionReport(tipo) {
     
     productionReports.push(reporte);
     
-    // 🔥 GUARDAR CON MÉTODO OPTIMIZADO
-    await saveProductionReportsOptimized();
+   // 🔥 GUARDAR EVIDENCIA POR SEPARADO
+if (reporte.evidencia) {
+    await saveToFirebase(`evidencia_${reporte.id}`, JSON.stringify(reporte.evidencia));
+    reporte.evidencia = { hasEvidence: true, evidenceId: reporte.id }; // Solo guardar referencia
+}
+
+// 🔥 GUARDAR REPORTES SIN EVIDENCIA PESADA
+await saveToFirebase('productionReports', JSON.stringify(arrayToFirebaseObject(productionReports)));
     
     let alertMessage = `✅ Reporte de ${tipo} guardado exitosamente!\n\n📊 Resumen:\n• Modelo: ${reporte.modelo}\n• Máquina: ${reporte.maquina}\n• Piezas buenas: ${reporte.piezasBuenas}\n• Fecha: ${reporte.fecha}\n• Turno: ${reporte.turno}`;
     
