@@ -1731,6 +1731,7 @@
         </table>
     </div>
 </div>
+</div>
 
 <!-- Gestionar Hojas -->
 <div id="manage-sheets" class="sub-tab-content">
@@ -1822,6 +1823,7 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 
 <!-- Reportes -->
@@ -7898,26 +7900,23 @@ async function generateNewRetencionFolio() {
     document.getElementById('retencion-folio').value = folio;
 }
 function updateRetencionProductInfo() {
-    const producto = document.getElementById('retencion-producto').value;
+    const producto = document.getElementById('retencion-producto');
     const moldeSelect = document.getElementById('retencion-molde');
+    
+    if (!producto || !moldeSelect) {
+        console.warn('⚠️ Elementos de producto/molde no encontrados');
+        return;
+    }
+    
+    const productoValue = producto.value;
     
     // Limpiar opciones existentes
     moldeSelect.innerHTML = '<option value="">Seleccionar molde...</option>';
     
-    console.log('Producto seleccionado:', producto); // Para debug
-    
-    if (producto) {
-        // Agregar el sufijo -FUN al producto para buscar en MODEL_MOLDS
-        const productoKey = producto + '-FUN';
-        
-        console.log('Buscando en MODEL_MOLDS con clave:', productoKey); // Para debug
-        
-        // Obtener moldes de la constante MODEL_MOLDS
+    if (productoValue) {
+        const productoKey = productoValue + '-FUN';
         const moldes = MODEL_MOLDS[productoKey] || [];
         
-        console.log('Moldes encontrados:', moldes); // Para debug
-        
-        // Agregar opciones de moldes
         moldes.forEach(molde => {
             const option = document.createElement('option');
             option.value = molde;
@@ -7925,7 +7924,6 @@ function updateRetencionProductInfo() {
             moldeSelect.appendChild(option);
         });
         
-        // Si no hay moldes disponibles
         if (moldes.length === 0) {
             moldeSelect.innerHTML += '<option value="">No hay moldes disponibles para este producto</option>';
         }
@@ -7958,18 +7956,13 @@ async function validateRetencion() {
         </div>
     `;
 }
-function getRandomAlmacen() {
-    const almacenes = ['Almacén Fundición', 'Almacén Producto Terminado', 'Almacén Cuarentena'];
-    return almacenes[Math.floor(Math.random() * almacenes.length)];
-}
 // 🔄 FUNCIÓN createRetencion ACTUALIZADA
 async function createRetencion() {
     const folio = document.getElementById('retencion-folio').value;
     const fechaProduccion = document.getElementById('retencion-fecha-produccion').value;
     const producto = document.getElementById('retencion-producto').value;
     const molde = document.getElementById('retencion-molde').value;
-    const shotInicial = parseInt(document.getElementById('retencion-shot-inicial').value);
-    const shotFinal = parseInt(document.getElementById('retencion-shot-final').value);
+    const totalCodes = retencionValidatedCodes.length;
     const motivo = document.getElementById('retencion-motivo').value;
     const motivoOtro = document.getElementById('retencion-motivo-otro').value;
     const observaciones = document.getElementById('retencion-observaciones').value;
@@ -7995,7 +7988,7 @@ async function createRetencion() {
         alert('⚠️ Primero debes validar los shots');
         return;
     }
-if (retencionValidatedCodes.length === 0) {
+    if (retencionValidatedCodes.length === 0) {
         alert('⚠️ Primero debes agregar y validar códigos QR');
         return;
     }
@@ -8100,21 +8093,67 @@ function getMotivoTexto(motivo) {
 }
 
 function clearRetencionForm() {
-    document.getElementById('retencion-fecha-produccion').value = '';
-    document.getElementById('retencion-creado-por').value = '';
-    document.getElementById('retencion-producto').value = '';
-    document.getElementById('retencion-molde').innerHTML = '<option value="">Primero selecciona un producto...</option>';
-    document.getElementById('retencion-shot-inicial').value = '';
-    document.getElementById('retencion-shot-final').value = '';
-    document.getElementById('retencion-motivo').value = '';
-    document.getElementById('retencion-motivo-otro').value = '';
-    document.getElementById('retencion-observaciones').value = '';
-    document.getElementById('retencion-otro-motivo').style.display = 'none';
-    document.getElementById('retencion-validation-result').innerHTML = '';
-    document.getElementById('create-retencion-btn').disabled = true;
-    validatedShots = [];
+    // Elementos básicos del formulario
+    const elements = {
+        'retencion-fecha-produccion': '',
+        'retencion-creado-por': '',
+        'retencion-producto': '',
+        'retencion-shot-code': '', // ← NUEVO elemento
+        'retencion-motivo': '',
+        'retencion-motivo-otro': '',
+        'retencion-observaciones': ''
+    };
+    
+    // Limpiar campos que existen
+    Object.keys(elements).forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.value = elements[id];
+        } else {
+            console.warn(`⚠️ Elemento no encontrado: ${id}`);
+        }
+    });
+    
+    // Limpiar molde (select especial)
+    const moldeSelect = document.getElementById('retencion-molde');
+    if (moldeSelect) {
+        moldeSelect.innerHTML = '<option value="">Primero selecciona un producto...</option>';
+    }
+    
+    // Ocultar campo "otro motivo"
+    const otroMotivoDiv = document.getElementById('retencion-otro-motivo');
+    if (otroMotivoDiv) {
+        otroMotivoDiv.style.display = 'none';
+    }
+    
+    // Limpiar resultado de validación
+    const validationResult = document.getElementById('retencion-validation-result');
+    if (validationResult) {
+        validationResult.innerHTML = '';
+    }
+    
+    // Deshabilitar botón de crear
+    const createBtn = document.getElementById('create-retencion-btn');
+    if (createBtn) {
+        createBtn.disabled = true;
+    }
+    
+    // Limpiar códigos QR
     retencionValidatedCodes = [];
     updateRetencionCodesDisplay();
+    
+    // Detener cámara si está activa
+    if (retencionScanner) {
+        stopRetencionCamera();
+        retencionCameraMode = false;
+        const cameraText = document.getElementById('retencion-camera-mode-text');
+        const cameraSection = document.getElementById('retencion-camera-section');
+        const manualSection = document.getElementById('retencion-manual-entry-section');
+        
+        if (cameraText) cameraText.textContent = '📷 Activar Cámara';
+        if (cameraSection) cameraSection.style.display = 'none';
+        if (manualSection) manualSection.style.display = 'block';
+    }
 }
 function viewRetencionDetails(folio) {
     const retencion = retenciones.find(r => r.folio === folio);
