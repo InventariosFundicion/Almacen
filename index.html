@@ -720,8 +720,8 @@
         <div class="nav-tabs">
             <button class="nav-tab active" data-tab="dashboard">📊 Dashboard</button>
             <button class="nav-tab" data-tab="scanner">📱 Escáner QR</button>
-            <button class="nav-tab" data-tab="inventory">📋 Inventario</button>
-            <button class="nav-tab" data-tab="pallets">📦 Tarimas</button>
+            <button class="nav-tab" data-tab="inventory">📋 Información de Inventario</button>
+            <button class="nav-tab" data-tab="pallets">⚙️ Gestión de Inventario</button>
             <button class="nav-tab" data-tab="production">🏭 Producción</button>
             <button class="nav-tab" data-tab="theoretical">📊 Teórico vs Físico</button>
 	    <button class="nav-tab" data-tab="scrap-retention"> ♻️ Retención y Scrap</button>
@@ -970,26 +970,109 @@
 </div>
 
 <!-- Pallets Tab -->
+<!-- Gestión de Inventario Tab -->
 <div id="pallets" class="tab-content">
-    <h2>📦 Gestión de Tarimas</h2>
+    <h2>⚙️ Gestión de Inventario</h2>
 
-    <div class="card">
-        <h3>📋 Registro de Tarimas</h3>
-        <table class="inventory-table">
-            <thead>
-                <tr>
-                    <th>ID Tarima</th>
-                    <th>ID Original</th>
-                    <th>Estado</th>
-                    <th>Tipo</th>
-                    <th>Piezas</th>
-                    <th>Almacén</th>
-                    <th>Fecha</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="pallets-tbody"></tbody>
-        </table>
+    <!-- Sub-navegación -->
+    <div class="sub-nav-tabs">
+        <button class="sub-nav-tab active" onclick="showInventorySubTab('tarimas-management')">📦 Gestionar Tarimas</button>
+        <button class="sub-nav-tab" onclick="showInventorySubTab('individual-management')">🔍 Gestionar Códigos Individuales</button>
+    </div>
+
+    <!-- Gestión de Tarimas (funcionalidad actual) -->
+    <div id="tarimas-management" class="sub-tab-content active">
+        <h3>📦 Gestión de Tarimas Completas</h3>
+        <div class="card">
+            <h4>📋 Registro de Tarimas</h4>
+            <table class="inventory-table">
+                <thead>
+                    <tr>
+                        <th>ID Tarima</th>
+                        <th>ID Original</th>
+                        <th>Estado</th>
+                        <th>Tipo</th>
+                        <th>Piezas</th>
+                        <th>Almacén</th>
+                        <th>Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="pallets-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Gestión de Códigos Individuales (nueva funcionalidad) -->
+    <div id="individual-management" class="sub-tab-content">
+        <h3>🔍 Gestión de Códigos QR Individuales</h3>
+        
+        <!-- Filtros y búsqueda -->
+        <div class="card">
+            <h4>🔍 Filtros de Búsqueda</h4>
+            <div class="grid" style="grid-template-columns: repeat(4, 1fr);">
+                <div class="form-group">
+                    <label>🔤 Buscar por Código:</label>
+                    <input type="text" id="search-individual-code" placeholder="Ej: P5QF4181O1PX2" oninput="filterIndividualItems()">
+                </div>
+                <div class="form-group">
+                    <label>📦 Tipo:</label>
+                    <select id="filter-individual-type" onchange="filterIndividualItems()">
+                        <option value="">Todos</option>
+                        <option value="UPR">🔺 UPR</option>
+                        <option value="LWR">🔻 LWR</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>🏪 Almacén:</label>
+                    <select id="filter-individual-warehouse" onchange="filterIndividualItems()">
+                        <option value="">Todos</option>
+                        <option value="fundidos">🔥 Fundidos</option>
+                        <option value="acabados">✅ Acabados</option>
+                        <option value="envios">📦 Envíos</option>
+                        <option value="retenciones">⏸️ Retenciones</option>
+                        <option value="scrap">♻️ Scrap</option>
+                        <option value="pruebas">🧪 Pruebas</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>📊 Estado:</label>
+                    <select id="filter-individual-state" onchange="filterIndividualItems()">
+                        <option value="">Todos</option>
+                        <option value="FUNDIDOS">🔥 Fundidos</option>
+                        <option value="ACABADOS">✅ Acabados</option>
+                        <option value="SCRAP">♻️ Scrap</option>
+                        <option value="RETENIDO">⏸️ Retenido</option>
+                        <option value="ENVIADO">📦 Enviado</option>
+                        <option value="EN_PRUEBAS">🧪 En Pruebas</option>
+                    </select>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 15px;">
+                <button class="btn btn-info" onclick="clearIndividualFilters()">🔄 Limpiar Filtros</button>
+                <span id="individual-results-count" style="margin-left: 20px; font-weight: bold;">0 elementos encontrados</span>
+            </div>
+        </div>
+
+        <!-- Tabla de códigos individuales -->
+        <div class="card">
+            <h4>📋 Códigos QR Individuales</h4>
+            <table class="inventory-table">
+                <thead>
+                    <tr>
+                        <th>Código QR</th>
+                        <th>Tipo</th>
+                        <th>Part Number</th>
+                        <th>Estado</th>
+                        <th>Almacén</th>
+                        <th>Cantidad</th>
+                        <th>Último Movimiento</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="individual-codes-tbody"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -4917,26 +5000,32 @@ function toggleModelSection(sectionId) {
         toggleIcon.textContent = '▶';
     }
 }
-        function updatePalletsTable() {
-            const tbody = document.getElementById('pallets-tbody');
-            tbody.innerHTML = '';
-            
-            pallets.forEach(function(pallet) {
-                const row = document.createElement('tr');
-                row.innerHTML = '<td><strong>' + pallet.systemId + '</strong></td>' +
-                    '<td>' + pallet.originalId + '</td>' +
-                    '<td><span class="code-badge" style="background: ' + (pallet.state === 'fundidos' ? '#e74c3c' : '#27ae60') + ';">' + pallet.state.toUpperCase() + '</span></td>' +
-                    '<td><span class="code-badge" style="background: #17a2b8;">' + pallet.type + '</span></td>' +
-                    '<td style="text-align: center;">' + pallet.codesCount + '</td>' +
-                    '<td>' + getWarehouseName(pallet.warehouse) + '</td>' +
-                    '<td>' + (pallet.createdDate ? new Date(pallet.createdDate).toLocaleDateString() : 'N/A') + '</td>' +
-                    '<td>' +
-                    '<button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;" onclick="movePallet(\'' + pallet.systemId + '\')">📦 Mover</button>' +
-                    '<button class="btn btn-info" style="padding: 5px 10px; font-size: 12px;" onclick="viewPalletDetails(\'' + pallet.systemId + '\')">👁️ Ver</button>' +
-                    '</td>';
-                tbody.appendChild(row);
-            });
-        }
+function updatePalletsTable() {
+    const tbody = document.getElementById('pallets-tbody');
+    tbody.innerHTML = '';
+    
+    pallets.forEach(function(pallet) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td><strong>' + pallet.systemId + '</strong></td>' +
+            '<td>' + pallet.originalId + '</td>' +
+            '<td><span class="code-badge" style="background: ' + (pallet.state === 'fundidos' ? '#e74c3c' : '#27ae60') + ';">' + pallet.state.toUpperCase() + '</span></td>' +
+            '<td><span class="code-badge" style="background: #17a2b8;">' + pallet.type + '</span></td>' +
+            '<td style="text-align: center;">' + pallet.codesCount + '</td>' +
+            '<td>' + getWarehouseName(pallet.warehouse) + '</td>' +
+            '<td>' + (pallet.createdDate ? new Date(pallet.createdDate).toLocaleDateString() : 'N/A') + '</td>' +
+            '<td>' +
+            '<button class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;" onclick="movePallet(\'' + pallet.systemId + '\')">📦 Mover</button>' +
+            '<button class="btn btn-info" style="padding: 5px 10px; font-size: 12px;" onclick="viewPalletDetails(\'' + pallet.systemId + '\')">👁️ Ver</button>' +
+            '</td>';
+        tbody.appendChild(row);
+    });
+    
+    // Si estamos en la sub-pestaña individual, actualizar también
+    const individualTab = document.getElementById('individual-management');
+    if (individualTab && individualTab.classList.contains('active')) {
+        filterIndividualItems();
+    }
+}
 // 🔄 DOMCONTENTLOADED PRINCIPAL - VERSIÓN CORREGIDA SIN DUPLICACIONES
 document.addEventListener('DOMContentLoaded', async function() {
     // ⚠️ AGREGAR ESTA VERIFICACIÓN AL INICIO:
@@ -10121,6 +10210,213 @@ function clearRetencionCodes() {
         updateRetencionCodesDisplay();
         alert('🗑️ Lista limpiada');
     }
+}
+// Función para cambiar entre sub-pestañas de gestión de inventario
+function showInventorySubTab(subTabName) {
+    // Ocultar todas las sub-pestañas
+    document.querySelectorAll('#pallets .sub-tab-content').forEach(tab => {
+        tab.style.display = 'none';
+        tab.classList.remove('active');
+    });
+    
+    // Remover active de todos los botones
+    document.querySelectorAll('#pallets .sub-nav-tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Mostrar la sub-pestaña seleccionada
+    const targetTab = document.getElementById(subTabName);
+    if (targetTab) {
+        targetTab.style.display = 'block';
+        targetTab.classList.add('active');
+    }
+    
+    // Activar el botón correspondiente
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
+    
+    // Cargar datos según la pestaña
+    if (subTabName === 'individual-management') {
+        loadIndividualCodesTable();
+    }
+}
+
+// Función para cargar tabla de códigos individuales
+function loadIndividualCodesTable() {
+    filterIndividualItems();
+}
+
+// Función para filtrar elementos individuales
+function filterIndividualItems() {
+    const searchCode = document.getElementById('search-individual-code').value.toLowerCase();
+    const filterType = document.getElementById('filter-individual-type').value;
+    const filterWarehouse = document.getElementById('filter-individual-warehouse').value;
+    const filterState = document.getElementById('filter-individual-state').value;
+    
+    let filteredInventory = inventory.filter(item => item.quantity > 0);
+    
+    // Aplicar filtros
+    if (searchCode) {
+        filteredInventory = filteredInventory.filter(item => 
+            item.code.toLowerCase().includes(searchCode)
+        );
+    }
+    if (filterType) {
+        filteredInventory = filteredInventory.filter(item => item.type === filterType);
+    }
+    if (filterWarehouse) {
+        filteredInventory = filteredInventory.filter(item => item.warehouse === filterWarehouse);
+    }
+    if (filterState) {
+        filteredInventory = filteredInventory.filter(item => item.state === filterState);
+    }
+    
+    // Actualizar contador
+    document.getElementById('individual-results-count').textContent = `${filteredInventory.length} elementos encontrados`;
+    
+    // Generar tabla
+    const tbody = document.getElementById('individual-codes-tbody');
+    if (filteredInventory.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">🔍 No se encontraron códigos con los filtros aplicados</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = filteredInventory.map(item => `
+        <tr>
+            <td style="font-family: monospace; font-size: 0.9em;">${item.code}</td>
+            <td><span class="code-badge" style="background: ${item.type === 'UPR' ? '#007bff' : '#28a745'};">${item.type}</span></td>
+            <td>${item.partNumber}</td>
+            <td><span class="code-badge" style="background: ${getStateColor(item.state)};">${item.state}</span></td>
+            <td>${getWarehouseName(item.warehouse)}</td>
+            <td style="text-align: center; font-weight: bold;">${item.quantity}</td>
+            <td style="font-size: 0.8em;">${formatLastMovement(item.lastMovement)}</td>
+            <td>
+                <button class="btn btn-warning btn-sm" onclick="moveIndividualCode('${item.code}')">📦 Mover</button>
+                <button class="btn btn-info btn-sm" onclick="viewIndividualDetails('${item.code}')">👁️ Ver</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Función para limpiar filtros
+function clearIndividualFilters() {
+    document.getElementById('search-individual-code').value = '';
+    document.getElementById('filter-individual-type').value = '';
+    document.getElementById('filter-individual-warehouse').value = '';
+    document.getElementById('filter-individual-state').value = '';
+    filterIndividualItems();
+}
+
+// Función para obtener color del estado
+function getStateColor(state) {
+    const colors = {
+        'FUNDIDOS': '#e74c3c',
+        'ACABADOS': '#27ae60',
+        'SCRAP': '#95a5a6',
+        'RETENIDO': '#f39c12',
+        'ENVIADO': '#3498db',
+        'EN_PRUEBAS': '#9b59b6'
+    };
+    return colors[state] || '#6c757d';
+}
+
+// Función para mover código individual
+function moveIndividualCode(code) {
+    const item = inventory.find(i => i.code === code);
+    if (!item) return;
+    
+    // Similar a movePallet pero para códigos individuales
+    const modalHtml = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;" id="moveIndividualModal">
+            <div style="background: white; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%;">
+                <h3>📦 Mover Código Individual</h3>
+                <p><strong>Código:</strong> ${code}</p>
+                <p><strong>Estado actual:</strong> ${getWarehouseName(item.warehouse)}</p>
+                
+                <div style="margin: 20px 0;">
+                    <label style="display: block; margin-bottom: 10px; font-weight: bold;">Selecciona el almacén destino:</label>
+                    <div class="warehouse-selector" id="move-individual-selector">
+                        <div class="warehouse-btn" data-warehouse="fundidos">🔥 FUNDIDOS</div>
+                        <div class="warehouse-btn" data-warehouse="acabados">✅ ACABADOS</div>
+                        <div class="warehouse-btn" data-warehouse="scrap">♻️ SCRAP</div>
+                        <div class="warehouse-btn" data-warehouse="retenciones">⏸️ RETENCIONES</div>
+                        <div class="warehouse-btn" data-warehouse="envios">📦 ENVÍOS</div>
+                        <div class="warehouse-btn" data-warehouse="pruebas">🧪 PRUEBAS</div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 25px;">
+                    <button class="btn btn-success" onclick="confirmIndividualMove('${code}')" id="confirmIndividualMoveBtn" disabled>✅ Confirmar Movimiento</button>
+                    <button class="btn btn-danger" onclick="closeIndividualMoveModal()" style="margin-left: 10px;">❌ Cancelar</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Event listener para selector
+    document.getElementById('move-individual-selector').addEventListener('click', function(e) {
+        if (e.target.classList.contains('warehouse-btn')) {
+            this.querySelectorAll('.warehouse-btn').forEach(btn => btn.classList.remove('selected'));
+            e.target.classList.add('selected');
+            document.getElementById('confirmIndividualMoveBtn').disabled = false;
+            window.selectedMoveWarehouse = e.target.dataset.warehouse;
+        }
+    });
+}
+
+// Función para confirmar movimiento individual
+async function confirmIndividualMove(code) {
+    if (!window.selectedMoveWarehouse) return;
+    
+    const item = inventory.find(i => i.code === code);
+    const newWarehouse = window.selectedMoveWarehouse;
+    
+    // Actualizar item
+    item.warehouse = newWarehouse;
+    item.state = newWarehouse === 'fundidos' ? 'FUNDIDOS' : 
+                 newWarehouse === 'acabados' ? 'ACABADOS' : 
+                 newWarehouse === 'scrap' ? 'SCRAP' :
+                 newWarehouse === 'retenciones' ? 'RETENIDO' :
+                 newWarehouse === 'envios' ? 'ENVIADO' :
+                 'EN_PRUEBAS';
+    item.lastMovement = new Date();
+    
+    // Guardar en Firebase
+    await saveToFirebase('inventory', JSON.stringify(arrayToFirebaseObject(inventory)));
+    
+    alert('✅ Código ' + code + ' movido a ' + getWarehouseName(newWarehouse));
+    closeIndividualMoveModal();
+    filterIndividualItems(); // Refresh tabla
+    updateAllDisplays();
+}
+
+// Funciones auxiliares para modales
+function closeIndividualMoveModal() {
+    const modal = document.getElementById('moveIndividualModal');
+    if (modal) modal.remove();
+    window.selectedMoveWarehouse = null;
+}
+
+function viewIndividualDetails(code) {
+    const item = inventory.find(i => i.code === code);
+    if (!item) return;
+    
+    const details = `📋 DETALLES DEL CÓDIGO: ${code}
+    
+🏷️ Código QR: ${item.code}
+📦 Tipo: ${item.type}
+🏭 Part Number: ${item.partNumber}
+📊 Estado: ${item.state}
+🏪 Almacén: ${getWarehouseName(item.warehouse)}
+📊 Cantidad: ${item.quantity}
+📅 Último Movimiento: ${formatLastMovement(item.lastMovement)}
+📦 ID Tarima: ${item.palletId || 'No asignada'}
+🔄 Turno: ${item.shift || 'N/A'}`;
+    
+    alert(details);
 }
 </script>
 </body>
