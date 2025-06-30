@@ -11578,8 +11578,16 @@ function closeEditModal() {
 // Función optimizada para guardar reportes de producción
 async function saveProductionReportsOptimized() {
     try {
-        // Dividir reportes en chunks más pequeños si hay muchos
-        const chunkSize = 50; // 50 reportes por chunk
+        // 🧹 LIMPIEZA AUTOMÁTICA - mantener solo últimos 100 reportes
+        if (productionReports.length > 100) {
+            productionReports = productionReports
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                .slice(0, 100);
+            console.log('🧹 Reportes limitados a 100 más recientes');
+        }
+        
+        // Dividir reportes en chunks muy pequeños debido a PDFs
+        const chunkSize = 3; // Solo 3 reportes por chunk
         const chunks = [];
         
         for (let i = 0; i < productionReports.length; i += chunkSize) {
@@ -11603,11 +11611,14 @@ async function saveProductionReportsOptimized() {
         
     } catch (error) {
         console.error('❌ Error guardando reportes optimizado:', error);
-        // Fallback: intentar guardar solo los últimos 20 reportes
+        // Fallback: guardar solo los últimos 5 reportes sin evidencia
         try {
-            const recentReports = productionReports.slice(-20);
+            const recentReports = productionReports.slice(-5).map(report => ({
+                ...report,
+                evidencia: null // Remover evidencia para reducir tamaño
+            }));
             await saveToFirebase('productionReports_recent', JSON.stringify(arrayToFirebaseObject(recentReports)));
-            console.log('⚠️ Guardados solo los últimos 20 reportes como respaldo');
+            console.log('⚠️ Guardados solo los últimos 5 reportes sin evidencia como respaldo');
         } catch (fallbackError) {
             console.error('❌ Error en respaldo:', fallbackError);
             throw new Error('No se pudieron guardar los reportes. Datos demasiado grandes.');
