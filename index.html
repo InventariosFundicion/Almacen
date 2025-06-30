@@ -1328,19 +1328,18 @@
 <!-- Retención y Scrap Tab -->
 <div id="scrap-retention" class="tab-content">
     <h2>♻️ Retención y Scrap Adicional</h2>
-
+    
     <div class="sub-nav-tabs">
         <button class="sub-nav-tab active" onclick="showSubTab('new-scrap')">📝 Crear Nueva Hoja de Reporte de Scrap Adicional</button>
         <button class="sub-nav-tab" onclick="showSubTab('retenciones')">⏸️ Crear Retención de material</button>
         <button class="sub-nav-tab" onclick="showSubTab('manage-sheets')">📋 Gestionar Hojas de Scrap Adicional</button>
         <button class="sub-nav-tab" onclick="showSubTab('reports')">📊 Reporte general de estado de hojas creadas</button>
     </div>
-
-    <!-- Aquí iría todo el contenido del artifact que creé -->
-    <!-- Nueva Hoja de Scrap -->
+    
+    <!-- ==================== SUB-PESTAÑA 1: Nueva Hoja de Scrap ==================== -->
     <div id="new-scrap" class="sub-tab-content active">
         <h2>📝 Nueva Hoja de Scrap Adicional</h2>
-
+        
         <div class="card">
             <h3>📋 Información General</h3>
             <div class="grid grid-3">
@@ -1534,7 +1533,7 @@
         </div>
     </div>
 
-    <!-- Retenciones -->
+    <!-- ==================== SUB-PESTAÑA 2: Retenciones ==================== -->
     <div id="retenciones" class="sub-tab-content">
         <h2>⏸️ Sistema de Retenciones</h2>
 
@@ -1692,186 +1691,184 @@
                 <label>📝 Observaciones:</label>
                 <textarea id="retencion-observaciones" rows="3" placeholder="Observaciones adicionales sobre la retención..."></textarea>
             </div>
-        </div>
 
-        <div style="text-align: center; margin-top: 20px;">
-            <button class="btn btn-warning" onclick="validateRetencion()">🔍 Validar Shots</button>
-            <button class="btn btn-success" onclick="handleCreateRetencion()" id="create-retencion-btn" disabled>⏸️ Crear Retención</button>
-            <button class="btn btn-info" onclick="clearRetencionForm()">🔄 Limpiar</button>
-        </div>
-
-        <!-- Resultado de validación -->
-        <div id="retencion-validation-result" style="margin-top: 20px;"></div>
-    </div>
-
-    <!-- Lista de Retenciones Activas -->
-    <div class="card">
-        <h3>📋 Retenciones Activas</h3>
-        <div style="margin-bottom: 15px;">
-            <button class="btn btn-primary" onclick="refreshRetencionList()">🔄 Actualizar Lista</button>
-        </div>
-
-        <table class="inventory-table">
-            <thead>
-                <tr>
-                    <th>Folio</th>
-                    <th>Fecha Prod.</th>
-                    <th>Producto</th>
-                    <th>Molde</th>
-                    <th>Rango Shots</th>
-                    <th>Piezas</th>
-                    <th>Motivo</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="retenciones-table-body">
-                <!-- Se llenará dinámicamente -->
-            </tbody>
-        </table>
-    </div>
-</div>
-</div>
-
-<!-- Gestionar Hojas -->
-<div id="manage-sheets" class="sub-tab-content">
-    <h2>📋 Gestionar Hojas de Scrap</h2>
-
-    <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3>📊 Hojas Registradas</h3>
-            <button class="btn btn-primary" onclick="refreshSheetsList()">🔄 Actualizar</button>
-        </div>
-
-        <table class="inventory-table">
-            <thead>
-                <tr>
-                    <th>Folio</th>
-                    <th>Fecha</th>
-                    <th>Producto</th>
-                    <th>Molde</th>
-                    <th>Sector</th>
-                    <th>Shots</th>
-                    <th>Creado por</th>
-                    <th>Estado</th>
-                    <th>Evidencia</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="sheets-table-body">
-                <!-- Se llenará dinámicamente -->
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Modal para gestionar estado -->
-    <div id="manage-state-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <h3>📋 Gestionar Estado de Hoja</h3>
-
-            <div class="form-group">
-                <label>📄 Folio:</label>
-                <input type="text" id="modal-folio-manage" readonly style="background: #e9ecef;">
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-warning" onclick="validateRetencion()">🔍 Validar Shots</button>
+                <button class="btn btn-success" onclick="handleCreateRetencion()" id="create-retencion-btn" disabled>⏸️ Crear Retención</button>
+                <button class="btn btn-info" onclick="clearRetencionForm()">🔄 Limpiar</button>
             </div>
 
-            <div class="form-group">
-                <label>📊 Estado Actual:</label>
-                <input type="text" id="modal-current-state" readonly style="background: #e9ecef;">
+            <!-- Resultado de validación -->
+            <div id="retencion-validation-result" style="margin-top: 20px;"></div>
+        </div>
+
+        <!-- Lista de Retenciones Activas -->
+        <div class="card">
+            <h3>📋 Retenciones Activas</h3>
+            <div style="margin-bottom: 15px;">
+                <button class="btn btn-primary" onclick="refreshRetencionList()">🔄 Actualizar Lista</button>
             </div>
 
-            <div class="form-group">
-                <label>🔄 Nuevo Estado:</label>
-                <select id="modal-new-state">
-                    <option value="">Seleccionar nuevo estado...</option>
-                    <option value="EN_PROCESO">🔄 En Proceso</option>
-                    <option value="PENDIENTE_FIRMA">✍️ Pendiente de Firma</option>
-                    <option value="CERRADA">✅ Cerrada</option>
-                </select>
+            <table class="inventory-table">
+                <thead>
+                    <tr>
+                        <th>Folio</th>
+                        <th>Fecha Prod.</th>
+                        <th>Producto</th>
+                        <th>Molde</th>
+                        <th>Rango Shots</th>
+                        <th>Piezas</th>
+                        <th>Motivo</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="retenciones-table-body">
+                    <!-- Se llenará dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ==================== SUB-PESTAÑA 3: Gestionar Hojas ==================== -->
+    <div id="manage-sheets" class="sub-tab-content">
+        <h2>📋 Gestionar Hojas de Scrap</h2>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>📊 Hojas Registradas</h3>
+                <button class="btn btn-primary" onclick="refreshSheetsList()">🔄 Actualizar</button>
             </div>
 
-            <div class="form-group" id="evidence-upload-section" style="display: none;">
-                <label>📎 Subir Hoja Firmada (PDF):</label>
-                <div class="file-management-container">
-                    <input type="file" id="modal-evidencia-file" accept=".pdf" style="display: none;" onchange="handleModalEvidenceUpload()">
-                    <div class="file-upload-area" onclick="document.getElementById('modal-evidencia-file').click()">
-                        <div id="modal-file-status">
-                            <span class="file-placeholder">📎 Haz clic para seleccionar archivo PDF</span>
+            <table class="inventory-table">
+                <thead>
+                    <tr>
+                        <th>Folio</th>
+                        <th>Fecha</th>
+                        <th>Producto</th>
+                        <th>Molde</th>
+                        <th>Sector</th>
+                        <th>Shots</th>
+                        <th>Creado por</th>
+                        <th>Estado</th>
+                        <th>Evidencia</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="sheets-table-body">
+                    <!-- Se llenará dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Modal para gestionar estado -->
+        <div id="manage-state-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h3>📋 Gestionar Estado de Hoja</h3>
+
+                <div class="form-group">
+                    <label>📄 Folio:</label>
+                    <input type="text" id="modal-folio-manage" readonly style="background: #e9ecef;">
+                </div>
+
+                <div class="form-group">
+                    <label>📊 Estado Actual:</label>
+                    <input type="text" id="modal-current-state" readonly style="background: #e9ecef;">
+                </div>
+
+                <div class="form-group">
+                    <label>🔄 Nuevo Estado:</label>
+                    <select id="modal-new-state">
+                        <option value="">Seleccionar nuevo estado...</option>
+                        <option value="EN_PROCESO">🔄 En Proceso</option>
+                        <option value="PENDIENTE_FIRMA">✍️ Pendiente de Firma</option>
+                        <option value="CERRADA">✅ Cerrada</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="evidence-upload-section" style="display: none;">
+                    <label>📎 Subir Hoja Firmada (PDF):</label>
+                    <div class="file-management-container">
+                        <input type="file" id="modal-evidencia-file" accept=".pdf" style="display: none;" onchange="handleModalEvidenceUpload()">
+                        <div class="file-upload-area" onclick="document.getElementById('modal-evidencia-file').click()">
+                            <div id="modal-file-status">
+                                <span class="file-placeholder">📎 Haz clic para seleccionar archivo PDF</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="grid grid-2" id="signatures-section" style="display: none;">
+                <div class="grid grid-2" id="signatures-section" style="display: none;">
+                    <div class="form-group">
+                        <label>✍️ Firma Supervisor:</label>
+                        <input type="text" id="modal-firma-supervisor" placeholder="Nombre del supervisor">
+                    </div>
+                    <div class="form-group">
+                        <label>✍️ Firma Gerente:</label>
+                        <input type="text" id="modal-firma-gerente" placeholder="Nombre del gerente">
+                    </div>
+                </div>
+
                 <div class="form-group">
-                    <label>✍️ Firma Supervisor:</label>
-                    <input type="text" id="modal-firma-supervisor" placeholder="Nombre del supervisor">
+                    <label>📝 Comentarios:</label>
+                    <textarea id="modal-comentarios" rows="3" placeholder="Comentarios sobre el cambio de estado..."></textarea>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn btn-success" onclick="handleConfirmStateChange()">✅ Actualizar Estado</button>
+                    <button class="btn btn-secondary" onclick="closeManageModal()">❌ Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SUB-PESTAÑA 4: Reportes ==================== -->
+    <div id="reports" class="sub-tab-content">
+        <h2>📊 Reportes de Scrap Adicional</h2>
+
+        <div class="card">
+            <h3>📈 Filtros de Reporte</h3>
+            <div class="grid grid-3">
+                <div class="form-group">
+                    <label>📅 Fecha Desde:</label>
+                    <input type="date" id="report-date-from">
                 </div>
                 <div class="form-group">
-                    <label>✍️ Firma Gerente:</label>
-                    <input type="text" id="modal-firma-gerente" placeholder="Nombre del gerente">
+                    <label>📅 Fecha Hasta:</label>
+                    <input type="date" id="report-date-to">
+                </div>
+                <div class="form-group">
+                    <label>🏭 Producto:</label>
+                    <select id="report-product">
+                        <option value="">Todos los productos...</option>
+                        <option value="PX13-10-382">PX13-10-382 (LWR)</option>
+                        <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
+                        <option value="P54G-10-382">P54G-10-382 (LWR)</option>
+                        <option value="PX13-10-301">PX13-10-301 (UPR)</option>
+                        <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
+                        <option value="P54G-10-301-A">P54G-10-301-A (UPR)</option>
+                    </select>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label>📝 Comentarios:</label>
-                <textarea id="modal-comentarios" rows="3" placeholder="Comentarios sobre el cambio de estado..."></textarea>
+            <div style="text-align: center; margin: 20px 0;">
+                <button class="btn btn-primary" onclick="generateReport()">📊 Generar Reporte</button>
+                <button class="btn btn-success" onclick="exportToExcel()">📗 Exportar Excel</button>
+                <button class="btn btn-info" onclick="exportToPDF()">📄 Exportar PDF</button>
             </div>
+        </div>
 
-            <div style="text-align: center; margin-top: 20px;">
-                <button class="btn btn-success" onclick="handleConfirmStateChange()">✅ Actualizar Estado</button>
-                <button class="btn btn-secondary" onclick="closeManageModal()">❌ Cancelar</button>
+        <div class="card">
+            <h3>📈 Resumen de Scrap</h3>
+            <div id="scrap-summary">
+                <div class="alert alert-info">
+                    📊 El resumen aparecerá después de generar el reporte
+                </div>
             </div>
         </div>
     </div>
-</div>
-</div>
 
-<!-- Reportes -->
-<div id="reports" class="sub-tab-content">
-    <h2>📊 Reportes de Scrap Adicional</h2>
-
-    <div class="card">
-        <h3>📈 Filtros de Reporte</h3>
-        <div class="grid grid-3">
-            <div class="form-group">
-                <label>📅 Fecha Desde:</label>
-                <input type="date" id="report-date-from">
-            </div>
-            <div class="form-group">
-                <label>📅 Fecha Hasta:</label>
-                <input type="date" id="report-date-to">
-            </div>
-            <div class="form-group">
-                <label>🏭 Producto:</label>
-                <select id="report-product">
-                    <option value="">Todos los productos...</option>
-                    <option value="PX13-10-382">PX13-10-382 (LWR)</option>
-                    <option value="PEDD-10-382-A">PEDD-10-382-A (LWR)</option>
-                    <option value="P54G-10-382">P54G-10-382 (LWR)</option>
-                    <option value="PX13-10-301">PX13-10-301 (UPR)</option>
-                    <option value="PEDD-10-301-A">PEDD-10-301-A (UPR)</option>
-                    <option value="P54G-10-301-A">P54G-10-301-A (UPR)</option>
-                </select>
-            </div>
-        </div>
-
-        <div style="text-align: center; margin: 20px 0;">
-            <button class="btn btn-primary" onclick="generateReport()">📊 Generar Reporte</button>
-            <button class="btn btn-success" onclick="exportToExcel()">📗 Exportar Excel</button>
-            <button class="btn btn-info" onclick="exportToPDF()">📄 Exportar PDF</button>
-        </div>
-    </div>
-
-    <div class="card">
-        <h3>📈 Resumen de Scrap</h3>
-        <div id="scrap-summary">
-            <div class="alert alert-info">
-                📊 El resumen aparecerá después de generar el reporte
-            </div>
-        </div>
-    </div>
-</div>
-</div>
+</div> <!-- ✅ CIERRE CORRECTO del contenedor principal scrap-retention -->
 <script type="module">
 // 🔥 FUNCIONES BASE DE FIREBASE - VERSIÓN COMPAT
 function initializeFirebase() {
