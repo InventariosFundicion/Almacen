@@ -5843,7 +5843,7 @@ function updateProductionSummary() {
                 <td>${r.cantidadNG}</td>
                 <td><strong>${r.piezasBuenas}</strong></td>
                 <td>${evidenciaIcon}</td>
-                <td>${r.timestamp.toLocaleTimeString()}</td>
+                <td>${new Date(r.timestamp).toLocaleTimeString()}</td>
             </tr>`;
         });
         html += '</tbody></table>';
@@ -5867,7 +5867,7 @@ function updateProductionSummary() {
                 <td>${m.cantidad}</td>
                 <td>${evidenciaIcon}</td>
                 <td>${m.comentarios || 'Sin comentarios'}</td>
-                <td>${m.timestamp.toLocaleTimeString()}</td>
+                <td>${new Date(m.timestamp).toLocaleTimeString()}</td>
             </tr>`;
         });
         html += '</tbody></table>';
