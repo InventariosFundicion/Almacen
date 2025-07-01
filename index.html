@@ -5771,6 +5771,79 @@ async function saveMovementReport() {
     clearFormFiles('production-movimientos-form');
     updateProductionSummary();
 }
+// Guardar reportes de forma simple (sin chunks complicados)
+async function saveProductionReportsSimple() {
+    try {
+        console.log('💾 Guardando reportes en Firebase...');
+        
+        // Si hay más de 50 reportes, mantener solo los últimos 50
+        if (productionReports.length > 50) {
+            productionReports = productionReports
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                .slice(0, 50);
+            console.log('🧹 Limitados a 50 reportes más recientes');
+        }
+        
+        // Crear versión sin evidencia para guardar (reducir tamaño)
+        const reportsWithoutEvidence = productionReports.map(report => ({
+            ...report,
+            evidencia: report.evidencia ? { hasEvidence: true, evidenceId: report.id } : null
+        }));
+        
+        // Guardar reportes principales
+        await saveToFirebase('productionReports_simple', JSON.stringify(arrayToFirebaseObject(reportsWithoutEvidence)));
+        
+        // Guardar evidencias por separado
+        for (const report of productionReports) {
+            if (report.evidencia && report.evidencia.contenido) {
+                await saveToFirebase(`evidencia_${report.id}`, JSON.stringify(report.evidencia));
+            }
+        }
+        
+        console.log('✅ Reportes guardados correctamente');
+        
+    } catch (error) {
+        console.error('❌ Error guardando reportes:', error);
+        throw error;
+    }
+}
+
+// Cargar reportes de forma simple
+async function loadProductionReportsSimple() {
+    try {
+        console.log('📊 Cargando reportes desde Firebase...');
+        
+        const reportsData = await loadFromFirebase('productionReports_simple');
+        if (reportsData) {
+            const reportsArray = firebaseObjectToArray(JSON.parse(reportsData));
+            
+            // Cargar evidencias por separado
+            for (const report of reportsArray) {
+                if (report.evidencia && report.evidencia.hasEvidence) {
+                    try {
+                        const evidenciaData = await loadFromFirebase(`evidencia_${report.id}`);
+                        if (evidenciaData) {
+                            report.evidencia = JSON.parse(evidenciaData);
+                        }
+                    } catch (evidenceError) {
+                        console.warn(`⚠️ No se pudo cargar evidencia para reporte ${report.id}`);
+                        report.evidencia = null;
+                    }
+                }
+            }
+            
+            productionReports = reportsArray;
+            console.log(`✅ ${productionReports.length} reportes cargados`);
+        } else {
+            productionReports = [];
+            console.log('📭 No hay reportes de producción');
+        }
+        
+    } catch (error) {
+        console.error('❌ Error cargando reportes:', error);
+        productionReports = [];
+    }
+}
 // Actualizar resumen de producción
 function updateProductionSummary() {
     const summaryDiv = document.getElementById('production-summary');
@@ -10186,7 +10259,7 @@ async function initializeAppData() {
         const physicalVerificationData = await loadFromFirebase('physicalVerification');
         physicalVerification = physicalVerificationData ? JSON.parse(physicalVerificationData) : {};
         
-        const productionReportsData = await loadProductionReportsOptimized();('productionReports');
+        const productionReportsData = await loadProductionReportsSimple();('productionReports');
         productionReports = productionReportsData ? firebaseObjectToArray(JSON.parse(productionReportsData)) : [];
         
         const movementReportsData = await loadFromFirebase('movementReports');
@@ -11347,27 +11420,21 @@ let filteredProductionReports = [];
 // Refrescar lista de reportes - VERSIÓN CORREGIDA
 async function refreshProductionReports() {
     try {
-        // Cargar datos más recientes desde Firebase
-        const reportsData = await loadFromFirebase('productionReports');
-        if (reportsData) {
-            productionReports = firebaseObjectToArray(JSON.parse(reportsData));
-        }
+        // 🔥 CARGAR CON FUNCIÓN SIMPLE
+        await loadProductionReportsSimple();
         
         // ✅ SOLO FILTRAR SI ESTAMOS EN LA PESTAÑA CORRECTA
         const productionTab = document.getElementById('production');
         if (productionTab && productionTab.classList.contains('active')) {
-            // Aplicar filtros actuales
             filterProductionReports();
         }
         
-        console.log(`✅ ${productionReports.length} reportes cargados`);
+        console.log(`✅ ${productionReports.length} reportes cargados y sincronizados`);
     } catch (error) {
         console.error('❌ Error cargando reportes:', error);
-        // No mostrar alert si el usuario no está en la pestaña de producción
         console.log('⚠️ Error cargando reportes, pero continuando...');
     }
 }
-
 // Filtrar reportes de producción (Versión 1.1 - CORREGIDA)
 function filterProductionReports() {
     // ✅ VERIFICAR QUE LOS ELEMENTOS EXISTAN ANTES DE ACCEDER A ELLOS
@@ -11502,7 +11569,7 @@ function calculateEditGoodParts() {
     document.getElementById('edit-buenas').value = buenas;
 }
 
-// Guardar reporte editado
+// Guardar reporte editado - VERSIÓN CORREGIDA CON FIREBASE
 async function saveEditedReport() {
     try {
         const reportId = parseInt(document.getElementById('edit-report-id').value);
@@ -11513,6 +11580,8 @@ async function saveEditedReport() {
             return;
         }
         
+        console.log('✏️ Editando reporte:', reportId);
+        
         // Actualizar datos
         productionReports[reportIndex].fecha = document.getElementById('edit-fecha').value;
         productionReports[reportIndex].turno = document.getElementById('edit-turno').value;
@@ -11522,13 +11591,15 @@ async function saveEditedReport() {
         productionReports[reportIndex].lastModified = new Date().toISOString();
         productionReports[reportIndex].modifiedBy = currentUser.nombre;
         
-        // Guardar en Firebase de manera optimizada
-        await saveProductionReportsOptimized();
+        // 🔥 GUARDAR EN FIREBASE CON FUNCIÓN SIMPLE
+        await saveProductionReportsSimple();
         
         alert('✅ Reporte actualizado correctamente');
         closeEditModal();
         filterProductionReports();
         updateProductionSummary();
+        
+        console.log('✅ Reporte editado exitosamente');
         
     } catch (error) {
         console.error('❌ Error guardando reporte:', error);
@@ -11536,35 +11607,49 @@ async function saveEditedReport() {
     }
 }
 
-// Eliminar reporte
+// Eliminar reporte - VERSIÓN CORREGIDA CON FIREBASE
 async function deleteProductionReport(reportId) {
     if (!confirm('⚠️ ¿Estás seguro de eliminar este reporte?\n\nEsta acción no se puede deshacer.')) {
         return;
     }
     
     try {
+        console.log('🗑️ Eliminando reporte:', reportId);
+        
         const reportIndex = productionReports.findIndex(r => r.id === reportId);
         if (reportIndex === -1) {
             alert('❌ Reporte no encontrado');
             return;
         }
         
-        // Eliminar del array
+        // Eliminar evidencia de Firebase si existe
+        const report = productionReports[reportIndex];
+        if (report.evidencia) {
+            try {
+                await deleteFromFirebase(`evidencia_${reportId}`);
+                console.log('🗑️ Evidencia eliminada de Firebase');
+            } catch (evidenceError) {
+                console.warn('⚠️ No se pudo eliminar evidencia:', evidenceError);
+            }
+        }
+        
+        // Eliminar del array local
         productionReports.splice(reportIndex, 1);
         
-        // Guardar en Firebase de manera optimizada
-        await saveProductionReportsOptimized();
+        // 🔥 GUARDAR EN FIREBASE CON FUNCIÓN SIMPLE
+        await saveProductionReportsSimple();
         
         alert('✅ Reporte eliminado correctamente');
         filterProductionReports();
         updateProductionSummary();
         
+        console.log('✅ Reporte eliminado exitosamente');
+        
     } catch (error) {
         console.error('❌ Error eliminando reporte:', error);
-        alert('❌ Error: ' + error.message);
+        alert('❌ Error eliminando reporte: ' + error.message);
     }
 }
-
 // Ver evidencia de reporte
 function viewReportEvidence(reportId) {
     const report = productionReports.find(r => r.id === reportId);
