@@ -6721,6 +6721,7 @@ async function showEvidenceInfo(reportId) {
         alert('❌ No hay evidencia disponible para este reporte.');
     }
 }
+}
 // Variables para la cámara
 let qrScanner = null;
 let currentCamera = 'environment'; // 'environment' = cámara trasera, 'user' = frontal
@@ -10342,13 +10343,6 @@ async function handleConfirmStateChange() {
     }
 }
 
-// 🔄 CORREGIR TYPO EN EL HTML - Cambiar "handldeCreateRetencion" por "handleCreateRetencion"
-// En tu HTML línea donde dice:
-// <button class="btn btn-success" onclick="handldeCreateRetencion()" id="create-retencion-btn" disabled>⏸️ Crear Retención</button>
-// Debería ser:
-// <button class="btn btn-success" onclick="handleCreateRetencion()" id="create-retencion-btn" disabled>⏸️ Crear Retención</button>
-
-// 🔄 FUNCIÓN CORREGIDA handleCreateRetencion (sin typo)
 async function handleCreateRetencion() {
     try {
         await createRetencion();
