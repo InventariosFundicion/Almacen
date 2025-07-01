@@ -11320,16 +11320,28 @@ async function refreshProductionReports() {
     }
 }
 
-// Filtrar reportes de producción (Versión 1.1)
+// Filtrar reportes de producción (Versión 1.1 - CORREGIDA)
 function filterProductionReports() {
-    const dateFrom = document.getElementById('filter-date-from').value;
-    const dateTo = document.getElementById('filter-date-to').value;
-    const process = document.getElementById('filter-process').value;
-    const machine = document.getElementById('filter-machine').value;
+    // ✅ VERIFICAR QUE LOS ELEMENTOS EXISTAN ANTES DE ACCEDER A ELLOS
+    const dateFromElement = document.getElementById('filter-date-from');
+    const dateToElement = document.getElementById('filter-date-to');
+    const processElement = document.getElementById('filter-process');
+    const machineElement = document.getElementById('filter-machine');
+    
+    // Si los elementos no existen, salir de la función
+    if (!dateFromElement || !dateToElement || !processElement) {
+        console.log('⚠️ Elementos de filtro no disponibles, omitiendo filtrado');
+        return;
+    }
+    
+    const dateFrom = dateFromElement.value;
+    const dateTo = dateToElement.value;
+    const process = processElement.value;
+    const machine = machineElement ? machineElement.value : '';
     
     filteredProductionReports = productionReports.filter(report => {
-     // 🔄 CORREGIR: Usar fecha directa sin conversión UTC
-    const reportDate = report.fecha; // Ya está en formato YYYY-MM-DD
+        // 🔄 CORREGIR: Usar fecha directa sin conversión UTC
+        const reportDate = report.fecha; // Ya está en formato YYYY-MM-DD
         
         // Filtro por fecha desde (inclusive)
         if (dateFrom && reportDate < dateFrom) return false;
@@ -11352,10 +11364,12 @@ function filterProductionReports() {
     // Actualizar tabla
     updateProductionReportsTable();
     
-    // Actualizar contador
-    document.getElementById('reports-count').textContent = `${filteredProductionReports.length} reportes encontrados`;
+    // Actualizar contador si el elemento existe
+    const reportsCountElement = document.getElementById('reports-count');
+    if (reportsCountElement) {
+        reportsCountElement.textContent = `${filteredProductionReports.length} reportes encontrados`;
+    }
 }
-
 // Actualizar tabla de reportes
 function updateProductionReportsTable() {
     const tbody = document.getElementById('production-reports-tbody');
