@@ -11301,7 +11301,7 @@ function updateDashboard() {
 // Variables para gestión de reportes
 let filteredProductionReports = [];
 
-// Refrescar lista de reportes
+// Refrescar lista de reportes - VERSIÓN CORREGIDA
 async function refreshProductionReports() {
     try {
         // Cargar datos más recientes desde Firebase
@@ -11310,13 +11310,18 @@ async function refreshProductionReports() {
             productionReports = firebaseObjectToArray(JSON.parse(reportsData));
         }
         
-        // Aplicar filtros actuales
-        filterProductionReports();
+        // ✅ SOLO FILTRAR SI ESTAMOS EN LA PESTAÑA CORRECTA
+        const productionTab = document.getElementById('production');
+        if (productionTab && productionTab.classList.contains('active')) {
+            // Aplicar filtros actuales
+            filterProductionReports();
+        }
         
         console.log(`✅ ${productionReports.length} reportes cargados`);
     } catch (error) {
         console.error('❌ Error cargando reportes:', error);
-        alert('❌ Error cargando reportes: ' + error.message);
+        // No mostrar alert si el usuario no está en la pestaña de producción
+        console.log('⚠️ Error cargando reportes, pero continuando...');
     }
 }
 
@@ -11370,9 +11375,15 @@ function filterProductionReports() {
         reportsCountElement.textContent = `${filteredProductionReports.length} reportes encontrados`;
     }
 }
-// Actualizar tabla de reportes
+// Actualizar tabla de reportes - VERSIÓN CORREGIDA
 function updateProductionReportsTable() {
+    // ✅ VERIFICAR QUE EL ELEMENTO TBODY EXISTA
     const tbody = document.getElementById('production-reports-tbody');
+    
+    if (!tbody) {
+        console.log('⚠️ Elemento production-reports-tbody no encontrado, omitiendo actualización de tabla');
+        return;
+    }
     
     if (filteredProductionReports.length === 0) {
         tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; padding: 20px;">📋 No hay reportes que coincidan con los filtros</td></tr>';
