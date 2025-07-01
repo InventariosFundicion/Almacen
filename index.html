@@ -11449,7 +11449,7 @@ function updateProductionReportsTable() {
         
         return `
             <tr>
-                <td>${report.fecha} (${new Date(report.fecha).toLocaleDateString()})</td>
+                <td>${report.fecha}</td>
                 <td><span class="code-badge" style="background: ${report.tipo === 'fundicion' ? '#e74c3c' : '#27ae60'};">${report.tipo.toUpperCase()}</span></td>
                 <td>${report.maquina || 'N/A'}</td>
                 <td style="font-size: 0.8em;">${report.modelo}</td>
