@@ -1809,107 +1809,26 @@
                         <option value="">Todos los procesos</option>
                         <option value="fundicion">🔥 Fundición</option>
                         <option value="acabado">✅ Acabado</option>
+                        <option value="movimientos">📦 Movimientos</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label>🔧 Máquina:</label>
-                    <select id="filter-machine" onchange="filterProductionReports()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
-                        <option value="">Todas las máquinas</option>
-                        <option value="30">Máquina #30</option>
-                        <option value="31">Máquina #31</option>
-                        <option value="32">Máquina #32</option>
-                        <option value="33">Máquina #33</option>
-                        <option value="34">Máquina #34</option>
-                    </select>
-                </div>
-            </div>
-            <div style="text-align: center; margin-top: 15px;">
-                <button class="btn btn-info" onclick="clearProductionFilters()">🗑️ Limpiar Filtros</button>
-                <span id="reports-count" style="margin-left: 20px; font-weight: bold;">0 reportes encontrados</span>
             </div>
         </div>
 
-        <!-- Tabla de reportes -->
-        <div style="overflow-x: auto;">
-            <table class="inventory-table">
-                <thead>
-                    <tr>
-                        <th>📅 Fecha</th>
-                        <th>🏭 Proceso</th>
-                        <th>🔧 Máquina</th>
-                        <th>📦 Modelo</th>
-                        <th>🔧 Molde</th>
-                        <th>📊 Total</th>
-                        <th>❌ NG</th>
-                        <th>✅ Buenas</th>
-                        <th>🎯 Eficiencia</th>
-                        <th>📄 Evidencia</th>
-                        <th>⚙️ Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="production-reports-tbody">
-                    <!-- Se llenará dinámicamente -->
-                </tbody>
-            </table>
-        </div>
-</div>	    
-</div>
+        <!-- Tabla -->
+        <div id="production-reports-table" style="overflow-x: auto;"></div>
+    </div>
+
     <!-- Modal para editar reporte -->
-<div id="edit-report-modal" class="modal" style="display: none;">
+    <div id="edit-report-modal" class="modal" style="display: none;">
         <div class="modal-content" style="max-width: 600px;">
+            <span class="close" onclick="closeEditReportModal()">&times;</span>
             <h3>✏️ Editar Reporte de Producción</h3>
-            
-            <form id="edit-report-form">
-                <input type="hidden" id="edit-report-id">
-                
-                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <div class="form-group">
-                        <label>📅 Fecha:</label>
-                        <input type="date" id="edit-fecha" required>
-                    </div>
-                    <div class="form-group">
-                        <label>🔄 Turno:</label>
-                        <select id="edit-turno" required>
-                            <option value="1">Primer Turno (07:00-19:00)</option>
-                            <option value="2">Segundo Turno (19:00-07:00)</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <div class="form-group">
-                        <label>🔧 Máquina:</label>
-                        <input type="text" id="edit-maquina" readonly style="background: #e9ecef;">
-                    </div>
-                    <div class="form-group">
-                        <label>📦 Modelo:</label>
-                        <input type="text" id="edit-modelo" readonly style="background: #e9ecef;">
-                    </div>
-                </div>
-                
-                <div class="grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-                    <div class="form-group">
-                        <label>📊 Total Producido:</label>
-                        <input type="number" id="edit-total" min="0" oninput="calculateEditGoodParts()" required>
-                    </div>
-                    <div class="form-group">
-                        <label>❌ Cantidad NG:</label>
-                        <input type="number" id="edit-ng" min="0" oninput="calculateEditGoodParts()" required>
-                    </div>
-                    <div class="form-group">
-                        <label>✅ Piezas Buenas:</label>
-                        <input type="number" id="edit-buenas" readonly style="background: #e9ecef;">
-                    </div>
-                </div>
-                
-                <div style="text-align: center; margin-top: 20px;">
-                    <button type="button" class="btn btn-success" onclick="saveEditedReport()">💾 Guardar Cambios</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">❌ Cancelar</button>
-                </div>
-            </form>
+            <div id="edit-report-form-container"></div>
         </div>
- </div>
+    </div>
 
+</div> <!-- ✅ ESTA LÍNEA ES LA QUE FALTABA PARA CERRAR -->
 <!-- Theoretical vs Physical Tab -->
 <div id="theoretical" class="tab-content">
     <h2>📊 Inventario Teórico vs Físico</h2>
