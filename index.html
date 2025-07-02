@@ -1812,64 +1812,66 @@
                         <option value="movimientos">📦 Movimientos</option>
                     </select>
                 </div>
-		    <!-- 👇 AGREGAR ESTE CAMPO -->
-<div class="form-group">
-    <label>⚙️ Máquina:</label>
-    <select id="filter-machine" onchange="filterProductionReports()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
-        <option value="">Todas las máquinas</option>
-        <option value="30">Máquina #30</option>
-        <option value="31">Máquina #31</option>
-        <option value="32">Máquina #32</option>
-        <option value="33">Máquina #33</option>
-        <option value="34">Máquina #34</option>
-    </select>
-</div>
+                <div class="form-group">
+                    <label>⚙️ Máquina:</label>
+                    <select id="filter-machine" onchange="filterProductionReports()" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                        <option value="">Todas las máquinas</option>
+                        <option value="30">Máquina #30</option>
+                        <option value="31">Máquina #31</option>
+                        <option value="32">Máquina #32</option>
+                        <option value="33">Máquina #33</option>
+                        <option value="34">Máquina #34</option>
+                    </select>
+                </div>
             </div>
         </div>
 
-<!-- Tabla -->
- <div id="production-reports-table" style="overflow-x: auto;">
-    <table class="inventory-table">
-        <thead>
-            <tr>
-                <th>📅 Fecha</th>
-                <th>🏭 Tipo</th>
-                <th>⚙️ Máquina</th>
-                <th>📦 Modelo</th>
-                <th>🔧 Molde</th>
-                <th>📊 Total</th>
-                <th>❌ NG</th>
-                <th>✅ Buenas</th>
-                <th>📈 Eficiencia</th>
-                <th>📄 Evidencia</th>
-                <th>⚙️ Acciones</th>
-            </tr>
-        </thead>
-        <tbody id="production-reports-tbody">
-            <tr>
-                <td colspan="11" style="text-align: center; padding: 20px;">
-                    📊 Selecciona filtros para ver los reportes
-                </td>
-            </tr>
-        </tbody>
-    </table>
-    
-    <!-- Contador de resultados -->
-    <div style="margin-top: 15px; text-align: center;">
-        <span id="reports-count" style="color: #666; font-style: italic;">
-            Selecciona filtros para mostrar reportes
-        </span>
-    </div>
-    <!-- Modal para editar reporte -->
-    <div id="edit-report-modal" class="modal" style="display: none;">
-        <div class="modal-content" style="max-width: 600px;">
-            <span class="close" onclick="closeEditReportModal()">&times;</span>
-            <h3>✏️ Editar Reporte de Producción</h3>
-            <div id="edit-report-form-container"></div>
-        </div>
-    </div>
- </div> 
-</div> <!-- ✅ ESTA LÍNEA ES LA QUE FALTABA PARA CERRAR -->
+        <!-- Tabla -->
+        <div id="production-reports-table" style="overflow-x: auto;">
+            <table class="inventory-table">
+                <thead>
+                    <tr>
+                        <th>📅 Fecha</th>
+                        <th>🏭 Tipo</th>
+                        <th>⚙️ Máquina</th>
+                        <th>📦 Modelo</th>
+                        <th>🔧 Molde</th>
+                        <th>📊 Total</th>
+                        <th>❌ NG</th>
+                        <th>✅ Buenas</th>
+                        <th>📈 Eficiencia</th>
+                        <th>📄 Evidencia</th>
+                        <th>⚙️ Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="production-reports-tbody">
+                    <tr>
+                        <td colspan="11" style="text-align: center; padding: 20px;">
+                            📊 Selecciona filtros para ver los reportes
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <!-- Contador de resultados -->
+            <div style="margin-top: 15px; text-align: center;">
+                <span id="reports-count" style="color: #666; font-style: italic;">
+                    Selecciona filtros para mostrar reportes
+                </span>
+            </div>
+
+            <!-- Modal para editar reporte -->
+            <div id="edit-report-modal" class="modal" style="display: none;">
+                <div class="modal-content" style="max-width: 600px;">
+                    <span class="close" onclick="closeEditReportModal()">&times;</span>
+                    <h3>✏️ Editar Reporte de Producción</h3>
+                    <div id="edit-report-form-container"></div>
+                </div>
+            </div>
+        </div> <!-- ✅ Cierra production-reports-table -->
+    </div> <!-- ✅ Cierra card de Gestión de Reportes -->
+</div> <!-- ✅ Cierra div principal de production -->
+
 <!-- Theoretical vs Physical Tab -->
 <div id="theoretical" class="tab-content">
     <h2>📊 Inventario Teórico vs Físico</h2>
