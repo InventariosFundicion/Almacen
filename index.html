@@ -4114,20 +4114,20 @@ function movePallet(palletId) {
     });
 }
 
-// Reemplaza la función confirmPalletMove() completa
+// 🔄 REEMPLAZAR la función confirmPalletMove() completa
 async function confirmPalletMove(palletId) {
     if (!window.selectedMoveWarehouse) return;
     
     const pallet = pallets.find(p => p.systemId === palletId);
     const newWarehouse = window.selectedMoveWarehouse;
     
-    // 🆕 AUTOMATIZACIÓN DE FLUJOS
-    if (newWarehouse === 'retenciones') {
-        const confirmRetencion = confirm(`⏸️ CREAR RETENCIÓN AUTOMÁTICA\n\nSe creará automáticamente una retención para esta tarima.\n\n¿Continuar?`);
+    // 🆕 FLUJO ESPECIAL PARA SCRAP
+    if (newWarehouse === 'scrap') {
+        const confirmScrap = confirm(`♻️ CREAR HOJA DE SCRAP\n\nSe abrirá el formulario de scrap para registrar los detalles.\n\n¿Continuar?`);
         
-        if (confirmRetencion) {
-            // Crear retención automática
-            await createAutomaticRetencion(pallet);
+        if (confirmScrap) {
+            // Redirigir a formulario de scrap con datos pre-llenados
+            await redirectToScrapForm('TARIMA', pallet);
             closeMoveModal();
             return;
         } else {
@@ -4135,22 +4135,27 @@ async function confirmPalletMove(palletId) {
         }
     }
     
-    if (newWarehouse === 'pruebas') {
-        const confirmPruebas = confirm(`🧪 ENVIAR A PRUEBAS\n\nEsta tarima será enviada a pruebas. Se puede crear una hoja de seguimiento.\n\n¿Continuar?`);
+    // 🆕 FLUJO ESPECIAL PARA RETENCIONES
+    if (newWarehouse === 'retenciones') {
+        const confirmRetencion = confirm(`⏸️ CREAR RETENCIÓN\n\nSe abrirá el formulario de retención para registrar los detalles.\n\n¿Continuar?`);
         
-        if (confirmPruebas) {
-            // Opcional: crear hoja de seguimiento de pruebas
-            const createSheet = confirm(`📋 ¿Deseas crear una hoja de seguimiento para las pruebas?`);
-            
-            if (createSheet) {
-                await createAutomaticTestSheet(pallet);
-            }
-        } else {
+        if (confirmRetencion) {
+            // Redirigir a formulario de retención con datos pre-llenados
+            await redirectToRetencionForm('TARIMA', pallet);
+            closeMoveModal();
             return;
+        } else {
+            return; // Cancelar movimiento
         }
     }
     
-    // Continuar con movimiento normal
+    // 🆕 FLUJO ESPECIAL PARA PRUEBAS (opcional)
+    if (newWarehouse === 'pruebas') {
+        const confirmPruebas = confirm(`🧪 ENVIAR A PRUEBAS\n\nEsta tarima será enviada a pruebas.\n\n¿Continuar?`);
+        if (!confirmPruebas) return;
+    }
+    
+    // Continuar con movimiento normal para otros almacenes
     pallet.warehouse = newWarehouse;
     pallet.state = newWarehouse;
     
@@ -4171,7 +4176,6 @@ async function confirmPalletMove(palletId) {
     updateAllDisplays();
     closeMoveModal();
 }
-
 function closeMoveModal() {
     const modal = document.getElementById('moveModal');
     if (modal) modal.remove();
@@ -11231,33 +11235,48 @@ function moveIndividualCode(code) {
         }
     });
 }
-// Reemplaza la función confirmIndividualMove() completa
+// 🔄 REEMPLAZAR la función confirmIndividualMove() completa
 async function confirmIndividualMove(code) {
     if (!window.selectedMoveWarehouse) return;
     
     const item = inventory.find(i => i.code === code);
     const newWarehouse = window.selectedMoveWarehouse;
     
-    // 🆕 AUTOMATIZACIÓN DE FLUJOS PARA CÓDIGOS INDIVIDUALES
-    if (newWarehouse === 'retenciones') {
-        const confirmRetencion = confirm(`⏸️ CREAR RETENCIÓN AUTOMÁTICA\n\nSe creará automáticamente una retención para este código.\n\n¿Continuar?`);
+    // 🆕 FLUJO ESPECIAL PARA SCRAP
+    if (newWarehouse === 'scrap') {
+        const confirmScrap = confirm(`♻️ CREAR HOJA DE SCRAP\n\nSe abrirá el formulario de scrap para registrar los detalles.\n\n¿Continuar?`);
         
-        if (confirmRetencion) {
-            await createAutomaticIndividualRetencion(item);
+        if (confirmScrap) {
+            // Redirigir a formulario de scrap con datos pre-llenados
+            await redirectToScrapForm('INDIVIDUAL', item);
             closeIndividualMoveModal();
             return;
         } else {
-            return;
+            return; // Cancelar movimiento
         }
     }
     
+    // 🆕 FLUJO ESPECIAL PARA RETENCIONES
+    if (newWarehouse === 'retenciones') {
+        const confirmRetencion = confirm(`⏸️ CREAR RETENCIÓN\n\nSe abrirá el formulario de retención para registrar los detalles.\n\n¿Continuar?`);
+        
+        if (confirmRetencion) {
+            // Redirigir a formulario de retención con datos pre-llenados
+            await redirectToRetencionForm('INDIVIDUAL', item);
+            closeIndividualMoveModal();
+            return;
+        } else {
+            return; // Cancelar movimiento
+        }
+    }
+    
+    // 🆕 FLUJO ESPECIAL PARA PRUEBAS (opcional)
     if (newWarehouse === 'pruebas') {
         const confirmPruebas = confirm(`🧪 ENVIAR A PRUEBAS\n\nEste código será enviado a pruebas.\n\n¿Continuar?`);
-        
         if (!confirmPruebas) return;
     }
     
-    // Continuar con movimiento normal
+    // Continuar con movimiento normal para otros almacenes
     item.warehouse = newWarehouse;
     item.state = getStateFromWarehouse(newWarehouse);
     item.lastMovement = new Date();
@@ -12295,6 +12314,305 @@ function getStateFromWarehouse(warehouse) {
         'pruebas': 'EN_PRUEBAS'
     };
     return mapping[warehouse] || 'DESCONOCIDO';
+}
+// ============ NUEVAS FUNCIONES PARA REDIRECCIÓN ============
+
+// 🆕 FUNCIÓN PARA REDIRIGIR A FORMULARIO DE SCRAP
+async function redirectToScrapForm(tipo, itemData) {
+    try {
+        console.log('🔄 Redirigiendo a formulario de scrap:', tipo, itemData);
+        
+        // 1. Cambiar a la pestaña de scrap-retention
+        showTab('scrap-retention');
+        
+        // 2. Cambiar a sub-pestaña de new-scrap
+        setTimeout(() => {
+            showSubTab('new-scrap');
+            
+            // 3. Pre-llenar formulario después de que cargue
+            setTimeout(() => {
+                prefillScrapFormAdvanced(tipo, itemData);
+            }, 500);
+        }, 200);
+        
+        // 4. Mostrar mensaje de éxito
+        setTimeout(() => {
+            alert('✅ Formulario de scrap abierto\n\nCompleta los campos faltantes:\n• Motivo del scrap\n• Observaciones\n• Códigos QR individuales');
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Error redirigiendo a scrap:', error);
+        alert('❌ Error abriendo formulario de scrap: ' + error.message);
+    }
+}
+
+// 🆕 FUNCIÓN PARA REDIRIGIR A FORMULARIO DE RETENCIÓN
+async function redirectToRetencionForm(tipo, itemData) {
+    try {
+        console.log('🔄 Redirigiendo a formulario de retención:', tipo, itemData);
+        
+        // 1. Cambiar a la pestaña de scrap-retention
+        showTab('scrap-retention');
+        
+        // 2. Cambiar a sub-pestaña de retenciones
+        setTimeout(() => {
+            showSubTab('retenciones');
+            
+            // 3. Pre-llenar formulario después de que cargue
+            setTimeout(() => {
+                prefillRetencionFormAdvanced(tipo, itemData);
+            }, 500);
+        }, 200);
+        
+        // 4. Mostrar mensaje de éxito
+        setTimeout(() => {
+            alert('✅ Formulario de retención abierto\n\nCompleta los campos faltantes:\n• Motivo de la retención\n• Observaciones\n• Códigos QR individuales');
+        }, 1000);
+        
+    } catch (error) {
+        console.error('Error redirigiendo a retención:', error);
+        alert('❌ Error abriendo formulario de retención: ' + error.message);
+    }
+}
+
+// ============ FUNCIONES AVANZADAS PARA PRE-LLENAR FORMULARIOS ============
+
+// 🆕 FUNCIÓN AVANZADA PARA PRE-LLENAR SCRAP
+function prefillScrapFormAdvanced(tipo, itemData) {
+    try {
+        console.log('📝 Pre-llenando formulario de scrap avanzado:', tipo, itemData);
+        
+        // Pre-llenar fecha de hoy
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('fecha-operacion').value = today;
+        
+        // Pre-llenar sector de trabajo
+        document.getElementById('sector-trabajo').value = 'FUNDICION';
+        
+        // Pre-llenar creado por
+        if (currentUser && currentUser.nombre) {
+            document.getElementById('creado-por').value = currentUser.nombre;
+        }
+        
+        if (tipo === 'TARIMA') {
+            // Pre-llenar información de tarima
+            prefillFromPallet(itemData);
+            
+            // Agregar observación automática
+            document.getElementById('observaciones').value = `Scrap generado desde movimiento de tarima ${itemData.systemId}. Completar detalles específicos de cada shot.`;
+            
+        } else if (tipo === 'INDIVIDUAL') {
+            // Pre-llenar información de código individual
+            prefillFromIndividualCode(itemData);
+            
+            // Pre-llenar el shot number directamente
+            document.getElementById('shot-number').value = itemData.code;
+            
+            // Agregar observación automática
+            document.getElementById('observaciones').value = `Scrap generado desde movimiento de código individual ${itemData.code}.`;
+        }
+        
+        // Generar nuevo folio
+        generateNewFolio();
+        
+        console.log('✅ Formulario de scrap pre-llenado exitosamente');
+        
+    } catch (error) {
+        console.error('Error pre-llenando formulario de scrap:', error);
+        alert('⚠️ Formulario abierto pero hubo un error pre-llenando algunos campos');
+    }
+}
+
+// 🆕 FUNCIÓN AVANZADA PARA PRE-LLENAR RETENCIÓN
+function prefillRetencionFormAdvanced(tipo, itemData) {
+    try {
+        console.log('📝 Pre-llenando formulario de retención avanzado:', tipo, itemData);
+        
+        // Pre-llenar fecha de producción (hoy)
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('retencion-fecha-produccion').value = today;
+        
+        // Pre-llenar creado por
+        if (currentUser && currentUser.nombre) {
+            document.getElementById('retencion-creado-por').value = currentUser.nombre;
+        }
+        
+        if (tipo === 'TARIMA') {
+            // Pre-llenar información de tarima
+            prefillRetencionFromPallet(itemData);
+            
+            // Agregar observación automática
+            document.getElementById('retencion-observaciones').value = `Retención generada desde movimiento de tarima ${itemData.systemId}. Especificar motivo detallado y agregar códigos QR individuales.`;
+            
+        } else if (tipo === 'INDIVIDUAL') {
+            // Pre-llenar información de código individual
+            prefillRetencionFromIndividualCode(itemData);
+            
+            // Pre-llenar el código QR directamente
+            document.getElementById('retencion-shot-code').value = itemData.code;
+            
+            // Agregar observación automática
+            document.getElementById('retencion-observaciones').value = `Retención generada desde movimiento de código individual ${itemData.code}.`;
+        }
+        
+        // Generar nuevo folio
+        generateNewRetencionFolio();
+        
+        console.log('✅ Formulario de retención pre-llenado exitosamente');
+        
+    } catch (error) {
+        console.error('Error pre-llenando formulario de retención:', error);
+        alert('⚠️ Formulario abierto pero hubo un error pre-llenando algunos campos');
+    }
+}
+
+// ============ FUNCIONES HELPER PARA PRE-LLENAR ============
+
+// 🆕 PRE-LLENAR SCRAP DESDE TARIMA
+function prefillFromPallet(pallet) {
+    // Intentar determinar el producto desde los códigos de la tarima
+    if (pallet.codes && pallet.codes.length > 0) {
+        const firstCode = pallet.codes[0];
+        const codeData = extractCodeData(firstCode);
+        
+        if (codeData) {
+            // Detectar producto basado en el tipo y modelo
+            let detectedProduct = '';
+            if (codeData.type === 'UPR') {
+                if (codeData.modelo === 'PX') detectedProduct = 'PX13-10-301';
+                else if (codeData.modelo === 'PE') detectedProduct = 'PEDD-10-301-A';
+                else if (codeData.modelo === 'P5') detectedProduct = 'P54G-10-301-A';
+            } else if (codeData.type === 'LWR') {
+                if (codeData.modelo === 'PX') detectedProduct = 'PX13-10-382';
+                else if (codeData.modelo === 'PE') detectedProduct = 'PEDD-10-382-A';
+                else if (codeData.modelo === 'P5') detectedProduct = 'P54G-10-382';
+            }
+            
+            if (detectedProduct) {
+                document.getElementById('numero-producto').value = detectedProduct;
+                updateProductInfo();
+                
+                // Pre-seleccionar molde si está disponible
+                setTimeout(() => {
+                    const moldeSelect = document.getElementById('molde-producto');
+                    if (moldeSelect && codeData.molde) {
+                        moldeSelect.value = codeData.molde;
+                    }
+                }, 100);
+            }
+        }
+    }
+    
+    // Determinar almacén origen basado en el warehouse actual
+    const almacenSelect = document.getElementById('almacen-origen');
+    if (pallet.warehouse === 'fundidos') {
+        almacenSelect.value = 'ALMACEN_FUNDICION';
+    } else if (pallet.warehouse === 'acabados') {
+        almacenSelect.value = 'ALMACEN_ACABADO';
+    }
+}
+
+// 🆕 PRE-LLENAR SCRAP DESDE CÓDIGO INDIVIDUAL
+function prefillFromIndividualCode(item) {
+    const codeData = extractCodeData(item.code);
+    
+    if (codeData) {
+        // Detectar producto
+        let detectedProduct = '';
+        if (codeData.type === 'UPR') {
+            if (codeData.modelo === 'PX') detectedProduct = 'PX13-10-301';
+            else if (codeData.modelo === 'PE') detectedProduct = 'PEDD-10-301-A';
+            else if (codeData.modelo === 'P5') detectedProduct = 'P54G-10-301-A';
+        } else if (codeData.type === 'LWR') {
+            if (codeData.modelo === 'PX') detectedProduct = 'PX13-10-382';
+            else if (codeData.modelo === 'PE') detectedProduct = 'PEDD-10-382-A';
+            else if (codeData.modelo === 'P5') detectedProduct = 'P54G-10-382';
+        }
+        
+        if (detectedProduct) {
+            document.getElementById('numero-producto').value = detectedProduct;
+            updateProductInfo();
+            
+            setTimeout(() => {
+                const moldeSelect = document.getElementById('molde-producto');
+                if (moldeSelect && codeData.molde) {
+                    moldeSelect.value = codeData.molde;
+                }
+            }, 100);
+        }
+    }
+    
+    // Determinar almacén origen
+    const almacenSelect = document.getElementById('almacen-origen');
+    if (item.warehouse === 'fundidos') {
+        almacenSelect.value = 'ALMACEN_FUNDICION';
+    } else if (item.warehouse === 'acabados') {
+        almacenSelect.value = 'ALMACEN_ACABADO';
+    }
+}
+
+// 🆕 PRE-LLENAR RETENCIÓN DESDE TARIMA
+function prefillRetencionFromPallet(pallet) {
+    // Similar a prefillFromPallet pero para retención
+    if (pallet.codes && pallet.codes.length > 0) {
+        const firstCode = pallet.codes[0];
+        const codeData = extractCodeData(firstCode);
+        
+        if (codeData) {
+            let detectedProduct = '';
+            if (codeData.type === 'UPR') {
+                if (codeData.modelo === 'PX') detectedProduct = 'PX13-10-301';
+                else if (codeData.modelo === 'PE') detectedProduct = 'PEDD-10-301-A';
+                else if (codeData.modelo === 'P5') detectedProduct = 'P54G-10-301-A';
+            } else if (codeData.type === 'LWR') {
+                if (codeData.modelo === 'PX') detectedProduct = 'PX13-10-382';
+                else if (codeData.modelo === 'PE') detectedProduct = 'PEDD-10-382-A';
+                else if (codeData.modelo === 'P5') detectedProduct = 'P54G-10-382';
+            }
+            
+            if (detectedProduct) {
+                document.getElementById('retencion-producto').value = detectedProduct;
+                updateRetencionProductInfo();
+                
+                setTimeout(() => {
+                    const moldeSelect = document.getElementById('retencion-molde');
+                    if (moldeSelect && codeData.molde) {
+                        moldeSelect.value = codeData.molde;
+                    }
+                }, 100);
+            }
+        }
+    }
+}
+
+// 🆕 PRE-LLENAR RETENCIÓN DESDE CÓDIGO INDIVIDUAL
+function prefillRetencionFromIndividualCode(item) {
+    const codeData = extractCodeData(item.code);
+    
+    if (codeData) {
+        let detectedProduct = '';
+        if (codeData.type === 'UPR') {
+            if (codeData.modelo === 'PX') detectedProduct = 'PX13-10-301';
+            else if (codeData.modelo === 'PE') detectedProduct = 'PEDD-10-301-A';
+            else if (codeData.modelo === 'P5') detectedProduct = 'P54G-10-301-A';
+        } else if (codeData.type === 'LWR') {
+            if (codeData.modelo === 'PX') detectedProduct = 'PX13-10-382';
+            else if (codeData.modelo === 'PE') detectedProduct = 'PEDD-10-382-A';
+            else if (codeData.modelo === 'P5') detectedProduct = 'P54G-10-382';
+        }
+        
+        if (detectedProduct) {
+            document.getElementById('retencion-producto').value = detectedProduct;
+            updateRetencionProductInfo();
+            
+            setTimeout(() => {
+                const moldeSelect = document.getElementById('retencion-molde');
+                if (moldeSelect && codeData.molde) {
+                    moldeSelect.value = codeData.molde;
+                }
+            }, 100);
+        }
+    }
 }
 </script>
 </body>
