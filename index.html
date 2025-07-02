@@ -7282,9 +7282,13 @@ function generatePalletQR() {
         codesCount: validCodes.length
     });
     
-    // Limpiar formulario
-    clearGeneratorForm();
-}
+ // Solo limpiar códigos, mantener zona y tipo para posibles regeneraciones
+generatedCodes = [];
+duplicateAttempts = 0;
+document.getElementById('gen-codigos').value = '';
+updateCodesValidationList();
+updateValidationInfo();
+// NO llamar updateGenerateButton() aquí para mantener el botón habilitado
 
 // Mostrar resultado del QR generado
 function showQRResult(zona, tipo, codes, qrText) {
@@ -7468,8 +7472,8 @@ function clearGeneratorForm() {
     updateGenerateButton();
     
     // Ocultar resultado si está visible
-    document.getElementById('qr-result').style.display = 'none';
-    document.getElementById('generator-mode').style.display = 'block';
+    // document.getElementById('qr-result').style.display = 'none'; // 
+    // document.getElementById('generator-mode').style.display = 'block'; //
 }
 
 // Función para mostrar mensajes temporales
@@ -7549,6 +7553,13 @@ function updateCodesValidationList() {
     html += '</div>';
     
     listDiv.innerHTML = html;
+// Scroll automático hacia el último código agregado
+setTimeout(() => {
+    const listDiv = document.getElementById('codes-validation-list');
+    if (listDiv && listDiv.scrollHeight > listDiv.clientHeight) {
+        listDiv.scrollTop = listDiv.scrollHeight;
+    }
+}, 100);
 }
        // Función para remover códigos del generador
 function removeCode(index) {
