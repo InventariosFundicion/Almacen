@@ -4037,6 +4037,7 @@ movements.push({
     await saveToFirebase('inventory', JSON.stringify(arrayToFirebaseObject(inventory)));
     await saveToFirebase('movements', JSON.stringify(arrayToFirebaseObject(movements)));
 }
+// Reemplaza la función movePallet() completa
 function movePallet(palletId) {
     const pallet = pallets.find(p => p.systemId === palletId);
     if (!pallet) {
@@ -4044,11 +4045,11 @@ function movePallet(palletId) {
         return;
     }
     
-    // Definir opciones permitidas según estado actual
+    // 🆕 NUEVAS REGLAS DE MOVIMIENTO
     const allowedMoves = {
-        'fundidos': ['acabados', 'scrap', 'retenciones', 'pruebas'], // Fundidos NO puede ir a envíos ni mantenerse en fundidos
-        'acabados': ['envios', 'scrap', 'retenciones', 'pruebas'], // Acabados NO puede ir a fundidos ni mantenerse en acabados
-        'scrap': [], // Scrap no se puede mover a ningún lado
+        'fundidos': ['acabados', 'retenciones', 'pruebas', 'scrap'], // ✅ FUNDIDOS: solo a acabados, retención, pruebas o scrap
+        'acabados': ['envios', 'retenciones', 'pruebas', 'scrap'],   // ✅ ACABADOS: solo a envíos, retención, pruebas o scrap
+        'scrap': [], // Scrap no se puede mover
         'retenciones': ['fundidos', 'acabados', 'scrap'], // Retenciones puede liberarse o scrapearse
         'envios': [], // Envíos no se pueden mover
         'pruebas': ['fundidos', 'acabados', 'scrap'] // Pruebas puede regresar según resultado
@@ -4113,28 +4114,58 @@ function movePallet(palletId) {
     });
 }
 
-function confirmPalletMove(palletId) {
+// Reemplaza la función confirmPalletMove() completa
+async function confirmPalletMove(palletId) {
     if (!window.selectedMoveWarehouse) return;
     
     const pallet = pallets.find(p => p.systemId === palletId);
     const newWarehouse = window.selectedMoveWarehouse;
     
-    // VALIDACIÓN: Solo acabadas pueden ir a envíos
-    if (newWarehouse === 'envios' && pallet.state !== 'acabados') {
-        alert('⚠️ MOVIMIENTO NO PERMITIDO\n\nSolo las tarimas ACABADAS pueden enviarse.\n\nEsta tarima está en estado: ' + getWarehouseName(pallet.state));
-        return;
+    // 🆕 AUTOMATIZACIÓN DE FLUJOS
+    if (newWarehouse === 'retenciones') {
+        const confirmRetencion = confirm(`⏸️ CREAR RETENCIÓN AUTOMÁTICA\n\nSe creará automáticamente una retención para esta tarima.\n\n¿Continuar?`);
+        
+        if (confirmRetencion) {
+            // Crear retención automática
+            await createAutomaticRetencion(pallet);
+            closeMoveModal();
+            return;
+        } else {
+            return; // Cancelar movimiento
+        }
     }
     
+    if (newWarehouse === 'pruebas') {
+        const confirmPruebas = confirm(`🧪 ENVIAR A PRUEBAS\n\nEsta tarima será enviada a pruebas. Se puede crear una hoja de seguimiento.\n\n¿Continuar?`);
+        
+        if (confirmPruebas) {
+            // Opcional: crear hoja de seguimiento de pruebas
+            const createSheet = confirm(`📋 ¿Deseas crear una hoja de seguimiento para las pruebas?`);
+            
+            if (createSheet) {
+                await createAutomaticTestSheet(pallet);
+            }
+        } else {
+            return;
+        }
+    }
+    
+    // Continuar con movimiento normal
     pallet.warehouse = newWarehouse;
     pallet.state = newWarehouse;
     
+    // Actualizar inventario
     inventory.forEach(item => {
         if (item.palletId === palletId) {
             item.warehouse = newWarehouse;
-            item.state = newWarehouse === 'fundidos' ? 'FUNDIDOS' : 'ACABADOS';
+            item.state = getStateFromWarehouse(newWarehouse);
             item.lastMovement = new Date();
         }
     });
+    
+    // Guardar cambios
+    await saveToFirebase('pallets', JSON.stringify(arrayToFirebaseObject(pallets)));
+    await saveToFirebase('inventory', JSON.stringify(arrayToFirebaseObject(inventory)));
     
     alert('✅ Tarima ' + palletId + ' movida a ' + getWarehouseName(newWarehouse));
     updateAllDisplays();
@@ -9270,7 +9301,43 @@ async function confirmResolveRetencion(folio) {
     closeResolveModal();
     refreshRetencionList();
 }
-
+// Agrega esta función después de las funciones de retención existentes
+async function liberateFromRetencion(retencionFolio, targetWarehouse, reason) {
+    try {
+        // Encontrar elementos en retención
+        const itemsInRetencion = inventory.filter(item => item.retencionFolio === retencionFolio);
+        const palletsInRetencion = pallets.filter(pallet => pallet.retencionFolio === retencionFolio);
+        
+        // Actualizar estado de items
+        itemsInRetencion.forEach(item => {
+            item.warehouse = targetWarehouse;
+            item.state = getStateFromWarehouse(targetWarehouse);
+            item.retencionFolio = null;
+            item.lastMovement = new Date();
+            item.liberationReason = reason;
+        });
+        
+        // Actualizar estado de tarimas
+        palletsInRetencion.forEach(pallet => {
+            pallet.warehouse = targetWarehouse;
+            pallet.state = targetWarehouse;
+            pallet.retencionFolio = null;
+            pallet.liberationDate = new Date().toISOString();
+            pallet.liberationReason = reason;
+        });
+        
+        // Guardar cambios
+        await saveToFirebase('inventory', JSON.stringify(arrayToFirebaseObject(inventory)));
+        await saveToFirebase('pallets', JSON.stringify(arrayToFirebaseObject(pallets)));
+        
+        console.log(`✅ ${itemsInRetencion.length} items y ${palletsInRetencion.length} tarimas liberadas de retención`);
+        updateAllDisplays();
+        
+    } catch (error) {
+        console.error('Error liberando de retención:', error);
+        throw error;
+    }
+}
 
 function getActionText(action) {
     const actions = {
@@ -11092,12 +11159,44 @@ function getStateColor(state) {
     return colors[state] || '#6c757d';
 }
 
-// Función para mover código individual
+// Reemplaza la función moveIndividualCode() completa
 function moveIndividualCode(code) {
     const item = inventory.find(i => i.code === code);
     if (!item) return;
     
-    // Similar a movePallet pero para códigos individuales
+    // 🆕 APLICAR MISMAS REGLAS QUE TARIMAS
+    const allowedMoves = {
+        'fundidos': ['acabados', 'retenciones', 'pruebas', 'scrap'],
+        'acabados': ['envios', 'retenciones', 'pruebas', 'scrap'],
+        'scrap': [],
+        'retenciones': ['fundidos', 'acabados', 'scrap'],
+        'envios': [],
+        'pruebas': ['fundidos', 'acabados', 'scrap']
+    };
+    
+    const currentState = item.warehouse;
+    const availableMoves = allowedMoves[currentState] || [];
+    
+    if (availableMoves.length === 0) {
+        alert(`❌ MOVIMIENTO NO PERMITIDO\n\nLos códigos en estado "${getWarehouseName(currentState)}" no pueden moverse.`);
+        return;
+    }
+    
+    // Generar opciones filtradas
+    const warehouseOptions = {
+        'fundidos': '<div class="warehouse-btn" data-warehouse="fundidos">🔥 FUNDIDOS</div>',
+        'acabados': '<div class="warehouse-btn" data-warehouse="acabados">✅ ACABADOS</div>',
+        'scrap': '<div class="warehouse-btn" data-warehouse="scrap">♻️ SCRAP</div>',
+        'retenciones': '<div class="warehouse-btn" data-warehouse="retenciones">⏸️ RETENCIONES</div>',
+        'envios': '<div class="warehouse-btn" data-warehouse="envios">📦 ENVÍOS</div>',
+        'pruebas': '<div class="warehouse-btn" data-warehouse="pruebas">🧪 PRUEBAS</div>'
+    };
+    
+    let optionsHTML = '';
+    availableMoves.forEach(move => {
+        optionsHTML += warehouseOptions[move];
+    });
+    
     const modalHtml = `
         <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000;" id="moveIndividualModal">
             <div style="background: white; padding: 30px; border-radius: 15px; max-width: 500px; width: 90%;">
@@ -11108,12 +11207,7 @@ function moveIndividualCode(code) {
                 <div style="margin: 20px 0;">
                     <label style="display: block; margin-bottom: 10px; font-weight: bold;">Selecciona el almacén destino:</label>
                     <div class="warehouse-selector" id="move-individual-selector">
-                        <div class="warehouse-btn" data-warehouse="fundidos">🔥 FUNDIDOS</div>
-                        <div class="warehouse-btn" data-warehouse="acabados">✅ ACABADOS</div>
-                        <div class="warehouse-btn" data-warehouse="scrap">♻️ SCRAP</div>
-                        <div class="warehouse-btn" data-warehouse="retenciones">⏸️ RETENCIONES</div>
-                        <div class="warehouse-btn" data-warehouse="envios">📦 ENVÍOS</div>
-                        <div class="warehouse-btn" data-warehouse="pruebas">🧪 PRUEBAS</div>
+                        ${optionsHTML}
                     </div>
                 </div>
                 
@@ -11137,30 +11231,42 @@ function moveIndividualCode(code) {
         }
     });
 }
-
-// Función para confirmar movimiento individual
+// Reemplaza la función confirmIndividualMove() completa
 async function confirmIndividualMove(code) {
     if (!window.selectedMoveWarehouse) return;
     
     const item = inventory.find(i => i.code === code);
     const newWarehouse = window.selectedMoveWarehouse;
     
-    // Actualizar item
+    // 🆕 AUTOMATIZACIÓN DE FLUJOS PARA CÓDIGOS INDIVIDUALES
+    if (newWarehouse === 'retenciones') {
+        const confirmRetencion = confirm(`⏸️ CREAR RETENCIÓN AUTOMÁTICA\n\nSe creará automáticamente una retención para este código.\n\n¿Continuar?`);
+        
+        if (confirmRetencion) {
+            await createAutomaticIndividualRetencion(item);
+            closeIndividualMoveModal();
+            return;
+        } else {
+            return;
+        }
+    }
+    
+    if (newWarehouse === 'pruebas') {
+        const confirmPruebas = confirm(`🧪 ENVIAR A PRUEBAS\n\nEste código será enviado a pruebas.\n\n¿Continuar?`);
+        
+        if (!confirmPruebas) return;
+    }
+    
+    // Continuar con movimiento normal
     item.warehouse = newWarehouse;
-    item.state = newWarehouse === 'fundidos' ? 'FUNDIDOS' : 
-                 newWarehouse === 'acabados' ? 'ACABADOS' : 
-                 newWarehouse === 'scrap' ? 'SCRAP' :
-                 newWarehouse === 'retenciones' ? 'RETENIDO' :
-                 newWarehouse === 'envios' ? 'ENVIADO' :
-                 'EN_PRUEBAS';
+    item.state = getStateFromWarehouse(newWarehouse);
     item.lastMovement = new Date();
     
-    // Guardar en Firebase
     await saveToFirebase('inventory', JSON.stringify(arrayToFirebaseObject(inventory)));
     
     alert('✅ Código ' + code + ' movido a ' + getWarehouseName(newWarehouse));
     closeIndividualMoveModal();
-    filterIndividualItems(); // Refresh tabla
+    filterIndividualItems();
     updateAllDisplays();
 }
 
@@ -12018,6 +12124,177 @@ function exportData() {
         console.error('Error exportando datos:', error);
         alert('❌ Error exportando datos: ' + error.message);
     }
+}
+// 🆕 FUNCIÓN PARA CREAR RETENCIÓN AUTOMÁTICA DE TARIMA
+async function createAutomaticRetencion(pallet) {
+    try {
+        // Generar folio automático
+        const currentDate = new Date();
+        const year = currentDate.getFullYear().toString().slice(-2);
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const day = String(currentDate.getDate()).padStart(2, '0');
+        
+        const currentCounter = await loadFromFirebase('retencionCounter') || 1;
+        const newCounter = parseInt(currentCounter) + 1;
+        
+        const folio = `RET-${year}${month}${day}-${String(newCounter).padStart(4, '0')}`;
+        
+        // Crear retención con códigos de la tarima
+        const retencion = {
+            folio: folio,
+            fechaCreacion: new Date().toISOString(),
+            fechaProduccion: new Date().toISOString().split('T')[0],
+            tipoOrigen: 'TARIMA_AUTOMATICA',
+            palletId: pallet.systemId,
+            codigosQR: pallet.codes || [],
+            totalShots: pallet.codes ? pallet.codes.length : pallet.codesCount,
+            motivo: 'INSPECCION_AUTOMATICA',
+            observaciones: `Retención automática creada desde movimiento de tarima ${pallet.systemId}`,
+            creadoPor: currentUser.nombre,
+            estado: 'ACTIVA',
+            historial: [{
+                fecha: new Date().toISOString(),
+                accion: 'CREACION_AUTOMATICA',
+                responsable: currentUser.nombre,
+                comentario: 'Retención creada automáticamente desde gestión de inventario'
+            }]
+        };
+        
+        // Guardar retención
+        retenciones.push(retencion);
+        await saveToFirebase('retenciones', JSON.stringify(arrayToFirebaseObject(retenciones)));
+        await saveToFirebase('retencionCounter', newCounter.toString());
+        
+        // Actualizar estado de la tarima
+        pallet.warehouse = 'retenciones';
+        pallet.state = 'retenciones';
+        pallet.retencionFolio = folio;
+        
+        // Actualizar inventario
+        inventory.forEach(item => {
+            if (item.palletId === pallet.systemId) {
+                item.warehouse = 'retenciones';
+                item.state = 'RETENIDO';
+                item.retencionFolio = folio;
+                item.lastMovement = new Date();
+            }
+        });
+        
+        await saveToFirebase('pallets', JSON.stringify(arrayToFirebaseObject(pallets)));
+        await saveToFirebase('inventory', JSON.stringify(arrayToFirebaseObject(inventory)));
+        
+        alert(`✅ RETENCIÓN CREADA AUTOMÁTICAMENTE\n\nFolio: ${folio}\nTarima: ${pallet.systemId}\nCódigos: ${retencion.totalShots}\n\nPuedes gestionar la retención desde la pestaña "Retención y Scrap"`);
+        
+        // Opcional: abrir pestaña de retenciones
+        const openTab = confirm('¿Deseas abrir la pestaña de retenciones para revisar?');
+        if (openTab) {
+            showTab('scrap-retention');
+            showSubTab('retenciones');
+        }
+        
+        updateAllDisplays();
+        
+    } catch (error) {
+        console.error('Error creando retención automática:', error);
+        alert('❌ Error creando retención automática: ' + error.message);
+    }
+}
+
+// 🆕 FUNCIÓN PARA CREAR RETENCIÓN AUTOMÁTICA DE CÓDIGO INDIVIDUAL
+async function createAutomaticIndividualRetencion(item) {
+    try {
+        // Similar a la anterior pero para código individual
+        const currentDate = new Date();
+        const year = currentDate.getFullYear().toString().slice(-2);
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const day = String(currentDate.getDate()).padStart(2, '0');
+        
+        const currentCounter = await loadFromFirebase('retencionCounter') || 1;
+        const newCounter = parseInt(currentCounter) + 1;
+        
+        const folio = `RET-${year}${month}${day}-${String(newCounter).padStart(4, '0')}`;
+        
+        const retencion = {
+            folio: folio,
+            fechaCreacion: new Date().toISOString(),
+            fechaProduccion: new Date().toISOString().split('T')[0],
+            tipoOrigen: 'CODIGO_INDIVIDUAL_AUTOMATICO',
+            codigosQR: [item.code],
+            totalShots: 1,
+            motivo: 'INSPECCION_AUTOMATICA',
+            observaciones: `Retención automática creada para código individual ${item.code}`,
+            creadoPor: currentUser.nombre,
+            estado: 'ACTIVA',
+            historial: [{
+                fecha: new Date().toISOString(),
+                accion: 'CREACION_AUTOMATICA',
+                responsable: currentUser.nombre,
+                comentario: 'Retención individual creada automáticamente'
+            }]
+        };
+        
+        retenciones.push(retencion);
+        await saveToFirebase('retenciones', JSON.stringify(arrayToFirebaseObject(retenciones)));
+        await saveToFirebase('retencionCounter', newCounter.toString());
+        
+        // Actualizar item
+        item.warehouse = 'retenciones';
+        item.state = 'RETENIDO';
+        item.retencionFolio = folio;
+        item.lastMovement = new Date();
+        
+        await saveToFirebase('inventory', JSON.stringify(arrayToFirebaseObject(inventory)));
+        
+        alert(`✅ RETENCIÓN INDIVIDUAL CREADA\n\nFolio: ${folio}\nCódigo: ${item.code}`);
+        updateAllDisplays();
+        
+    } catch (error) {
+        console.error('Error creando retención individual:', error);
+        alert('❌ Error: ' + error.message);
+    }
+}
+
+// 🆕 FUNCIÓN PARA CREAR HOJA DE SEGUIMIENTO DE PRUEBAS
+async function createAutomaticTestSheet(pallet) {
+    try {
+        // Crear hoja similar a scrap pero para pruebas
+        const folio = `PRUEBA-${new Date().getFullYear().toString().slice(-2)}${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(folioCounter).padStart(4, '0')}`;
+        
+        const testSheet = {
+            folio: folio,
+            tipo: 'PRUEBAS',
+            fechaOperacion: new Date().toISOString().split('T')[0],
+            fechaCreacion: new Date().toISOString(),
+            palletId: pallet.systemId,
+            codigosQR: pallet.codes || [],
+            totalCodigos: pallet.codes ? pallet.codes.length : pallet.codesCount,
+            motivo: 'ENVIO_AUTOMATICO_PRUEBAS',
+            observaciones: `Hoja automática para seguimiento de pruebas de tarima ${pallet.systemId}`,
+            creadoPor: currentUser.nombre,
+            estado: 'EN_PRUEBAS'
+        };
+        
+        // Nota: Esto requeriría una nueva estructura para hojas de pruebas
+        // Por simplicidad, puedes usar scrapSheets o crear una nueva variable testSheets
+        
+        alert(`📋 HOJA DE SEGUIMIENTO CREADA\n\nFolio: ${folio}\nTipo: Pruebas\nTarima: ${pallet.systemId}`);
+        
+    } catch (error) {
+        console.error('Error creando hoja de pruebas:', error);
+    }
+}
+
+// 🆕 FUNCIÓN HELPER PARA MAPEAR WAREHOUSE A STATE
+function getStateFromWarehouse(warehouse) {
+    const mapping = {
+        'fundidos': 'FUNDIDOS',
+        'acabados': 'ACABADOS',
+        'scrap': 'SCRAP',
+        'retenciones': 'RETENIDO',
+        'envios': 'ENVIADO',
+        'pruebas': 'EN_PRUEBAS'
+    };
+    return mapping[warehouse] || 'DESCONOCIDO';
 }
 </script>
 </body>
