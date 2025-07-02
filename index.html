@@ -7251,9 +7251,13 @@ function clearAllCodes() {
 
 // Generar código QR de tarima
 function generatePalletQR() {
+    console.log('🔍 generatePalletQR iniciada'); // 🆕 AGREGAR
+	
     const zona = document.getElementById('gen-zona').value.trim();
     const tipo = document.getElementById('gen-tipo').value;
     const validCodes = generatedCodes.filter(item => item.valid);
+	
+    console.log('📊 Datos:', { zona, tipo, validCodes: validCodes.length }); // 🆕 AGREGAR
     
     if (!zona || !tipo || validCodes.length === 0) {
         alert('⚠️ Completa todos los campos:\n• Zona/ID de tarima\n• Tipo de material\n• Al menos un código válido');
@@ -7284,7 +7288,7 @@ function generatePalletQR() {
 
 // Mostrar resultado del QR generado
 function showQRResult(zona, tipo, codes, qrText) {
-    console.log('showQRResult llamada con:', zona, tipo, codes.length, 'códigos'); // DEBUG
+    console.log('🎯 showQRResult iniciada con:', { zona, tipo, codesLength: codes.length, qrTextLength: qrText.length }); // 🆕 AGREGAR
     
     const resultDiv = document.getElementById('qr-result');
     const infoDiv = document.getElementById('qr-info');
