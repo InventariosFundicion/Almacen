@@ -1042,6 +1042,38 @@
         align-items: center;
     }
 }
+/* Agrega estas reglas CSS dentro del <style> */
+.chart-container {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    min-height: 400px; /* Aumentar altura mínima */
+}
+
+.chart-container .chart-content {
+    position: relative;
+    height: 350px; /* Aumentar altura del gráfico */
+}
+/* Agrega al CSS existente */
+.chart-container.activity-feed {
+    min-height: 350px; /* Más altura */
+}
+
+.activity-feed {
+    max-height: 300px; /* Aumentar altura máxima */
+    overflow-y: auto;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 12px; /* Más padding */
+    border-bottom: 1px solid #ecf0f1;
+    transition: background 0.2s ease;
+}
     </style>
 </head>
 <body>
@@ -1156,26 +1188,44 @@
         </div>
 
         <!-- Métricas de calidad -->
-        <div class="chart-container">
-            <div class="chart-header">
-                <h3>🎯 Métricas de Calidad</h3>
-                <p>Porcentajes de eficiencia</p>
+<div class="chart-container">
+    <div class="chart-header">
+        <h3>🎯 Métricas de Calidad</h3>
+        <p>Porcentajes de eficiencia</p>
+        <!-- AGREGAR FILTROS -->
+        <div style="display: flex; gap: 15px; margin: 15px 0;">
+            <div>
+                <label>Máquina:</label>
+                <select id="quality-machine-filter" onchange="updateQualityMetrics()" style="padding: 5px;">
+                    <option value="">Todas</option>
+                    <option value="30">Máquina 30</option>
+                    <option value="31">Máquina 31</option>
+                    <option value="32">Máquina 32</option>
+                    <option value="33">Máquina 33</option>
+                    <option value="34">Máquina 34</option>
+                </select>
             </div>
-            <div class="quality-metrics">
-                <div class="quality-metric">
-                    <div class="quality-circle" id="quality-efficiency">
-                        <span class="quality-percentage" id="efficiency-percentage">0%</span>
-                        <span class="quality-label">Eficiencia</span>
-                    </div>
-                </div>
-                <div class="quality-metric">
-                    <div class="quality-circle" id="quality-defects">
-                        <span class="quality-percentage" id="defects-percentage">0%</span>
-                        <span class="quality-label">Defectos</span>
-                    </div>
-                </div>
+            <div>
+                <label>Fecha:</label>
+                <input type="date" id="quality-date-filter" onchange="updateQualityMetrics()" style="padding: 5px;">
             </div>
         </div>
+    </div>
+    <div class="quality-metrics" style="height: 300px;"> <!-- Más altura -->
+        <div class="quality-metric">
+            <div class="quality-circle" id="quality-efficiency">
+                <span class="quality-percentage" id="efficiency-percentage">0%</span>
+                <span class="quality-label">Eficiencia</span>
+            </div>
+        </div>
+        <div class="quality-metric">
+            <div class="quality-circle" id="quality-defects">
+                <span class="quality-percentage" id="defects-percentage">0%</span>
+                <span class="quality-label">Defectos</span>
+            </div>
+        </div>
+    </div>
+</div>
 
         <!-- Resumen de actividad -->
         <div class="chart-container">
@@ -11155,69 +11205,64 @@ function initializeDashboardCharts() {
     }, 1000);
 }
 
-// Gráfico de estatus por modelo
+// Reemplaza la función createStatusByModelChart() completa
 function createStatusByModelChart() {
     const ctx = document.getElementById('statusByModelChart');
     if (!ctx) return;
 
-    // Procesar datos del inventario
-    const modelData = {};
-    inventory.forEach(item => {
-        if (item.quantity > 0) {
-            const model = extractModelFromPartNumber(item.partNumber);
-            if (!modelData[model]) {
-                modelData[model] = { fundidos: 0, acabados: 0, retenciones: 0, scrap: 0 };
-            }
-            
-            if (item.warehouse === 'fundidos') modelData[model].fundidos += item.quantity;
-            else if (item.warehouse === 'acabados') modelData[model].acabados += item.quantity;
-            else if (item.warehouse === 'retenciones') modelData[model].retenciones += item.quantity;
-            else if (item.warehouse === 'scrap') modelData[model].scrap += item.quantity;
+    // Procesar datos por número de parte y fecha
+    const dailyData = {};
+    const partNumbers = new Set();
+
+    // Agrupar movimientos por fecha y número de parte
+    movements.forEach(movement => {
+        const date = new Date(movement.date).toISOString().split('T')[0];
+        const partNumber = movement.partNumber || 'DESCONOCIDO';
+        
+        if (!dailyData[date]) {
+            dailyData[date] = {};
         }
+        if (!dailyData[date][partNumber]) {
+            dailyData[date][partNumber] = { fundidos: 0, acabados: 0, scrap: 0, retenciones: 0 };
+        }
+        
+        partNumbers.add(partNumber);
+        
+        // Sumar o restar según el almacén de destino
+        if (movement.warehouse === 'fundidos') dailyData[date][partNumber].fundidos += movement.quantity;
+        else if (movement.warehouse === 'acabados') dailyData[date][partNumber].acabados += movement.quantity;
+        else if (movement.warehouse === 'scrap') dailyData[date][partNumber].scrap += movement.quantity;
+        else if (movement.warehouse === 'retenciones') dailyData[date][partNumber].retenciones += movement.quantity;
     });
 
-    const models = Object.keys(modelData);
-    
+    // Obtener últimos 7 días
+    const dates = Object.keys(dailyData).sort().slice(-7);
+    const partNumbersArray = Array.from(partNumbers);
+
     if (statusChart) statusChart.destroy();
     
     statusChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: models,
-            datasets: [
-                {
-                    label: '🔥 Fundidos',
-                    data: models.map(model => modelData[model].fundidos),
-                    backgroundColor: '#e74c3c',
-                    borderColor: '#c0392b',
+            labels: dates.map(date => new Date(date).toLocaleDateString()),
+            datasets: partNumbersArray.map((partNumber, index) => {
+                const colors = ['#e74c3c', '#27ae60', '#3498db', '#f39c12', '#9b59b6', '#1abc9c'];
+                return {
+                    label: partNumber,
+                    data: dates.map(date => {
+                        const dayData = dailyData[date] && dailyData[date][partNumber];
+                        return dayData ? (dayData.fundidos + dayData.acabados + dayData.scrap + dayData.retenciones) : 0;
+                    }),
+                    backgroundColor: colors[index % colors.length],
+                    borderColor: colors[index % colors.length],
                     borderWidth: 2
-                },
-                {
-                    label: '✅ Acabados',
-                    data: models.map(model => modelData[model].acabados),
-                    backgroundColor: '#27ae60',
-                    borderColor: '#229954',
-                    borderWidth: 2
-                },
-                {
-                    label: '⏸️ Retenciones',
-                    data: models.map(model => modelData[model].retenciones),
-                    backgroundColor: '#f39c12',
-                    borderColor: '#e67e22',
-                    borderWidth: 2
-                },
-                {
-                    label: '♻️ Scrap',
-                    data: models.map(model => modelData[model].scrap),
-                    backgroundColor: '#95a5a6',
-                    borderColor: '#7f8c8d',
-                    borderWidth: 2
-                }
-            ]
+                };
+            })
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            aspectRatio: 2.5, // Más ancho horizontalmente
             plugins: {
                 legend: {
                     position: 'top',
@@ -11239,43 +11284,37 @@ function createStatusByModelChart() {
         }
     });
 }
-
 // Gráfico de distribución de almacenes
+// Reemplaza la función createWarehouseDistributionChart() completa
 function createWarehouseDistributionChart() {
     const ctx = document.getElementById('warehouseDistributionChart');
     if (!ctx) return;
 
-    const warehouseData = {
-        fundidos: 0,
-        acabados: 0,
-        retenciones: 0,
-        scrap: 0,
-        envios: 0,
-        pruebas: 0
-    };
+    const partNumberData = {};
 
     inventory.forEach(item => {
-        if (item.quantity > 0 && warehouseData.hasOwnProperty(item.warehouse)) {
-            warehouseData[item.warehouse] += item.quantity;
+        if (item.quantity > 0) {
+            const partNumber = item.partNumber || 'DESCONOCIDO';
+            if (!partNumberData[partNumber]) {
+                partNumberData[partNumber] = 0;
+            }
+            partNumberData[partNumber] += item.quantity;
         }
     });
+
+    const partNumbers = Object.keys(partNumberData);
+    const quantities = Object.values(partNumberData);
+    const colors = ['#e74c3c', '#27ae60', '#3498db', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#95a5a6'];
 
     if (warehouseChart) warehouseChart.destroy();
 
     warehouseChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: ['🔥 Fundidos', '✅ Acabados', '⏸️ Retenciones', '♻️ Scrap', '📦 Envíos', '🧪 Pruebas'],
+            labels: partNumbers,
             datasets: [{
-                data: Object.values(warehouseData),
-                backgroundColor: [
-                    '#e74c3c',
-                    '#27ae60', 
-                    '#f39c12',
-                    '#95a5a6',
-                    '#3498db',
-                    '#9b59b6'
-                ],
+                data: quantities,
+                backgroundColor: colors.slice(0, partNumbers.length),
                 borderWidth: 3,
                 borderColor: '#fff'
             }]
@@ -11283,9 +11322,14 @@ function createWarehouseDistributionChart() {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            aspectRatio: 2.5, // Más ancho horizontalmente
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20
+                    }
                 }
             }
         }
@@ -11370,11 +11414,29 @@ function createDailyProductionChart() {
     });
 }
 
-// Actualizar métricas de calidad
+// Reemplaza la función updateQualityMetrics() completa
 function updateQualityMetrics() {
-    const totalProduction = productionReports.reduce((sum, report) => sum + report.cantidadTotal, 0);
-    const totalGood = productionReports.reduce((sum, report) => sum + report.piezasBuenas, 0);
-    const totalNG = productionReports.reduce((sum, report) => sum + report.cantidadNG, 0);
+    const machineFilter = document.getElementById('quality-machine-filter')?.value;
+    const dateFilter = document.getElementById('quality-date-filter')?.value;
+    
+    let filteredReports = productionReports;
+    
+    // Aplicar filtros
+    if (machineFilter) {
+        filteredReports = filteredReports.filter(report => 
+            report.maquina && report.maquina.toString() === machineFilter
+        );
+    }
+    
+    if (dateFilter) {
+        filteredReports = filteredReports.filter(report => 
+            report.fecha === dateFilter
+        );
+    }
+    
+    const totalProduction = filteredReports.reduce((sum, report) => sum + report.cantidadTotal, 0);
+    const totalGood = filteredReports.reduce((sum, report) => sum + report.piezasBuenas, 0);
+    const totalNG = filteredReports.reduce((sum, report) => sum + report.cantidadNG, 0);
     
     const efficiency = totalProduction > 0 ? Math.round((totalGood / totalProduction) * 100) : 0;
     const defects = totalProduction > 0 ? Math.round((totalNG / totalProduction) * 100) : 0;
@@ -11395,7 +11457,6 @@ function updateQualityMetrics() {
             (defects <= 5 ? 'excellent' : defects <= 15 ? 'good' : 'poor');
     }
 }
-
 // Actualizar actividad reciente
 function updateRecentActivity() {
     const recentActivity = document.getElementById('recent-activity');
@@ -11835,6 +11896,127 @@ async function loadProductionReportsOptimized() {
     } catch (error) {
         console.error('❌ Error cargando reportes:', error);
         productionReports = [];
+    }
+}
+// Función para generar reporte
+function generateReport() {
+    try {
+        // Crear datos del reporte
+        const reportData = {
+            fecha: new Date().toLocaleString(),
+            inventario: {
+                total: inventory.filter(i => i.quantity > 0).length,
+                fundidos: inventory.filter(i => i.warehouse === 'fundidos' && i.quantity > 0).length,
+                acabados: inventory.filter(i => i.warehouse === 'acabados' && i.quantity > 0).length,
+                scrap: inventory.filter(i => i.warehouse === 'scrap' && i.quantity > 0).length
+            },
+            tarimas: pallets.length,
+            movimientos: movements.length,
+            reportesProduccion: productionReports.length,
+            verificacionesFisicas: Object.keys(physicalVerification).length
+        };
+        
+        // Crear contenido HTML del reporte
+        const reportHTML = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Reporte General - ${new Date().toLocaleDateString()}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    .header { text-align: center; border-bottom: 2px solid #333; padding: 20px; }
+                    .section { margin: 20px 0; }
+                    .stat { display: inline-block; margin: 10px; padding: 15px; background: #f5f5f5; border-radius: 5px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>🏭 REPORTE GENERAL DEL SISTEMA</h1>
+                    <p>Generado: ${reportData.fecha}</p>
+                </div>
+                
+                <div class="section">
+                    <h2>📊 RESUMEN DE INVENTARIO</h2>
+                    <div class="stat"><strong>Total Items:</strong> ${reportData.inventario.total}</div>
+                    <div class="stat"><strong>🔥 Fundidos:</strong> ${reportData.inventario.fundidos}</div>
+                    <div class="stat"><strong>✅ Acabados:</strong> ${reportData.inventario.acabados}</div>
+                    <div class="stat"><strong>♻️ Scrap:</strong> ${reportData.inventario.scrap}</div>
+                </div>
+                
+                <div class="section">
+                    <h2>📦 ESTADÍSTICAS GENERALES</h2>
+                    <div class="stat"><strong>Tarimas:</strong> ${reportData.tarimas}</div>
+                    <div class="stat"><strong>Movimientos:</strong> ${reportData.movimientos}</div>
+                    <div class="stat"><strong>Reportes Producción:</strong> ${reportData.reportesProduccion}</div>
+                    <div class="stat"><strong>Verificaciones Físicas:</strong> ${reportData.verificacionesFisicas}</div>
+                </div>
+            </body>
+            </html>
+        `;
+        
+        // Crear y descargar el reporte
+        const blob = new Blob([reportHTML], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Reporte-General-${new Date().toISOString().split('T')[0]}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert('📊 Reporte generado y descargado exitosamente');
+        
+    } catch (error) {
+        console.error('Error generando reporte:', error);
+        alert('❌ Error generando reporte: ' + error.message);
+    }
+}
+
+// Función para exportar datos - ACTUALIZADA Y FUNCIONAL
+function exportData() {
+    try {
+        const data = {
+            metadata: {
+                fechaExportacion: new Date().toISOString(),
+                version: "1.3",
+                totalInventario: inventory.length,
+                totalMovimientos: movements.length,
+                totalTarimas: pallets.length
+            },
+            inventory: inventory,
+            movements: movements,
+            pallets: pallets,
+            physicalVerification: physicalVerification,
+            productionReports: productionReports.map(report => ({
+                ...report,
+                evidencia: report.evidencia ? { hasEvidence: true } : null // Excluir evidencia pesada
+            })),
+            scrapSheets: scrapSheets.map(sheet => ({
+                ...sheet,
+                evidencia: sheet.evidencia ? { hasEvidence: true } : null // Excluir evidencia pesada
+            })),
+            retenciones: retenciones
+        };
+        
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `almacen-completo-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        alert('📊 Datos exportados exitosamente\n\nArchivo JSON con toda la información del sistema descargado.');
+        
+    } catch (error) {
+        console.error('Error exportando datos:', error);
+        alert('❌ Error exportando datos: ' + error.message);
     }
 }
 </script>
