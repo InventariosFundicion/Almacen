@@ -579,12 +579,30 @@
 .codes-list {
     max-height: 300px;
     overflow-y: auto;
+    scroll-behavior: smooth;  /* 🆕 AGREGAR ESTA LÍNEA */
     border: 1px solid #dee2e6;
     border-radius: 8px;
     padding: 10px;
     background: #f8f9fa;
 }
+/* 🆕 AGREGAR ESTAS LÍNEAS NUEVAS: */
+.codes-list::-webkit-scrollbar {
+    width: 8px;
+}
 
+.codes-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.codes-list::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.codes-list::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
 .code-item {
     display: flex;
     justify-content: space-between;
@@ -7044,6 +7062,17 @@ function handleGeneratorScan(qrData) {
         
         // Agregar código a la lista
         addCodeToList(code);
+	// 🆕 AGREGAR ESTAS LÍNEAS:
+        // Scroll adicional para cámara (más tiempo para que se vea el efecto)
+        setTimeout(() => {
+            const listDiv = document.getElementById('codes-validation-list');
+            if (listDiv) {
+                listDiv.scrollTo({
+                    top: listDiv.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+        }, 300);
         
         // Feedback visual
         const statusElement = document.getElementById('gen-camera-status');
@@ -7098,6 +7127,17 @@ function addCodeToList(code) {
     updateCodesValidationList();
     updateValidationInfo(); // CRÍTICO: Actualizar siempre
     updateGenerateButton();
+	    // 🆕 AGREGAR ESTAS LÍNEAS:
+    // Scroll suave hacia el último elemento agregado
+    setTimeout(() => {
+        const listDiv = document.getElementById('codes-validation-list');
+        if (listDiv) {
+            listDiv.scrollTo({
+                top: listDiv.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+    }, 200);
 }
 // Actualizar textarea con códigos
 function updateCodesTextarea() {
@@ -7130,6 +7170,13 @@ function updateCodesValidationList() {
     html += '</div>';
     
     listDiv.innerHTML = html;
+ // 🆕 AGREGAR ESTAS LÍNEAS AL FINAL:
+    // Scroll automático hacia abajo
+    setTimeout(() => {
+        if (listDiv && listDiv.scrollHeight > listDiv.clientHeight) {
+            listDiv.scrollTop = listDiv.scrollHeight;
+        }
+    }, 150);
 }
 
 // Actualizar información de validación
