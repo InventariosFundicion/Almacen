@@ -1084,13 +1084,13 @@
         </div>
 
         <div class="nav-tabs">
-            <button class="nav-tab active" data-tab="dashboard">📊 Dashboard</button>
-            <button class="nav-tab" data-tab="scanner">📱 Escáner QR</button>
-            <button class="nav-tab" data-tab="inventory">📋 Información de Inventario</button>
-            <button class="nav-tab" data-tab="pallets">⚙️ Gestión de Inventario</button>
-            <button class="nav-tab" data-tab="production">🏭 Producción</button>
-            <button class="nav-tab" data-tab="theoretical">📊 Teórico vs Físico</button>
-	    <button class="nav-tab" data-tab="scrap-retention"> ♻️ Retención y Scrap</button>
+            <button class="nav-tab active" data-tab="dashboard" onclick="showTab('dashboard')">📊 Dashboard</button>
+            <button class="nav-tab" data-tab="scanner" onclick="showTab('scanner')">📱 Escáner QR</button>
+            <button class="nav-tab" data-tab="inventory" onclick="showTab('inventory')">📋 Información de Inventario</button>
+            <button class="nav-tab" data-tab="pallets" onclick="showTab('pallets')">⚙️ Gestión de Inventario</button>
+            <button class="nav-tab" data-tab="production" onclick="showTab('production')">🏭 Producción</button>
+            <button class="nav-tab" data-tab="theoretical" onclick="showTab('theoretical')">📊 Teórico vs Físico</button>
+	    <button class="nav-tab" data-tab="scrap-retention" onclick="showTab('scrap-retention')"> ♻️ Retención y Scrap</button>
              
         </div>
 
@@ -1245,15 +1245,15 @@
 
     <!-- Botones de acción -->
     <div class="dashboard-actions">
-        <button class="dashboard-btn primary" onclick="exportData()">
+        <button class="dashboard-btn primary" onclick="exportData()" title="Exportar todos los datos">
             <span class="btn-icon">📊</span>
             <span class="btn-text">Exportar Datos</span>
         </button>
-        <button class="dashboard-btn secondary" onclick="refreshDashboard()">
+        <button class="dashboard-btn secondary" onclick="refreshDashboard()" title="Actualizar dashboard">
             <span class="btn-icon">🔄</span>
             <span class="btn-text">Actualizar</span>
         </button>
-        <button class="dashboard-btn success" onclick="generateReport()">
+        <button class="dashboard-btn success" onclick="generateReport()" title="Generar reporte de producción">
             <span class="btn-icon">📋</span>
             <span class="btn-text">Generar Reporte</span>
         </button>
@@ -1283,9 +1283,9 @@
 
         <!-- Controles de cámara -->
         <div class="camera-controls">
-            <button class="btn btn-success" id="start-camera-btn" onclick="startCamera()">📷 Activar Cámara</button>
-            <button class="btn btn-danger" id="stop-camera-btn" onclick="stopCamera()" style="display: none;">⏹️ Detener Cámara</button>
-            <button class="btn btn-info" id="switch-camera-btn" onclick="switchCamera()" style="display: none;">🔄 Cambiar Cámara</button>
+            <button class="btn btn-success" id="start-camera-btn" onclick="startCamera()" title="Activar cámara para escanear QR">📷 Activar Cámara</button>
+            <button class="btn btn-danger" id="stop-camera-btn" onclick="stopCamera()" style="display: none;" title="Detener cámara">⏹️ Detener Cámara</button>
+            <button class="btn btn-info" id="switch-camera-btn" onclick="switchCamera()" style="display: none;" title="Cambiar cámara frontal/trasera">🔄 Cambiar Cámara</button>
         </div>
 
         <!-- Contenedor de la cámara -->
@@ -1343,9 +1343,9 @@
                 <div class="warehouse-btn" data-warehouse="acabados">✅ ACABADOS</div>
             </div>
         </div>
-        <button class="btn btn-success" onclick="handleAsyncCall(() => processQRCode())">✅ Procesar Código QR</button>
-        <button class="btn btn-info" onclick="clearForm()">🔄 Limpiar</button>
-        <button class="btn btn-warning" onclick="handleStartNewShiftVerification()">🆕 Nuevo Turno</button>
+        <button class="btn btn-success" onclick="handleAsyncCall(() => processQRCode())" title="Procesar código QR">✅ Procesar Código QR</button>
+        <button class="btn btn-info" onclick="clearForm()" title="Limpiar formulario">🔄 Limpiar</button>
+        <button class="btn btn-warning" onclick="handleStartNewShiftVerification()" title="Iniciar nuevo turno">🆕 Nuevo Turno</button>
         <div id="process-result" style="margin-top: 20px;"></div>
     </div>
     <!-- Modo Generador (Nuevo) -->
@@ -1372,10 +1372,10 @@
         <div class="form-group">
             <label>📋 Códigos de Piezas Individuales:</label>
             <div class="camera-controls">
-                <button class="btn btn-success" id="gen-start-camera-btn" onclick="startGeneratorCamera()">📷 Usar Cámara</button>
-                <button class="btn btn-danger" id="gen-stop-camera-btn" onclick="stopGeneratorCamera()" style="display: none;">⏹️ Detener</button>
-                <button class="btn btn-info" onclick="pasteCodesFromClipboard()">📋 Pegar desde Portapapeles</button>
-                <button class="btn btn-warning" onclick="clearAllCodes()">🗑️ Limpiar Todo</button>
+                <button class="btn btn-success" id="gen-start-camera-btn" onclick="startGeneratorCamera()" title="Activar cámara para códigos individuales">📷 Usar Cámara</button>
+                <button class="btn btn-danger" id="gen-stop-camera-btn" onclick="stopGeneratorCamera()" style="display: none;" title="Detener cámara">⏹️ Detener</button>
+                <button class="btn btn-info" onclick="pasteCodesFromClipboard()" title="Pegar códigos desde portapapeles">📋 Pegar desde Portapapeles</button>
+                <button class="btn btn-warning" onclick="clearAllCodes()" title="Limpiar todos los códigos">🗑️ Limpiar Todo</button>
             </div>
 
             <!-- Cámara para códigos individuales -->
@@ -1399,8 +1399,8 @@
             </div>
         </div>
 
-        <button class="btn btn-success" onclick="generatePalletQR()" id="generate-qr-btn" disabled>🏷️ Generar Código QR de Tarima</button>
-        <button class="btn btn-info" onclick="clearGeneratorForm()">🔄 Limpiar Formulario</button>
+        <button class="btn btn-success" onclick="generatePalletQR()" id="generate-qr-btn" disabled title="Generar código QR de tarima">🏷️ Generar Código QR de Tarima</button>
+        <button class="btn btn-info" onclick="clearGeneratorForm()" title="Limpiar formulario generador">🔄 Limpiar Formulario</button>
     </div>
 
     <!-- Resultado de QR Generado -->
@@ -1416,9 +1416,9 @@
                 <h4>🏷️ Código QR:</h4>
                 <div id="qr-display"></div>
                 <div style="margin-top: 15px;">
-                    <button class="btn btn-primary" onclick="downloadQRImage()">📥 Descargar Imagen</button>
-                    <button class="btn btn-info" onclick="copyQRText()">📋 Copiar Texto</button>
-                    <button class="btn btn-warning" onclick="printQR()">🖨️ Imprimir</button>
+                    <button class="btn btn-primary" onclick="downloadQRImage()" title="Descargar imagen del código QR">📥 Descargar Imagen</button>
+                    <button class="btn btn-info" onclick="copyQRText()" title="Copiar texto del código QR">📋 Copiar Texto</button>
+                    <button class="btn btn-warning" onclick="printQR()" title="Imprimir código QR">🖨️ Imprimir</button>
                 </div>
             </div>
         </div>
@@ -1435,8 +1435,8 @@
 <div id="inventory" class="tab-content">
     <h2>📋 Inventario Detallado</h2>
 
-    <div style="text-align: center; margin-bottom: 20px;">
-        <button onclick="clearAllInventoryData()" class="btn" style="background: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 10px 0;">
+    <div id="admin-clear-btn-container" class="admin-only" style="text-align: center; margin-bottom: 20px;">
+        <button onclick="clearAllInventoryData()" class="btn" title="Solo visible para el Administrador Principal" style="background: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 10px 0;">
             🗑️ LIMPIAR TODOS LOS DATOS
         </button>
     </div>
@@ -9690,6 +9690,17 @@ function showMainApp() {
     
     // Aplicar permisos a la aplicación existente
     applyPermissions();
+
+    // Mostrar el botón de limpiar datos solo para el administrador principal
+    if (currentUser && currentUser.rol === ROLES.ADMIN) {
+        const clearBtnContainer = document.getElementById('admin-clear-btn-container');
+        if (clearBtnContainer) {
+            clearBtnContainer.style.display = 'block';
+        } else {
+            console.error('El contenedor del botón admin-clear-btn-container no se encontró.');
+        }
+    }
+
     // 4. Inicializar sistemas específicos solo si el usuario está logueado
         console.log('🔍 DEBUG showMainApp - currentUser:', currentUser, 'isLoggedIn:', isLoggedIn);
         if (currentUser) {
