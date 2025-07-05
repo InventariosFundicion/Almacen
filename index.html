@@ -2860,6 +2860,120 @@ function getAccionesButtons(sheet) {
             alert('📄 Funcionalidad de PDF en desarrollo. Por ahora puedes usar "Guardar Hoja" y luego "Generar PDF" desde la lista.');
         }
 
+        // Implement exportToPDF function to generate PDF report for scrap summary
+        function exportToPDF() {
+            const dateFrom = document.getElementById('report-date-from').value;
+            const dateTo = document.getElementById('report-date-to').value;
+            const product = document.getElementById('report-product').value;
+
+            let filteredSheets = scrapSheets;
+
+            if (dateFrom) {
+                filteredSheets = filteredSheets.filter(sheet => sheet.fechaOperacion >= dateFrom);
+            }
+            if (dateTo) {
+                filteredSheets = filteredSheets.filter(sheet => sheet.fechaOperacion <= dateTo);
+            }
+            if (product) {
+                filteredSheets = filteredSheets.filter(sheet => sheet.numeroProducto === product);
+            }
+
+            const totalShots = filteredSheets.reduce((sum, sheet) => sum + sheet.shots.length, 0);
+            const totalSheets = filteredSheets.length;
+
+            // Create HTML content for the PDF report
+            const currentDate = new Date().toLocaleDateString('es-ES');
+            const currentTime = new Date().toLocaleTimeString('es-ES');
+
+            let htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Reporte de Scrap Adicional</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
+                        .header { text-align: center; border-bottom: 3px solid #e74c3c; padding-bottom: 20px; margin-bottom: 30px; }
+                        .company-name { font-size: 24px; font-weight: bold; color: #e74c3c; margin-bottom: 5px; }
+                        .report-title { font-size: 18px; color: #2c3e50; margin-bottom: 10px; }
+                        .report-info { font-size: 14px; color: #666; }
+                        .section { margin: 25px 0; }
+                        .section-title { font-size: 16px; font-weight: bold; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-bottom: 15px; }
+                        table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 12px; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background-color: #34495e; color: white; font-weight: bold; }
+                        tr:nth-child(even) { background-color: #f8f9fa; }
+                        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-align: center; }
+                        @media print { body { margin: 0; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="company-name">🏭 CONTROL DE ALMACÉN - FUNDICIÓN</div>
+                        <div class="report-title">📊 REPORTE DE SCRAP ADICIONAL</div>
+                        <div class="report-info">📅 Fecha: ${currentDate} | ⏰ Hora: ${currentTime}</div>
+                    </div>
+                    <div class="section">
+                        <div class="section-title">📋 Resumen de Scrap</div>
+                        <p>Total de hojas: <strong>${totalSheets}</strong></p>
+                        <p>Total de shots: <strong>${totalShots}</strong></p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Folio</th>
+                                    <th>Fecha Operación</th>
+                                    <th>Producto</th>
+                                    <th>Molde</th>
+                                    <th>Sector</th>
+                                    <th>Shots</th>
+                                    <th>Creado Por</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+
+            filteredSheets.forEach(sheet => {
+                htmlContent += `
+                    <tr>
+                        <td>${sheet.folio}</td>
+                        <td>${sheet.fechaOperacion}</td>
+                        <td>${sheet.numeroProducto}</td>
+                        <td>${sheet.moldeProducto || 'N/A'}</td>
+                        <td>${sheet.sectorTrabajo}</td>
+                        <td>${sheet.shots ? sheet.shots.length : 0}</td>
+                        <td>${sheet.creadoPor}</td>
+                        <td>${sheet.estado}</td>
+                    </tr>
+                `;
+            });
+
+            htmlContent += `
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="footer">
+                        Reporte generado automáticamente por el Sistema de Control de Almacén - Fundición v1.3
+                    </div>
+                </body>
+                </html>
+            `;
+
+            // Create blob and trigger download
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Reporte_Scrap_Adicional_${new Date().toISOString().split('T')[0]}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert('📄 Reporte exportado como archivo HTML.\n\nPara generar PDF:\n1. Abre el archivo en tu navegador\n2. Presiona Ctrl+P (Cmd+P en Mac)\n3. Selecciona "Guardar como PDF"');
+        }
+
         // Generar PDF de hoja específica
 function generateSheetPDF(folio) {
     const sheet = scrapSheets.find(s => s.folio === folio);
@@ -3086,42 +3200,42 @@ function scanQRCode() {
             document.getElementById('scrap-summary').innerHTML = summaryHTML;
         }
 
-// Actualizar la función exportToExcel
-function exportToExcel() {
-    const sheets = getFromLocalStorage('scrapSheets') || [];
-    
-    // Preparar datos para Excel
-    const excelData = [];
-    
-    sheets.forEach(sheet => {
-        sheet.shots.forEach(shot => {
-            excelData.push({
-                'Folio': sheet.folio,
-                'Fecha': sheet.fechaOperacion,
-                'Producto': sheet.numeroProducto,
-                'Nombre Producto': sheet.nombreProducto,
-                'Molde': sheet.moldeProducto,
-                'Sector': sheet.sectorTrabajo,
-                'Shot': shot.shotNumber,
-                'Molde Shot': shot.moldeNumber,
-                'Motivo Scrap': shot.scrapReason,
-                'Almacén Origen': sheet.almacenOrigen,
-                'Almacén Proveniente': shot.almacenProveniente || sheet.almacenOrigen,
-                'Creado Por': sheet.creadoPor,
-                'Estado': sheet.estado,
-                'Observaciones': sheet.observaciones
+        // Actualizar la función exportToExcel
+        function exportToExcel() {
+            const sheets = getFromLocalStorage('scrapSheets') || [];
+            
+            // Preparar datos para Excel
+            const excelData = [];
+            
+            sheets.forEach(sheet => {
+                sheet.shots.forEach(shot => {
+                    excelData.push({
+                        'Folio': sheet.folio,
+                        'Fecha': sheet.fechaOperacion,
+                        'Producto': sheet.numeroProducto,
+                        'Nombre Producto': sheet.nombreProducto,
+                        'Molde': sheet.moldeProducto,
+                        'Sector': sheet.sectorTrabajo,
+                        'Shot': shot.shotNumber,
+                        'Molde Shot': shot.moldeNumber,
+                        'Motivo Scrap': shot.scrapReason,
+                        'Almacén Origen': sheet.almacenOrigen,
+                        'Almacén Proveniente': shot.almacenProveniente || sheet.almacenOrigen,
+                        'Creado Por': sheet.creadoPor,
+                        'Estado': sheet.estado,
+                        'Observaciones': sheet.observaciones
+                    });
+                });
             });
-        });
-    });
-    
-    // Crear libro de Excel
-    const ws = XLSX.utils.json_to_sheet(excelData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Reporte Scrap");
-    
-    // Descargar archivo
-    XLSX.writeFile(wb, `Reporte_Scrap_${new Date().toISOString().split('T')[0]}.xlsx`);
-}
+            
+            // Crear libro de Excel
+            const ws = XLSX.utils.json_to_sheet(excelData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Reporte Scrap");
+            
+            // Descargar archivo
+            XLSX.writeFile(wb, `Reporte_Scrap_${new Date().toISOString().split('T')[0]}.xlsx`);
+        }
     </script>
 </body>
 </html>
