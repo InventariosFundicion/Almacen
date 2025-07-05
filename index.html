@@ -2886,92 +2886,68 @@ function getAccionesButtons(sheet) {
             const currentTime = new Date().toLocaleTimeString('es-ES');
 
             let htmlContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <title>Reporte de Scrap Adicional</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
-                        .header { text-align: center; border-bottom: 3px solid #e74c3c; padding-bottom: 20px; margin-bottom: 30px; }
-                        .company-name { font-size: 24px; font-weight: bold; color: #e74c3c; margin-bottom: 5px; }
-                        .report-title { font-size: 18px; color: #2c3e50; margin-bottom: 10px; }
-                        .report-info { font-size: 14px; color: #666; }
-                        .section { margin: 25px 0; }
-                        .section-title { font-size: 16px; font-weight: bold; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-bottom: 15px; }
-                        table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 12px; }
-                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                        th { background-color: #34495e; color: white; font-weight: bold; }
-                        tr:nth-child(even) { background-color: #f8f9fa; }
-                        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-align: center; }
-                        @media print { body { margin: 0; } }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <div class="company-name">🏭 CONTROL DE ALMACÉN - FUNDICIÓN</div>
-                        <div class="report-title">📊 REPORTE DE SCRAP ADICIONAL</div>
-                        <div class="report-info">📅 Fecha: ${currentDate} | ⏰ Hora: ${currentTime}</div>
-                    </div>
-                    <div class="section">
-                        <div class="section-title">📋 Resumen de Scrap</div>
-                        <p>Total de hojas: <strong>${totalSheets}</strong></p>
-                        <p>Total de shots: <strong>${totalShots}</strong></p>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Folio</th>
-                                    <th>Fecha Operación</th>
-                                    <th>Producto</th>
-                                    <th>Molde</th>
-                                    <th>Sector</th>
-                                    <th>Shots</th>
-                                    <th>Creado Por</th>
-                                    <th>Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                <div class="header" style="text-align: center; border-bottom: 3px solid #e74c3c; padding-bottom: 20px; margin-bottom: 30px;">
+                    <div class="company-name" style="font-size: 24px; font-weight: bold; color: #e74c3c; margin-bottom: 5px;">🏭 CONTROL DE ALMACÉN - FUNDICIÓN</div>
+                    <div class="report-title" style="font-size: 18px; color: #2c3e50; margin-bottom: 10px;">📊 REPORTE DE SCRAP ADICIONAL</div>
+                    <div class="report-info" style="font-size: 14px; color: #666;">📅 Fecha: ${currentDate} | ⏰ Hora: ${currentTime}</div>
+                </div>
+                <div class="section" style="margin: 25px 0;">
+                    <div class="section-title" style="font-size: 16px; font-weight: bold; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-bottom: 15px;">📋 Resumen de Scrap</div>
+                    <p>Total de hojas: <strong>${totalSheets}</strong></p>
+                    <p>Total de shots: <strong>${totalShots}</strong></p>
+                    <table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 12px;">
+                        <thead>
+                            <tr>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #34495e; color: white; font-weight: bold;">Folio</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #34495e; color: white; font-weight: bold;">Fecha Operación</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #34495e; color: white; font-weight: bold;">Producto</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #34495e; color: white; font-weight: bold;">Molde</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #34495e; color: white; font-weight: bold;">Sector</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #34495e; color: white; font-weight: bold;">Shots</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #34495e; color: white; font-weight: bold;">Creado Por</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #34495e; color: white; font-weight: bold;">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
             `;
 
             filteredSheets.forEach(sheet => {
                 htmlContent += `
                     <tr>
-                        <td>${sheet.folio}</td>
-                        <td>${sheet.fechaOperacion}</td>
-                        <td>${sheet.numeroProducto}</td>
-                        <td>${sheet.moldeProducto || 'N/A'}</td>
-                        <td>${sheet.sectorTrabajo}</td>
-                        <td>${sheet.shots ? sheet.shots.length : 0}</td>
-                        <td>${sheet.creadoPor}</td>
-                        <td>${sheet.estado}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${sheet.folio}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${sheet.fechaOperacion}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${sheet.numeroProducto}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${sheet.moldeProducto || 'N/A'}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${sheet.sectorTrabajo}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${sheet.shots ? sheet.shots.length : 0}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${sheet.creadoPor}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${sheet.estado}</td>
                     </tr>
                 `;
             });
 
             htmlContent += `
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="footer">
-                        Reporte generado automáticamente por el Sistema de Control de Almacén - Fundición v1.3
-                    </div>
-                </body>
-                </html>
+                        </tbody>
+                    </table>
+                </div>
             `;
 
-            // Create blob and trigger download
-            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
+            // Create a temporary container element for html2pdf
+            const container = document.createElement('div');
+            container.innerHTML = htmlContent;
+            container.style.padding = '20px';
+            container.style.fontFamily = 'Arial, sans-serif';
 
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Reporte_Scrap_Adicional_${new Date().toISOString().split('T')[0]}.html`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            // Use html2pdf to generate and save PDF
+            const opt = {
+                margin:       0.5,
+                filename:     `Reporte_Scrap_Adicional_${new Date().toISOString().split('T')[0]}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
 
-            alert('📄 Reporte exportado como archivo HTML.\n\nPara generar PDF:\n1. Abre el archivo en tu navegador\n2. Presiona Ctrl+P (Cmd+P en Mac)\n3. Selecciona "Guardar como PDF"');
+            html2pdf().set(opt).from(container).save();
         }
 
         // Generar PDF de hoja específica
@@ -3758,42 +3734,42 @@ async function processQRCode() {
                 return;
             }
             targetWarehouse = selectedMovement;
-	// 🔥 INTEGRACIÓN AUTOMÁTICA CON HOJAS DE SCRAP Y RETENCIONES
-if (selectedMovement === 'scrap') {
-   // Para scrap
-const codeInfo = analysis.isValid ? `\n\nCódigo detectado: ${analysis.code}\nTipo: ${analysis.type}` : '';
-const confirmScrapSheet = confirm(`🔄 SCRAP DETECTADO${codeInfo}\n\n¿Quieres crear automáticamente una hoja de scrap con este código?\n\n✅ Sí = Abrir formulario de scrap\n❌ No = Solo mover a scrap`);
-    
-    if (confirmScrapSheet) {
-        // Cambiar a la pestaña de scrap y pre-llenar datos
-        showTab('scrap-retention');
-        showSubTab('new-scrap');
-        
-        // Pre-llenar formulario de scrap con datos del código
-        setTimeout(() => {
-            prefillScrapForm(analysis);
-        }, 500);
-        
-        return; // Salir para que el usuario complete el formulario de scrap
-    }
-}
-if (selectedMovement === 'retenciones') {
-   // Para retención  
-const confirmRetencion = confirm(`⏸️ RETENCIÓN DETECTADA${codeInfo}\n\n¿Quieres crear una nueva retención basada en este código?\n\n✅ Sí = Abrir formulario de retención\n❌ No = Solo mover a retenciones`);
-    
-    if (confirmRetencion) {
-        // Cambiar a la pestaña de retenciones
-        showTab('scrap-retention');
-        showSubTab('retenciones');
-        
-        // Pre-llenar formulario de retención con datos del código
-        setTimeout(() => {
-            prefillRetencionForm(analysis);
-        }, 500);
-        
-        return; // Salir para que el usuario complete el formulario
-    }
-}
+            // 🔥 INTEGRACIÓN AUTOMÁTICA CON HOJAS DE SCRAP Y RETENCIONES
+            if (selectedMovement === 'scrap') {
+                // Para scrap
+                const codeInfo = analysis.isValid ? `\n\nCódigo detectado: ${analysis.code}\nTipo: ${analysis.type}` : '';
+                const confirmScrapSheet = confirm(`🔄 SCRAP DETECTADO${codeInfo}\n\n¿Quieres crear automáticamente una hoja de scrap con este código?\n\n✅ Sí = Abrir formulario de scrap\n❌ No = Solo mover a scrap`);
+                
+                if (confirmScrapSheet) {
+                    // Cambiar a la pestaña de scrap y pre-llenar datos
+                    showTab('scrap-retention');
+                    showSubTab('new-scrap');
+                    
+                    // Pre-llenar formulario de scrap con datos del código
+                    setTimeout(() => {
+                        prefillScrapForm(analysis);
+                    }, 500);
+                    
+                    return; // Salir para que el usuario complete el formulario de scrap
+                }
+            }
+            if (selectedMovement === 'retenciones') {
+                // Para retención  
+                const confirmRetencion = confirm(`⏸️ RETENCIÓN DETECTADA${codeInfo}\n\n¿Quieres crear una nueva retención basada en este código?\n\n✅ Sí = Abrir formulario de retención\n❌ No = Solo mover a retenciones`);
+                
+                if (confirmRetencion) {
+                    // Cambiar a la pestaña de retenciones
+                    showTab('scrap-retention');
+                    showSubTab('retenciones');
+                    
+                    // Pre-llenar formulario de retención con datos del código
+                    setTimeout(() => {
+                        prefillRetencionForm(analysis);
+                    }, 500);
+                    
+                    return; // Salir para que el usuario complete el formulario
+                }
+            }
         } else {
             if (analysis.detectedState) {
                 targetWarehouse = analysis.detectedState;
@@ -7326,7 +7302,7 @@ function addCodeToList(code) {
     updateCodesValidationList();
     updateValidationInfo(); // CRÍTICO: Actualizar siempre
     updateGenerateButton();
-	    // 🆕 AGREGAR ESTAS LÍNEAS:
+    // 🆕 AGREGAR ESTAS LÍNEAS:
     // Scroll suave hacia el último elemento agregado
     setTimeout(() => {
         const listDiv = document.getElementById('codes-validation-list');
@@ -7507,6 +7483,22 @@ function generatePalletQR() {
     
     if (!zona || !tipo || validCodes.length === 0) {
         alert('⚠️ Completa todos los campos:\n• Zona/ID de tarima\n• Tipo de material\n• Al menos un código válido');
+        return;
+    }
+    
+    // Validation for maximum allowed codes
+    const uprCount = validCodes.filter(item => item.type === 'UPR').length;
+    const lwrCount = validCodes.filter(item => item.type === 'LWR').length;
+    const uprMax = 32; // or 24 as per requirement, using 32 here
+    const lwrMax = 48;
+    
+    if ((tipo === 'FUNDIDO' || tipo === 'ACABADO') && uprCount > uprMax) {
+        alert(`⚠️ Límite excedido: Solo se permiten máximo ${uprMax} códigos UPR. Actualmente tienes ${uprCount}. Por favor verifica la cantidad de piezas.`);
+        return;
+    }
+    
+    if ((tipo === 'FUNDIDO' || tipo === 'ACABADO') && lwrCount > lwrMax) {
+        alert(`⚠️ Límite excedido: Solo se permiten máximo ${lwrMax} códigos LWR. Actualmente tienes ${lwrCount}. Por favor verifica la cantidad de piezas.`);
         return;
     }
     
@@ -9896,6 +9888,14 @@ document.querySelectorAll('.nav-tab').forEach(function(tab) {
                         const content = e.target.value.trim();
                         if (content && (content.includes('|') || content.length >= 13)) {
                             analyzeQRCode();
+                        }
+                    }, 100);
+                });
+                // 🆕 AGREGAR SCROLL AUTOMÁTICO AL FINAL AL AGREGAR CÓDIGO
+                qrInput.addEventListener('input', function() {
+                    setTimeout(() => {
+                        if (qrInput.scrollHeight > qrInput.clientHeight) {
+                            qrInput.scrollTop = qrInput.scrollHeight;
                         }
                     }, 100);
                 });
